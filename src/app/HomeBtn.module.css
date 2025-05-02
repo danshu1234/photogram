@@ -1,0 +1,14 @@
+.butt {
+  display: inline-block;
+  padding: 8px 16px;
+  background: #3897f0;
+  color: white;
+  text-decoration: none;
+  border-radius: 4px;
+  font-size: 14px;
+  transition: background 0.3s;
+}
+
+.butt:hover {
+  background: #2680d9;
+}

@@ -1,0 +1,58 @@
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+    font-family: 'Arial', sans-serif;
+  }
+  
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #eee;
+  }
+  
+  .logo {
+    font-size: 24px;
+    font-weight: bold;
+    color: #3897f0;
+  }
+  
+  .controls {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+  
+  .notifs {
+    cursor: pointer;
+    padding: 8px 12px;
+    border-radius: 50%;
+    background: #f5f5f5;
+    position: relative;
+  }
+  
+  .hasNotifs {
+    background: #ff6b6b;
+    color: white;
+  }
+  
+  .myAccLink {
+    text-decoration: none;
+    color: #3897f0;
+    padding: 8px 16px;
+    border: 1px solid #3897f0;
+    border-radius: 4px;
+    transition: all 0.3s;
+  }
+  
+  .myAccLink:hover {
+    background: #3897f0;
+    color: white;
+  }
+  
+  .main {
+    padding: 20px 0;
+  }

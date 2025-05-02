@@ -1,0 +1,34 @@
+.photoContainer {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .photoImage {
+    width: 100%;
+    height: auto;
+    border-radius: 4px;
+    object-fit: cover;
+  }
+  
+  .likeSection {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  
+  .likeButton {
+    width: 24px;
+    height: 24px;
+    cursor: pointer;
+    transition: transform 0.2s;
+  }
+  
+  .likeButton:hover {
+    transform: scale(1.1);
+  }
+  
+  .likesCount {
+    font-size: 14px;
+    color: #555;
+  }
