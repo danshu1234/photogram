@@ -5,6 +5,7 @@ import useCheckReg from "./CheckReg";
 import Photo from "./PhotoInterface";
 import NotifsList from "./NotifsList";
 import List from "./List";
+import FeedbackBtn from "./FeedbackBtn";
 import useGetEmail from "./useGetEmail";
 import Link from "next/link";
 import styles from './Home.module.css';
@@ -107,6 +108,7 @@ export default function Home() {
     <div className={styles.container}>
       <header className={styles.header}>
         <h1 className={styles.logo}>Photogram</h1>
+        <FeedbackBtn/>
         <div className={styles.controls}>
           <div 
             className={`${styles.notifs} ${notifs.length ? styles.hasNotifs : ''}`} 
