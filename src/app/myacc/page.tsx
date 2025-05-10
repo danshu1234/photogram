@@ -23,6 +23,7 @@ export default function MyPage() {
   const {} = useCheckReg();
   const { email } = useGetEmail();
 
+  const [subs, setSubs] = useState <string[]> ([])
   const [isModal, setIsModal] = useState<boolean>(false)
   const [myPhotos, setMyPhotos] = useState<MyPhoto[]>([])
   let photosList;
@@ -85,10 +86,28 @@ export default function MyPage() {
     }
   }, [email]);
 
+  useEffect(() => {
+    if (email !== '') {
+      const getMySubs = async () => {
+        const getAllSubs = await fetch(`http://localhost:4000/users-controller/all/subs/${email}`)
+        const resultSubs = await getAllSubs.json()
+        const result = resultSubs.slice(1, resultSubs.length)
+        setSubs(result)
+      }
+      getMySubs()
+    }
+  }, [email])
+
+
   return (
     <div className={styles.container}>
       <header className={styles.header}>
         <h1 className={styles.title}>Мои фото</h1>
+        <h3 style={{cursor: 'pointer'}} onClick={() => {
+          if (subs.length !== 0) {
+            window.location.href='/mysubs'
+          }
+        }}>Мои подписчики: <span style={{color: 'green'}}>{subs.length}</span></h3>
         <button 
           className={styles.addButton}
           onClick={() => setIsModal(true)}

@@ -8,11 +8,16 @@ import useGetEmail from "../useGetEmail";
 import { useParams } from 'next/navigation'; 
 import List from "../List";
 import styles from './UserPage.module.css';
+import { io } from "socket.io-client";
 
 export default function UserPage() {
+
+    const socket = io('http://localhost:4000')
+
     const params = useParams()
     const { email } = useGetEmail()
 
+    const [trueParamEmail, setTrueParamEmail] = useState <string> ('')
     const [subCount, setSubCount] = useState<number>(0)
     const [subStatus, setSubStatus] = useState<boolean | null>(null)
     const [photos, setPhotos] = useState<Photo[]>([])
@@ -105,11 +110,28 @@ export default function UserPage() {
         }
     }, [email]); 
 
+    useEffect(() => {
+        if (typeof params.email === "string") {
+            const arrFromParamEmail = params.email.split('')
+            const resultParamArr = arrFromParamEmail.map(el => {
+                if (el === '%') {
+                    return '@'
+                } else if (el === '4' || el === '0') {
+                    return ''
+                } else {
+                    return el
+                }
+            })
+            const resultParamEmail = resultParamArr.join('')
+            setTrueParamEmail(resultParamEmail)
+        }
+    }, [])
+
     return (
         <div className={styles.container}>
             <header className={styles.header}>
                 <div className={styles.userInfo}>
-                    <h2 className={styles.username}>@{params.email?.toString().split('@')[0]}</h2>
+                    <h2 className={styles.username}>{trueParamEmail}</h2>
                     <p className={styles.subCount}>Подписчики: {subCount}</p>
                 </div>
                 <div className={styles.actions}>

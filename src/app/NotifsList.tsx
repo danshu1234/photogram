@@ -1,8 +1,14 @@
 import { FC } from "react";
 import styles from './NotifsList.module.css';
+import Link from "next/link";
+
+interface Notif{
+    notif: string,
+    photoId: string,
+}
 
 interface NotifsListProps{
-    notifs: string[],
+    notifs: Notif[],
     setIsNotifs: Function,
     email: string,
     setNotifs: Function,
@@ -13,7 +19,8 @@ const NotifsList: FC <NotifsListProps> = (props) => {
 
     if (props.notifs.length !== 0 && Array.isArray(props.notifs) === true) {
         notifs = <ul className={styles.notifsList}>
-            {props.notifs.map((item, index) => <li key={index} className={styles.notifItem}>{item}</li>)}
+            {props.notifs.map((item, index) => <li key={index} className={styles.notifItem}>{item.notif} <span
+             style={{color: 'blue', cursor: 'pointer'}} onClick={() => window.open(`/bigphoto/${item.photoId}`, '_blank')}>фото</span></li>)}
         </ul>
     }
 

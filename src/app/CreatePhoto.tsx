@@ -24,6 +24,11 @@ const CreatePhoto: FC<CreateProps> = ({ setIsModal }) => {
     const createNewPhoto = async () => {
         if (!imageBase64 || !email) return;
 
+        const date = new Date(); 
+        const month = String(date.getMonth() + 1).padStart(2, '0'); 
+        const year = date.getFullYear();
+        const result = `${month}.${year}`;
+
         await fetch('http://localhost:4000/photos/create', {
             method: "POST",
             headers: { 'Content-Type': 'application/json' },
@@ -31,6 +36,7 @@ const CreatePhoto: FC<CreateProps> = ({ setIsModal }) => {
                 id: Date.now().toString(),
                 email,
                 img: imageBase64,
+                date: result,
             })
         });
         setIsModal(false);

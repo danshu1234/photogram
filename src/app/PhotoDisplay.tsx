@@ -19,6 +19,7 @@ const PhotoDisplay: FC <PropsPhotoDisplay> = (props) => {
         const id = props.id
                 const email = props.email
                 const userEmail = props.userEmail
+                const photoId = props.id
                 if (props.likeUrl === 'https://avatars.mds.yandex.net/i?id=e3e0e2429c17d22c59253ed4a53292cdb278ffc5-4283205-images-thumbs&n=13') {
                     await fetch('http://localhost:4000/photos/like/this/photo', {
                         method: "PATCH",
@@ -32,7 +33,7 @@ const PhotoDisplay: FC <PropsPhotoDisplay> = (props) => {
                         headers: {
                             'Content-Type': 'application/json',
                         },
-                        body: JSON.stringify({ email, userEmail })
+                        body: JSON.stringify({ email, userEmail, photoId })
                     })
                     const newArr = props.photos.map(el => {
                         if (el.id !== props.id) {
@@ -76,7 +77,7 @@ const PhotoDisplay: FC <PropsPhotoDisplay> = (props) => {
 
     return (
         <div className={styles.photoContainer}>
-            <img src={props.url} className={styles.photoImage}/>
+            <img src={props.url} className={styles.photoImage} onClick={() => window.open(`/bigphoto/${props.id}`, '_blank')}/>
             <div className={styles.likeSection}>
                 <img 
                     src={props.likeUrl} 

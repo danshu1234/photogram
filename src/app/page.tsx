@@ -10,8 +10,14 @@ import useGetEmail from "./useGetEmail";
 import Link from "next/link";
 import styles from './Home.module.css';
 import { io } from "socket.io-client";
+import ExitBtn from "./Exit";
 
 export default function Home() {
+
+  interface Notif{
+    notif: string,
+    photoId: string,
+  }
 
   const socket = io('http://localhost:4000')
 
@@ -71,6 +77,10 @@ export default function Home() {
       }
     })
 
+    socket.on('disconnect', () => {
+      clearSocket()
+    })
+
     return(() => {
       clearSocket()
     })
@@ -89,7 +99,7 @@ export default function Home() {
   }, [email])
   
   const [isNotifs, setIsNotifs] = useState <boolean> (false)
-  const [notifs, setNotifs] = useState <string[]> ([])
+  const [notifs, setNotifs] = useState <Notif[]> ([])
   const [photos, setPhotos] = useState <Photo[]> ([])
   let photosList;
   let notifsList;
@@ -121,6 +131,7 @@ export default function Home() {
             🔔 {Array.isArray(notifs) ? notifs.length : 0}
           </div>
           <Link href={'/myacc'} className={styles.myAccLink}>Мой аккаунт</Link>
+          <ExitBtn/>
         </div>
       </header>
       
