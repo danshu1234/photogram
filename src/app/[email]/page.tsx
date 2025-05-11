@@ -87,7 +87,7 @@ export default function UserPage() {
                 };
                 fetchPhotos();
             } else {
-                window.location.href = '/undef/user';
+                window.location.href = '/undef';
             }
         };
         checkIsUser ();

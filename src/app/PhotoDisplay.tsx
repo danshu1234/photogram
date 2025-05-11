@@ -85,6 +85,14 @@ const PhotoDisplay: FC <PropsPhotoDisplay> = (props) => {
                     onClick={likeUnlikePhoto}
                 />
                 <span className={styles.likesCount}>{props.countLikes} likes</span>
+                <img src='https://cdn-icons-png.flaticon.com/512/892/892303.png' style={{width: 30, height: 30, marginLeft: 120, cursor: 'pointer'}} onClick={() => {
+                const a = document.createElement('a');
+                a.href = props.url;
+                a.download = props.id || 'image.jpg';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                }}/>
             </div>
         </div>
     )

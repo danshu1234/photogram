@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "file-saver": "^2.0.5",
     "next": "15.3.1",
     "qrcode.react": "^4.2.0",
     "react": "^19.0.0",

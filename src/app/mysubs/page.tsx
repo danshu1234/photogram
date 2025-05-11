@@ -23,7 +23,7 @@ const MySubsList: FC = () => {
         list = (
             <ul className={styles.subsList}>
                 {subsList.map((item, index) => (
-                    <li key={index} className={styles.subItem}>
+                    <li key={index} className={styles.subItem} onClick={() => window.location.href=`/${item}`}>
                         <span className={styles.subText}>{item}</span>
                     </li>
                 ))}

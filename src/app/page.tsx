@@ -11,6 +11,8 @@ import Link from "next/link";
 import styles from './Home.module.css';
 import { io } from "socket.io-client";
 import ExitBtn from "./Exit";
+import Search from "./Search";
+import { ClimbingBoxLoader } from "react-spinners";
 
 export default function Home() {
 
@@ -111,7 +113,7 @@ export default function Home() {
   if (photos.length !== 0 && email !== '') {
     photosList = <List photos={photos} setPhotos={setPhotos} email={email}/>
   } else {
-    photosList = <h2>Загрузка...</h2>
+    photosList = <ClimbingBoxLoader color="#ff4757"/>
   }
 
   return (
@@ -137,6 +139,7 @@ export default function Home() {
       
       {notifsList}
       <main className={styles.main}>
+        <Search/>
         {photosList}
       </main>
     </div>
