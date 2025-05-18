@@ -9,6 +9,7 @@ interface CreateProps {
 const CreatePhoto: FC<CreateProps> = ({ setIsModal }) => {
     const { email } = useGetEmail();
     const [imageBase64, setImageBase64] = useState<string>('');
+    const [descript, setDescript] = useState<string>('');
 
     const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -37,6 +38,7 @@ const CreatePhoto: FC<CreateProps> = ({ setIsModal }) => {
                 email,
                 img: imageBase64,
                 date: result,
+                descript: descript,
             })
         });
         setIsModal(false);
@@ -62,6 +64,12 @@ const CreatePhoto: FC<CreateProps> = ({ setIsModal }) => {
                     className="input-file"
                 />
             </label>
+
+            <textarea 
+                placeholder="Описание" 
+                onChange={(event: ChangeEvent<HTMLTextAreaElement>) => setDescript(event.target.value)}
+                className="description-textarea"
+            />
 
             <button className="publish-button" onClick={createNewPhoto} disabled={!imageBase64}>
                 Опубликовать

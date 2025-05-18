@@ -42,6 +42,7 @@ const VerifyCode: FC = () => {
 
     useEffect(() => {
         if (code !== '') {
+            console.log(code)
             giveCode()
         }
     }, [code])

@@ -11,6 +11,7 @@ interface PropsPhotoDisplay{
     photos: Photo[],
     setPhotos: Function,
     userEmail: string,
+    descript: string,
 }
 
 const PhotoDisplay: FC <PropsPhotoDisplay> = (props) => {
@@ -77,6 +78,29 @@ const PhotoDisplay: FC <PropsPhotoDisplay> = (props) => {
 
     return (
         <div className={styles.photoContainer}>
+            <div style={{ display: 'flex', flexWrap: 'wrap' }}>
+                {props.descript && ( 
+                <div style={{ display: 'flex', flexWrap: 'wrap' }}>
+                    {props.descript.split(' ').map((item, index) => {
+                        const arrFromWord = item.split('')
+                        if (arrFromWord[0] === '#') {
+                            return <span key={index} style={{marginLeft: 5, color: 'blue', cursor: 'pointer'}} onClick={() => {
+                                let onlyClickTegPhotos = []
+                                for (let el of props.photos) {
+                                    const giveDescript = el.descript?.split(' ') || []; 
+                                    if (giveDescript.includes(item)) {
+                                        onlyClickTegPhotos.push(el)
+                                    }
+                                }
+                                props.setPhotos(onlyClickTegPhotos)
+                            }}>{item}</span>
+                        } else {
+                            return <span key={index} style={{marginLeft: 5}}>{item}</span>
+                        }
+                    })}
+                </div>
+            )}
+            </div>
             <img src={props.url} className={styles.photoImage} onClick={() => window.open(`/bigphoto/${props.id}`, '_blank')}/>
             <div className={styles.likeSection}>
                 <img 

@@ -8,15 +8,14 @@ import useGetEmail from "../useGetEmail";
 import { useParams } from 'next/navigation'; 
 import List from "../List";
 import styles from './UserPage.module.css';
-import { io } from "socket.io-client";
 
 export default function UserPage() {
-
-    const socket = io('http://localhost:4000')
 
     const params = useParams()
     const { email } = useGetEmail()
 
+    const [visits, setVisits] = useState <number> (0)
+    const [visWarn, setVisWarn] = useState <string> ('none')
     const [trueParamEmail, setTrueParamEmail] = useState <string> ('')
     const [subCount, setSubCount] = useState<number>(0)
     const [subStatus, setSubStatus] = useState<boolean | null>(null)
@@ -27,7 +26,7 @@ export default function UserPage() {
     if (photos.length !== 0) {
         userPhotos = <List photos={photos} setPhotos={setPhotos} email={email}/>
     } else {
-        userPhotos = <h2 className={styles.loading}>Загрузка...</h2>;
+        userPhotos = <h2 className={styles.loading}>Пользователь пока не публиковал фото</h2>;
     }
 
     if (subStatus === true) {
@@ -86,6 +85,47 @@ export default function UserPage() {
                     }
                 };
                 fetchPhotos();
+
+
+                const getVisits = async () => {
+                    const getUserVisits = await fetch(`http://localhost:4000/users-controller/get/visits/${params.email}`)
+                    const resultVisitsArr = await getUserVisits.json()
+                    const myEmail = localStorage.getItem('photogram-enter')
+                    let resultMyEmail: string = ''
+                    if (myEmail) {
+                        resultMyEmail = JSON.parse(myEmail)
+                    }
+                    const findMeAmongVisits = resultVisitsArr.find((el: string) => el === resultMyEmail)
+                    if (findMeAmongVisits === undefined) {
+                        let targetEmail = ''
+                        if (typeof params.email === "string") {
+                        const arrFromParamEmail = params.email.split('')
+                        const resultParamArr = arrFromParamEmail.map(el => {
+                        if (el === '%') {
+                        return '@'
+                        } else if (el === '4' || el === '0') {
+                            return ''
+                        } else {
+                            return el
+                        }
+                    })
+                        const resultParamEmail = resultParamArr.join('')
+                        targetEmail = resultParamEmail
+                    }
+                        const visitsWithMe: string[] = [...resultVisitsArr, resultMyEmail]
+                        const update = await fetch('http://localhost:4000/users-controller/update/visits', {
+                            method: "PATCH",
+                            headers: {
+                            'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({ visitsWithMe, targetEmail })
+                        })
+                        const resultUpdate = await update.text()
+                        console.log(resultUpdate)
+                    } 
+                    setVisits(resultVisitsArr.length)
+                }
+                getVisits()
             } else {
                 window.location.href = '/undef';
             }
@@ -135,6 +175,9 @@ export default function UserPage() {
                     <p className={styles.subCount}>Подписчики: {subCount}</p>
                 </div>
                 <div className={styles.actions}>
+                    <p style={{display: visWarn, opacity: 0.7}}>Просмотры профиля</p>
+                    <img src='https://steamuserimages-a.akamaihd.net/ugc/1916862140782257945/241CAB7053DABFB20EBBA44DC21AFE9F46D87494/?imw=512&amp;imh=289&amp;ima=fit&amp;impolicy=Letterbox&amp;imcolor=%23000000&amp;letterbox=true' width={30} height={20} onMouseEnter={() => setVisWarn('block')} onMouseLeave={() => setVisWarn('none')}/>
+                    <p>{visits}</p>
                     {subBtn}
                     <HomeBtn />
                 </div>

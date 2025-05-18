@@ -4,6 +4,7 @@ interface Photo{
     url: string,
     likes: string[],
     email: string,
+    descript: string,
 }
 
 export default Photo

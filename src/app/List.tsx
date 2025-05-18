@@ -26,6 +26,7 @@ const List: FC <PropsList> = (props) => {
                                 countLikes={item.likes.length} 
                                 email={props.email} 
                                 id={item.id} 
+                                descript={item.descript}
                                 likeUrl={
                                     item.likes.find(el => el === props.email) === undefined ? 
                                     "https://avatars.mds.yandex.net/i?id=e3e0e2429c17d22c59253ed4a53292cdb278ffc5-4283205-images-thumbs&n=13" : 
