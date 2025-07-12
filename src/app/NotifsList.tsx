@@ -1,10 +1,12 @@
 import { FC } from "react";
 import styles from './NotifsList.module.css';
 import Link from "next/link";
+import useGetEmail from "./useGetEmail";
 
 interface Notif{
-    notif: string,
-    photoId: string,
+    type: string,
+    photoId?: string,
+    user: string,
 }
 
 interface NotifsListProps{
@@ -15,12 +17,71 @@ interface NotifsListProps{
 }
 
 const NotifsList: FC <NotifsListProps> = (props) => {
+
+    const { email } = useGetEmail()
+
     let notifs;
+
+    const tellUserAboutPerm = async (succOrErr: string, userEmail: string) => {
+        const type = succOrErr
+        await fetch('http://localhost:4000/users-controller/new/notif', {
+            method: "PATCH",
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ userEmail, type, email })
+        })
+    }
+
+    const deletePermNotif = async (user: string) => {
+        const deleteNotif = await fetch('http://localhost:4000/users-controller/delete/perm', {
+            method: "PATCH",
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ user, email })
+        })
+        const resultNotifs = await deleteNotif.json()
+        props.setNotifs(resultNotifs)
+    }
 
     if (props.notifs.length !== 0 && Array.isArray(props.notifs) === true) {
         notifs = <ul className={styles.notifsList}>
-            {props.notifs.map((item, index) => <li key={index} className={styles.notifItem}>{item.notif} <span
-             style={{color: 'blue', cursor: 'pointer'}} onClick={() => window.open(`/bigphoto/${item.photoId}`, '_blank')}>фото</span></li>)}
+            {props.notifs.map((item, index) => {
+                if (item.type === 'photo') {
+                    return <li key={index}><p><span style={{cursor: 'pointer', color: 'blue'}} onClick={() => window.location.href=`/${item.user}`}>{item.user}</span> оценил(а) ваше <span style={{cursor: 'pointer', color: 'blue'}} onClick={() => window.open(`/bigphoto/${item.photoId}`, '_blank')}>фото</span></p></li>
+                } else if (item.type === 'perm') {
+                    return <li key={index}>
+                        <div>
+                            <p><span style={{cursor: 'pointer', color: 'blue'}} onClick={() => window.location.href=`/${item.user}`}>{item.user}</span> хочет посмотреть ваши фото</p>
+                            <button onClick={async() => {
+                                const newUserEmail = item.user
+                                const addNewPermUser = async () => {
+                                    await fetch('http://localhost:4000/users-controller/new/perm/user', {
+                                        method: "PATCH",
+                                        headers: {
+                                            'Content-Type': 'application/json',
+                                        },
+                                        body: JSON.stringify({ newUserEmail, email })
+                                    })
+                                }
+                                addNewPermUser()
+                                await tellUserAboutPerm('succes', newUserEmail)
+                                await deletePermNotif(item.user)
+                            }}>Принять</button>
+                            <button onClick={async() => {
+                                const newUserEmail = item.user
+                                await tellUserAboutPerm('err', newUserEmail)
+                                await deletePermNotif(item.user)
+                            }}>Отклонить</button>
+                        </div>
+                    </li>
+                } else if (item.type === 'succes') {
+                    return <li key={index}><p><span style={{cursor: 'pointer', color: 'blue'}} onClick={() => window.location.href=`/${item.user}`}>{item.user}</span> принял(а) ваш запрос на просмотр фото</p></li>
+                } else if (item.type === 'err') {
+                    return <li key={index}><p><span style={{cursor: 'pointer', color: 'blue'}} onClick={() => window.location.href=`/${item.user}`}>{item.user}</span> отклонил(а) ваш запрос на просмотр фото</p></li>
+                }
+            })}
         </ul>
     }
 
@@ -32,15 +93,16 @@ const NotifsList: FC <NotifsListProps> = (props) => {
                     className={styles.closeButton}
                     onClick={async() => {
                         const email = props.email
-                        await fetch('http://localhost:4000/users-controller/clear/notifs', {
+                        const clearNotifs = await fetch('http://localhost:4000/users-controller/clear/notifs', {
                             method: "PATCH",
                             headers: {
                                 'Content-Type': 'application/json',
                             },
                             body: JSON.stringify({ email })
                         })
+                        const resultNotifs = await clearNotifs.json()
                         props.setIsNotifs(false)
-                        props.setNotifs([])
+                        props.setNotifs(resultNotifs)
                     }}
                 >X</button>
             </div>

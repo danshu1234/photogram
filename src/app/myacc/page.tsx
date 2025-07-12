@@ -5,68 +5,86 @@ import useCheckReg from "../CheckReg";
 import useGetEmail from "../useGetEmail";
 import CreatePhoto from "../CreatePhoto";
 import styles from './MyPage.module.css';
+import ExitBtn from "../Exit";
+import Avatar from "../Avatar";
+import Photo from "../PhotoInterface";
+import List from "../List";
+import useGetSavePhotos from "../useGetSavePhotos";
 
-interface MyPhoto {
-  url: string,
-  email: string,
-  id: string,
-  likes: string[],
-}
-
-async function getUserPhoto(email: string): Promise<MyPhoto[]> {
+async function getUserPhoto(email: string): Promise<Photo[]> {
     const myPhotosResponse = await fetch(`http://localhost:4000/photos/get/user/photos/${email}`);
     const resultUserPhotos = await myPhotosResponse.json();
     return resultUserPhotos;
 }
 
 export default function MyPage() {
+
   const {} = useCheckReg();
   const { email } = useGetEmail();
 
+  const [width, setWidth] = useState <number> (30)
+
+  const { mySavePosts, setMySavePosts } = useGetSavePhotos()
+  const [openAcc, setOpenAcc] = useState <boolean> (false) 
   const [subs, setSubs] = useState <string[]> ([])
   const [isModal, setIsModal] = useState<boolean>(false)
-  const [myPhotos, setMyPhotos] = useState<MyPhoto[]>([])
+  const [myPhotos, setMyPhotos] = useState<Photo[] | null>(null)
   let photosList;
+  let showAva;
+  let open;
 
-  if (myPhotos.length !== 0) {
-    photosList = (
-      <ul className={styles.photosList}>
-        {myPhotos.map((item, index) => {
-          return (
-            <li key={index} className={styles.photoItem}>
-              <div className={styles.photoCard}>
-                <img 
-                  src={item.url} 
-                  className={styles.photoImage}
-                  alt={`Фото пользователя ${email}`}
-                />
-                <div className={styles.photoFooter}>
-                  <span className={styles.likesCount}>❤️ {item.likes.length}</span>
-                  <button 
-                    className={styles.deleteButton}
-                    onClick={async() => {
-                      const photoId = item.id
-                      await fetch('http://localhost:4000/photos/delete/photo', {
-                        method: "DELETE",
-                        headers: {
-                          'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({ photoId })
-                      })
-                      window.location.reload()
-                    }}
-                  >
-                    Удалить
-                  </button>
-                </div>
-              </div>
-            </li>
-          )
-        })}
-      </ul>
-    )
+  const closeAcc = async () => {
+    const close = await fetch('http://localhost:4000/users-controller/close/acc', {
+      method: "PATCH",
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ email })
+    })
+    const resultClose = await close.text()
+    if (resultClose === 'OK') {
+      setOpenAcc(false)
+    }
+  }
+
+  const openAccaunt = async () => {
+    const opAcc = await fetch('http://localhost:4000/users-controller/open/acc', {
+      method: "PATCH",
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ email })
+    })
+    const resultOpen = await opAcc.text()
+    if (resultOpen === 'OK') {
+      setOpenAcc(true)
+    }
+  }
+
+  if (openAcc) {
+    open = <img src='https://upload.wikimedia.org/wikipedia/commons/thumb/a/ab/OOjs_UI_icon_unLock-ltr.svg/60px-OOjs_UI_icon_unLock-ltr.svg.png' width={40} height={40} onClick={closeAcc}/>
   } else {
+    open = <img src='https://upload.wikimedia.org/wikipedia/commons/thumb/3/31/OOjs_UI_icon_secure-link.svg/640px-OOjs_UI_icon_secure-link.svg.png' width={40} height={40} onClick={openAccaunt}/>
+  }
+
+  let exitBtnAndFeedback;
+
+  if (email !== '') {
+    showAva = <Avatar email={email} type='edit'/>
+  }
+
+  if (width === 200) {
+    exitBtnAndFeedback = <div>
+      <ExitBtn/>
+    </div>
+  }
+
+  if (myPhotos !== null && myPhotos.length !== 0 && mySavePosts !== null) {
+    photosList = <List photos={myPhotos} setPhotos={setMyPhotos} email={email} mySavePosts={mySavePosts} setMySavePosts={setMySavePosts}/>
+  } else if (myPhotos !== null && myPhotos.length === 0) {
     photosList = <h2 className={styles.noPhotos}>Вы еще не публиковали фото</h2>
+  } else {
+    photosList = <h2 className={styles.noPhotos}>Загрузка...</h2>
   }
 
   useEffect(() => {
@@ -75,7 +93,15 @@ export default function MyPage() {
         try {
           const resultMyPhotos = await getUserPhoto(email);
           if (resultMyPhotos.length !== 0) {
-            setMyPhotos(resultMyPhotos);
+            const resultArr = resultMyPhotos.map(el => {
+              return {
+                ...el,
+                photoIndex: 0,
+              }
+            })
+            setMyPhotos(resultArr.reverse());
+          } else {
+            setMyPhotos([])
           }
         } catch (error) {
           console.error('Ошибка при получении фото', error);
@@ -89,25 +115,37 @@ export default function MyPage() {
   useEffect(() => {
     if (email !== '') {
       const getMySubs = async () => {
-        const getAllSubs = await fetch(`http://localhost:4000/users-controller/all/subs/${email}`)
+        const getAllSubs = await fetch(`http://localhost:4000/users-controller/all/subs/and/country/${email}`)
         const resultSubs = await getAllSubs.json()
-        const result = resultSubs.slice(1, resultSubs.length)
+        const result = resultSubs.subscribes.slice(1, resultSubs.length)
         setSubs(result)
       }
       getMySubs()
     }
   }, [email])
 
+  useEffect(() => {
+    if (email !== '') {
+      const checkOpenStatus = async () => {
+        const checkStatus = await fetch(`http://localhost:4000/users-controller/check/open/${email}`)
+        const resultStatus = await checkStatus.json()
+        setOpenAcc(resultStatus)
+      }
+      checkOpenStatus()
+    }
+  }, [email])
 
   return (
     <div className={styles.container}>
       <header className={styles.header}>
+        {showAva}
         <h1 className={styles.title}>Мои фото</h1>
         <h3 style={{cursor: 'pointer'}} onClick={() => {
           if (subs.length !== 0) {
             window.location.href='/mysubs'
           }
         }}>Мои подписчики: <span style={{color: 'green'}}>{subs.length}</span></h3>
+        {open}
         <button 
           className={styles.addButton}
           onClick={() => setIsModal(true)}
@@ -120,6 +158,7 @@ export default function MyPage() {
       <div className={styles.photosContainer}>
         {photosList}
       </div>
+      <div style={{position: 'absolute', right: 0, bottom: 50, backgroundColor: 'turquoise', height: 100, width: width, transitionDuration: '0.7s'}} onMouseEnter={() => setWidth(200)} onMouseLeave={() => setWidth(20)}>{exitBtnAndFeedback}</div>
     </div>
   );
 }

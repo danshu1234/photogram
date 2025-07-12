@@ -8,27 +8,38 @@ interface CreateProps {
 
 const CreatePhoto: FC<CreateProps> = ({ setIsModal }) => {
     const { email } = useGetEmail();
-    const [imageBase64, setImageBase64] = useState<string>('');
+    const [imageBase64, setImageBase64] = useState<string[]>([]);
     const [descript, setDescript] = useState<string>('');
+
+    let photosShow;
+
+    if (imageBase64.length !== 0) {
+        photosShow = <div>
+            <ul>
+                {imageBase64.map((item, index) => <li key={index}><img src={item} style={{width: 100, height: 100}}/></li>)}
+            </ul>
+        </div>
+    }
 
     const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
             const reader = new FileReader();
             reader.onload = (event) => {
-                setImageBase64(event.target?.result as string);
+                setImageBase64([...imageBase64, event.target?.result as string]);
             };
             reader.readAsDataURL(file);
         }
     };
 
     const createNewPhoto = async () => {
-        if (!imageBase64 || !email) return;
+        if (imageBase64.length === 0 || !email) return;
 
         const date = new Date(); 
+        const day = date.getDate()
         const month = String(date.getMonth() + 1).padStart(2, '0'); 
         const year = date.getFullYear();
-        const result = `${month}.${year}`;
+        const result = `${day}.${month}.${year}`;
 
         await fetch('http://localhost:4000/photos/create', {
             method: "POST",
@@ -38,7 +49,7 @@ const CreatePhoto: FC<CreateProps> = ({ setIsModal }) => {
                 email,
                 img: imageBase64,
                 date: result,
-                descript: descript,
+                descript: descript, 
             })
         });
         setIsModal(false);
@@ -49,11 +60,7 @@ const CreatePhoto: FC<CreateProps> = ({ setIsModal }) => {
         <div className="container">
             <button className="close-button" onClick={() => setIsModal(false)}>Закрыть</button>
             
-            {imageBase64 ? (
-                <img src={imageBase64} className="preview-image" alt="Preview" />
-            ) : (
-                <h2 className="placeholder">Здесь будет ваше фото</h2>
-            )}
+            {photosShow}
 
             <label className="file-upload-button">
                 Выберите файл

@@ -4,6 +4,7 @@ import { ChangeEvent, FC, useEffect, useState } from "react"
 import useCheckReg from "../CheckReg"
 import useGetEmail from '../useGetEmail'
 import styles from './VerifyCode.module.css';
+const { v4: uuidv4 } = require('uuid');
 
 const VerifyCode: FC = () => {
 
@@ -48,39 +49,85 @@ const VerifyCode: FC = () => {
     }, [code])
 
     const checkCode = async () => {
-        if (code === inputCode) {
-            const dataForRegOrEnter = localStorage.getItem('dataForRegPhotoGram')
-            if (dataForRegOrEnter) {
-                const resultData = JSON.parse(dataForRegOrEnter)
-                if (resultData.status === 'enter') {
-                    localStorage.setItem('photogram-enter', JSON.stringify(resultData.email))
-                    localStorage.removeItem('dataForRegPhotoGram')
-                    window.location.href = '/'
-                } else if (resultData.status === 'reg') {
-                    const getLocal = localStorage.getItem('dataForRegPhotoGram')
-                    let resultName = null
-                    let resultEmail = null
-                    if (getLocal) {
-                        const resultLocal = JSON.parse(getLocal)
-                        resultName = resultLocal.name
-                        resultEmail = resultLocal.email
-                    }
-                    await fetch('http://localhost:4000/users-controller/create/new/user', {
-                        method: "POST",
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({ resultEmail, resultName })
-                    })
-                    localStorage.setItem('photogram-enter', JSON.stringify(resultData.email))
-                    localStorage.removeItem('dataForRegPhotoGram')
-                    window.location.href = '/'
-                }
-            }
-        } else {
-            alert('Неверный код')
+  if (code === inputCode) {
+    const dataForRegOrEnter = localStorage.getItem('dataForRegPhotoGram');
+    if (dataForRegOrEnter) {
+      const resultData = JSON.parse(dataForRegOrEnter);
+      
+      if (resultData.status === 'enter') {
+        localStorage.setItem('photogram-enter', JSON.stringify(resultData.email));
+        localStorage.removeItem('dataForRegPhotoGram');
+        window.location.href = '/';
+      } 
+      else if (resultData.status === 'reg') {
+        const getLocal = localStorage.getItem('dataForRegPhotoGram');
+        let resultName = null;
+        let resultEmail = null;
+        
+        if (getLocal) {
+          const resultLocal = JSON.parse(getLocal);
+          resultName = resultLocal.name;
+          resultEmail = resultLocal.email;
         }
+
+        try {
+          const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(resolve, reject);
+          });
+
+          const response = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${position.coords.latitude}&lon=${position.coords.longitude}`
+          );
+          const data = await response.json();
+          const countryName = data.address?.country || 'Unknown'; 
+
+          const latitude = position.coords.latitude
+          const longitude = position.coords.longitude
+
+          const code = uuidv4()
+
+          await fetch('http://localhost:4000/users-controller/create/new/user', {
+            method: "POST",
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ 
+              code,
+              resultEmail, 
+              resultName, 
+              country: countryName,
+              latitude: latitude,
+              longitude: longitude,
+            })
+          });
+
+          localStorage.setItem('photogram-enter', JSON.stringify(resultEmail));
+          localStorage.removeItem('dataForRegPhotoGram');
+          window.location.href = '/';
+          
+        } catch (error) {
+          console.error('Ошибка при регистрации:', error);
+          await fetch('http://localhost:4000/users-controller/create/new/user', {
+            method: "POST",
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ 
+              resultEmail, 
+              resultName, 
+              country: '' ,
+              latitude: '',
+              longitude: '',
+            })
+          });
+          window.location.href = '/';
+        }
+      }
     }
+  } else {
+    alert('Неверный код');
+  }
+};
 
     return (
         <div className={styles.container}>

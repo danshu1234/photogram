@@ -14,7 +14,7 @@ const useGetEmail = () => {
         }
     }, [])
 
-    return { email }
+    return { email, setEmail }
 
 }
 

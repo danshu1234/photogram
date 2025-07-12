@@ -8,6 +8,10 @@ interface PropsList{
     photos: Photo[],
     setPhotos: Function,
     email: string,
+    setSavePhotos?: Function,
+    setSharePost?: Function,
+    mySavePosts: string[],
+    setMySavePosts: Function,
 }
 
 const List: FC <PropsList> = (props) => {
@@ -27,12 +31,19 @@ const List: FC <PropsList> = (props) => {
                                 email={props.email} 
                                 id={item.id} 
                                 descript={item.descript}
+                                date={item.date}
+                                photoIndex={item.photoIndex}
+                                commentsCount={item.comments?.length || 0}  
+                                setSavePhotos={props.setSavePhotos}
+                                setSharePost={props.setSharePost}
+                                mySavePosts={props.mySavePosts}
+                                setMySavePosts={props.setMySavePosts}
                                 likeUrl={
                                     item.likes.find(el => el === props.email) === undefined ? 
                                     "https://avatars.mds.yandex.net/i?id=e3e0e2429c17d22c59253ed4a53292cdb278ffc5-4283205-images-thumbs&n=13" : 
                                     "https://www.pngall.com/wp-content/uploads/4/Red-Heart-Symbol-PNG-Picture.png"
                                 }
-                            />
+/>
                         </div>
                     </li>
                 })}

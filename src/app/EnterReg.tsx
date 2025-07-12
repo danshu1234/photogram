@@ -25,7 +25,7 @@ const EnterReg: FC <Props> = (props) => {
         }
     }, [])
 
-    const checkEmail = () => {
+    const checkEmail = async () => {
         const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (regex.test(email)) {
             if (props.status === 'reg') {
@@ -36,8 +36,14 @@ const EnterReg: FC <Props> = (props) => {
                     alert('Введите имя')
                 }
             } else {
-                localStorage.setItem('dataForRegPhotoGram', JSON.stringify({status: 'enter', email: email}))
-                window.location.href = '/verify'
+                const findThisEmail = await fetch(`http://localhost:4000/users-controller/check/find/user/${email}`)
+                const resultCheckUser = await findThisEmail.text()
+                if (resultCheckUser === 'OK') {
+                    localStorage.setItem('dataForRegPhotoGram', JSON.stringify({status: 'enter', email: email}))
+                    window.location.href = '/verify'
+                } else {
+                    alert('Такого пользователя не существует')
+                }
             }
         } else {
             alert('Введите корректный Email')
