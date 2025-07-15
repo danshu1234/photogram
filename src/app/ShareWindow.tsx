@@ -13,7 +13,7 @@ interface ShareWindowProps{
 
 const ShareWindow: FC <ShareWindowProps> = (props) => {
 
-    const { email } = useGetEmail()
+    const { email, trueEmail } = useGetEmail()
 
     const [chats, setChats] = useState <Chat[] | null> (null)
     let chatsList;
@@ -30,6 +30,7 @@ const ShareWindow: FC <ShareWindowProps> = (props) => {
                             <button onClick={async() => {
                                 const trueParamEmail = item.user
                                 const socketId = ''
+                                const email = trueEmail
                                 const { formattedDate, messId } = getMessIdAndDate()
                                 const newMessages = [...item.messages, {user: email, text: props.sharePost, photos: [], date: formattedDate, id: messId, ans: '', edit: false, typeMess: 'post', per: ''}]
                                 await fetch('http://localhost:4000/users-controller/new/mess', {
@@ -54,12 +55,12 @@ const ShareWindow: FC <ShareWindowProps> = (props) => {
 
     useEffect(() => {
         const getChats = async () => {
-            const myChats = await fetch(`http://localhost:4000/users-controller/get/chats/${email}`)
+            const myChats = await fetch(`http://localhost:4000/users-controller/get/chats/${trueEmail}`)
             const resultChats = await myChats.json()
             setChats(resultChats)
         }
         getChats()
-    }, [email])
+    }, [trueEmail])
 
     return (
         <div>

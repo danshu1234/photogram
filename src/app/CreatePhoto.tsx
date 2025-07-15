@@ -1,6 +1,7 @@
 import { ChangeEvent, FC, useState } from "react";
 import useGetEmail from "./useGetEmail";
 import './CreatePhoto.css'; 
+import getUserEmail from "./getUserEmail";
 
 interface CreateProps {
     setIsModal: (value: boolean) => void;
@@ -41,12 +42,14 @@ const CreatePhoto: FC<CreateProps> = ({ setIsModal }) => {
         const year = date.getFullYear();
         const result = `${day}.${month}.${year}`;
 
+        const resultEmail = await getUserEmail()
+
         await fetch('http://localhost:4000/photos/create', {
             method: "POST",
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
                 id: Date.now().toString(),
-                email,
+                resultEmail,
                 img: imageBase64,
                 date: result,
                 descript: descript, 

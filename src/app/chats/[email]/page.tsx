@@ -11,6 +11,8 @@ import SendBtn from "@/app/SendBtn"
 import MessDisplay from "@/app/MessDisplay"
 import gifs from "@/app/gifs"
 import PinList from "@/app/PinList"
+import useCheckReg from "@/app/CheckReg"
+import showNotification from "@/app/ShowNotif"
 
 const UserChat: FC = () => {
 
@@ -19,9 +21,11 @@ const UserChat: FC = () => {
 
     const socket = io('http://localhost:4000')
 
+    const {} = useCheckReg()
+
     const [socketId, setSocketId] = useState ('')
 
-    const { email, setEmail } = useGetEmail()
+    const { trueEmail, setEmail } = useGetEmail()
     const { trueParamEmail, setTrueParamEmail } = useGetTrueParamEmail()
 
     const [showPin, setShowPin] = useState <boolean> (false)
@@ -51,6 +55,7 @@ const UserChat: FC = () => {
 
     if (Array.isArray(myBanArr)) {
         if (myBanArr.includes(trueParamEmail)) {
+            const email = trueEmail
             banBtn = <button onClick={async() => {
                 await fetch('http://localhost:4000/users-controller/unban/user', {
                     method: "PATCH",
@@ -63,6 +68,7 @@ const UserChat: FC = () => {
             }}>Разблокировать</button>
         } else {
             banBtn = <button onClick={async() => {
+                const email = trueEmail
                 await fetch('http://localhost:4000/users-controller/ban/user', {
                     method: "PATCH",
                     headers: {
@@ -89,7 +95,8 @@ const UserChat: FC = () => {
                 {gifsArr.map((item, index) => <li key={index}><img src={item} width={150} height={150} onClick={async() => {
                     const { formattedDate, messId } = getMessIdAndDate()
                     if (messages) {
-                        const newMessages = [...messages, {user: email, text: item, photos: [], date: formattedDate, id: messId, ans: answMess, edit: false, typeMess: 'gif', per: ''}]
+                        const email = trueEmail
+                        const newMessages = [...messages, {user: trueEmail, text: item, photos: [], date: formattedDate, id: messId, ans: answMess, edit: false, typeMess: 'gif', per: ''}]
                         await fetch('http://localhost:4000/users-controller/new/mess', {
                             method: "PATCH",
                             headers: {
@@ -97,7 +104,7 @@ const UserChat: FC = () => {
                             },
                             body: JSON.stringify({ newMessages, email, trueParamEmail, socketId })
                         })
-                        setMessages([...messages, {user: email, text: item, photos: [], date: formattedDate, id: messId, ans: answMess, edit: false, typeMess: 'gif', per: '', controls: false, pin: false}])
+                        setMessages([...messages, {user: trueEmail, text: item, photos: [], date: formattedDate, id: messId, ans: answMess, edit: false, typeMess: 'gif', per: '', controls: false, pin: false}])
                         setGifsArr([])
                     }
                 }}/></li>)}
@@ -124,10 +131,6 @@ const UserChat: FC = () => {
         </div>
     }
 
-    useEffect(() => {
-        console.log(pinMess)
-    }, [pinMess])
-
     if (pinMess.length !== 0) {
         pinBtn = <p onClick={() => setShowPin(!showPin)}>Закрепленные сообщения</p>
     }
@@ -140,7 +143,7 @@ const UserChat: FC = () => {
         if (messages.length === 0) {
             showMess = <h2>Этот чат пока пуст</h2>
         } else if (messages.length !== 0) {
-            showMess = <MessDisplay messages={messages} email={email} trueParamEmail={trueParamEmail} setMessages={setMessages} setAnswMess={setAnswMess} setEditMess={setEditMess} setInputMess={setInputMess} setSucCopy={setSucCopy} pinMess={pinMess} setPinMess={setPinMess}/>
+            showMess = <MessDisplay messages={messages} email={trueEmail} trueParamEmail={trueParamEmail} setMessages={setMessages} setAnswMess={setAnswMess} setEditMess={setEditMess} setInputMess={setInputMess} setSucCopy={setSucCopy} pinMess={pinMess} setPinMess={setPinMess}/>
         }
     } else {
         showMess = <h2>Загрузка...</h2>
@@ -167,11 +170,8 @@ const UserChat: FC = () => {
         })
     }
 
-    useEffect(() => {
-        console.log(imageBase64)
-    }, [imageBase64])
-
      const getMessages = async () => {
+        const email = trueEmail
         const getMess = await fetch(`http://localhost:4000/users-controller/get/mess`, {
             method: "POST",
             headers: {
@@ -200,12 +200,13 @@ const UserChat: FC = () => {
     }
 
     const getMyBanArr = async () => {
-        const banArr = await fetch(`http://localhost:4000/users-controller/get/my/ban/mess/${email}`)
+        const banArr = await fetch(`http://localhost:4000/users-controller/get/my/ban/mess/${trueEmail}`)
         const resultBanArr = await banArr.json()
         setMyBanArr(resultBanArr)
     }
 
     const getUserPermAndSubs = async () => {
+        const email = trueEmail
         const getPermData = await fetch('http://localhost:4000/users-controller/get/perm/data', {
             method: "POST",
             headers: {
@@ -236,14 +237,14 @@ const UserChat: FC = () => {
     }, [sucCopy])
 
     useEffect(() => {
-        if (trueParamEmail !== '' && email !== '') {
+        if (trueParamEmail !== '' && trueEmail !== '') {
             getMessages()
             getBanArr()
             getMyBanArr()
             getUserPermAndSubs()
         }
-        zeroMess(email, trueParamEmail)
-    }, [trueParamEmail, email])
+        zeroMess(trueEmail, trueParamEmail)
+    }, [trueParamEmail, trueEmail])
 
     useEffect(() => {
         if (mediaBlobUrl !== undefined) {
@@ -265,7 +266,8 @@ const UserChat: FC = () => {
                     const { formattedDate, messId } = getMessIdAndDate()
                 if (messages) {
                     if (messages.length !== 0) {
-                        const newMessages = [...messages, {user: email, text: base64String, photos: imageBase64, date: formattedDate, id: messId, ans: answMess, edit: false, typeMess: 'voice', per: ''}]
+                        const email = trueEmail
+                        const newMessages = [...messages, {user: trueEmail, text: base64String, photos: imageBase64, date: formattedDate, id: messId, ans: answMess, edit: false, typeMess: 'voice', per: ''}]
                         await fetch('http://localhost:4000/users-controller/new/mess', {
                             method: "PATCH",
                             headers: {
@@ -273,10 +275,11 @@ const UserChat: FC = () => {
                             },
                             body: JSON.stringify({ newMessages, email, trueParamEmail, socketId })
                         })
-                        setMessages([...messages, {user: email, text: base64String, photos: imageBase64, date: formattedDate, id: messId, ans: answMess, edit: false, typeMess: 'voice', controls: false, per: '', pin: false}])
+                        setMessages([...messages, {user: trueEmail, text: base64String, photos: imageBase64, date: formattedDate, id: messId, ans: answMess, edit: false, typeMess: 'voice', controls: false, per: '', pin: false}])
                     } else {
                         const inputMess = base64String
                         const typeMessage = 'voice'
+                        const email = trueEmail
                         await fetch('http://localhost:4000/users-controller/new/chat', {
                             method: "PATCH",
                             headers: {
@@ -285,7 +288,7 @@ const UserChat: FC = () => {
                             body: JSON.stringify({ inputMess, email, trueParamEmail, imageBase64, typeMessage })
                         })
                         const { formattedDate, messId } = getMessIdAndDate()
-                        setMessages([{user: email, text: base64String, photos: imageBase64, date: formattedDate, id: messId, ans: '', edit: false, typeMess: 'voice', controls: false, per: '', pin: false}])
+                        setMessages([{user: trueEmail, text: base64String, photos: imageBase64, date: formattedDate, id: messId, ans: '', edit: false, typeMess: 'voice', controls: false, per: '', pin: false}])
                     }                  
                 }
                 }
@@ -322,6 +325,9 @@ const UserChat: FC = () => {
                 })
                 return prev
             })
+            if (document.visibilityState !== 'visible') {
+                showNotification('Новое сообщение', `Новое сообщение от ${message.user}`)
+            }
             const userSocket = message.socketId
             await fetch(`http://localhost:4000/users-controller/zero/mess/count/${userSocket}`)
             } else if (message.type === 'typing') {
@@ -333,7 +339,6 @@ const UserChat: FC = () => {
                 return prev
                 })
             } else if (message.type === 'delete') {
-                console.log(message.id)
                 setMessages(prev => {
                     if (prev) {
                         return prev.filter(el => el.id !== message.id)
@@ -375,8 +380,9 @@ const UserChat: FC = () => {
     }, [])
     
     useEffect(() => {
-        if (socketId !== '' && email !== '') {
+        if (socketId !== '' && trueEmail !== '') {
         const addSocket = async () => {
+            const email = trueEmail
             await fetch('http://localhost:4000/users-controller/add/socket', {
                 method: "PATCH",
                     headers: {
@@ -387,12 +393,12 @@ const UserChat: FC = () => {
         }
         addSocket()
         }
-    }, [socketId, email])
+    }, [socketId, trueEmail])
 
 
-    if (email !== '' && Array.isArray(usersBan) && mySubs !== null && userSubs !== null && userPermMess !== null) {
-        if (usersBan.includes(email) === false) {
-            if (userPermMess === 'Все' || (userPermMess === 'Только друзья' && mySubs.includes(trueParamEmail) && userSubs.includes(email))) {
+    if (trueEmail !== '' && Array.isArray(usersBan) && mySubs !== null && userSubs !== null && userPermMess !== null) {
+        if (usersBan.includes(trueEmail) === false) {
+            if (userPermMess === 'Все' || (userPermMess === 'Только друзья' && mySubs.includes(trueParamEmail) && userSubs.includes(trueEmail))) {
                 showMessInter = <div>
                 <div>
                     <p>{answMess}</p>
@@ -400,6 +406,7 @@ const UserChat: FC = () => {
                 </div>
                 <input placeholder="Сообщение" onChange={async(event: ChangeEvent<HTMLInputElement>) => {
                 setInputMess(event.target.value)
+                const email = trueEmail
                 await fetch('http://localhost:4000/users-controller/typing', {
                     method: "POST",
                     headers: {
@@ -417,10 +424,11 @@ const UserChat: FC = () => {
                     setGifsArr([])
                 }
             }}/>
-            <SendBtn inputMess={inputMess} editMess={editMess} setAnswMess={setAnswMess} setEditMess={setEditMess} setMessages={setMessages} setInputMess={setInputMess} setImageBase64={setImageBase64} imageBase64={imageBase64} messages={messages} email={email} trueParamEmail={trueParamEmail} socketId={socketId} answMess={answMess}/>
+            <SendBtn inputMess={inputMess} editMess={editMess} setAnswMess={setAnswMess} setEditMess={setEditMess} setMessages={setMessages} setInputMess={setInputMess} setImageBase64={setImageBase64} imageBase64={imageBase64} messages={messages} email={trueEmail} trueParamEmail={trueParamEmail} socketId={socketId} answMess={answMess}/>
             {startStop === false ? <button onClick={async() => {
                 startRecording()
                 setStartStop(true)
+                const email = trueEmail
                 await fetch('http://localhost:4000/users-controller/start/voice', {
                     method: "POST",
                     headers: {
@@ -430,6 +438,7 @@ const UserChat: FC = () => {
                 })
             }}>Запись</button> : <button onClick={async() => {
                 stopRecording()
+                const email = trueEmail
                 await fetch('http://localhost:4000/users-controller/stop/voice', {
                     method: "POST",
                     headers: {

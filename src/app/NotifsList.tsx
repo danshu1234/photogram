@@ -18,22 +18,24 @@ interface NotifsListProps{
 
 const NotifsList: FC <NotifsListProps> = (props) => {
 
-    const { email } = useGetEmail()
+    const { email, trueEmail } = useGetEmail()
 
     let notifs;
 
     const tellUserAboutPerm = async (succOrErr: string, userEmail: string) => {
         const type = succOrErr
+        const resultEmail = trueEmail
         await fetch('http://localhost:4000/users-controller/new/notif', {
             method: "PATCH",
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ userEmail, type, email })
+            body: JSON.stringify({ userEmail, type, resultEmail })
         })
     }
 
     const deletePermNotif = async (user: string) => {
+        const email = trueEmail
         const deleteNotif = await fetch('http://localhost:4000/users-controller/delete/perm', {
             method: "PATCH",
             headers: {
@@ -56,6 +58,7 @@ const NotifsList: FC <NotifsListProps> = (props) => {
                             <p><span style={{cursor: 'pointer', color: 'blue'}} onClick={() => window.location.href=`/${item.user}`}>{item.user}</span> хочет посмотреть ваши фото</p>
                             <button onClick={async() => {
                                 const newUserEmail = item.user
+                                const email = trueEmail
                                 const addNewPermUser = async () => {
                                     await fetch('http://localhost:4000/users-controller/new/perm/user', {
                                         method: "PATCH",
@@ -92,7 +95,7 @@ const NotifsList: FC <NotifsListProps> = (props) => {
                 <button 
                     className={styles.closeButton}
                     onClick={async() => {
-                        const email = props.email
+                        const email = trueEmail
                         const clearNotifs = await fetch('http://localhost:4000/users-controller/clear/notifs', {
                             method: "PATCH",
                             headers: {

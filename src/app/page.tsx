@@ -9,7 +9,6 @@ import FeedbackBtn from "./FeedbackBtn";
 import useGetEmail from "./useGetEmail";
 import Link from "next/link";
 import styles from './Home.module.css';
-import ExitBtn from "./Exit";
 import Search from "./Search";
 import { RingLoader } from "react-spinners";
 import SearchPhoto from "./SearchPhoto";
@@ -17,7 +16,9 @@ import NameSearch from "./NameSearch";
 import UserInterface from "./UserInterface";
 import PhotoSave from "./PhotoSave";
 import ShareWindow from "./ShareWindow";
-import useGetSavePhotos from "./useGetSavePhotos";
+import { io } from "socket.io-client";
+import registerServiceWorker from "./RegisterServiceWorker"
+import showNotification from "./ShowNotif"
 
 export default function Home() {
 
@@ -35,7 +36,7 @@ export default function Home() {
   }
 
   const {} = useCheckReg()
-  const { email } = useGetEmail()
+  const { email, trueEmail } = useGetEmail()
 
   const getMyNotifs = async () => {
     const getEmailFromStorage = localStorage.getItem('photogram-enter')
@@ -52,17 +53,16 @@ export default function Home() {
       getMyNotifs()
     }
   }, [email])
+
+  const [socketId, setSocketId] = useState <string> ('')
   
-  const { mySavePosts, setMySavePosts } = useGetSavePhotos()
   const [sharePost, setSharePost] = useState <string> ('')
   const [isNotifs, setIsNotifs] = useState <boolean> (false)
-  const [newFeechModal, setNewFeechModal] = useState <boolean> (false)
   const [notifs, setNotifs] = useState <Notif[]> ([])
   const [subs, setSubs] = useState <Photo[]> ([])
   const [opacity, setOpacity] = useState <{all: number, sub: number}> ({all: 1, sub: 0.6})
   const [popularList, setPopularList] = useState <User[]> ([])
   const [allUsers, setAllUsers] = useState <UserInterface[]> ([])
-  const [countOfPopular, setCountOfPopular] = useState <number> (1)
   const [nearFriends, setNearFriends] = useState <boolean> (false)
   const [allPhotos, setAllPhotos] = useState <Photo[] | null> ([])
   const [savePhotos, setSavePhotos] = useState <string[]> ([])
@@ -89,7 +89,7 @@ export default function Home() {
     if (findUser?.open === true) {
       resultArr.push(item)
     } else {
-      if (findUser?.permUsers.includes(email) || item.email === email) {
+      if (findUser?.permUsers.includes(trueEmail) || item.email === trueEmail) {
         resultArr.push(item)
       }
     }
@@ -103,19 +103,13 @@ export default function Home() {
   setPhotos(finalArr)
   setAllPhotos(finalArr)
   }
-
-  const getMySavePosts = async () => {
-    const mySavePosts = await fetch(`http://localhost:4000/users-controller/get/save/posts/${email}`)
-    const resultMySavePosts = await mySavePosts.json()
-    setMySavePosts(resultMySavePosts)
-  }
   
   const getMySubs = async () => {
     const getAllUsers = await fetch('http://localhost:4000/users-controller/get/all/users')
     const resultUsers = await getAllUsers.json()
     let resultSubs = []
     for (let item of resultUsers) {
-      if (item.subscribes.includes(email)) {
+      if (item.subscribes.includes(trueEmail)) {
         resultSubs.push(item.email)
       }
     }
@@ -147,10 +141,10 @@ export default function Home() {
   }, [photos])
 
   useEffect(() => {
-    if (allUsers.length !== null && email !== '') {
+    if (allUsers.length !== null && trueEmail !== '') {
       getAllPhotosAndSort()
     }
-  }, [allUsers, email])
+  }, [allUsers, trueEmail])
 
   useEffect(() => {
     if (allPhotos !== null) {
@@ -160,13 +154,6 @@ export default function Home() {
       setDatesArr(resultArr)
     }
   }, [allPhotos])
-
-  useEffect(() => {
-    const getStorageFeech = localStorage.getItem('feech')
-    if (!getStorageFeech) {
-      setNewFeechModal(true)
-    }
-  }, [])
 
   useEffect(() => {
     if (email !== '') {
@@ -213,62 +200,52 @@ export default function Home() {
     }
   }, [date])
 
-  const followPopular = async (targetEmail: string) => {
-    await fetch('http://localhost:4000/users-controller/sub', {
-      method: "PATCH",
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ email, targetEmail })
-    })
-    const newArr = popularList.map(el => {
-      if (el.email === targetEmail) {
-        return {
-          ...el,
-          subscribes: [...el.subscribes, email]
-        }
-      } else {
-        return el
-      }
-    })
-    setPopularList(newArr)
-  }
 
-  const unFollowPopular = async (targetEmail: string) => {
-    await fetch('http://localhost:4000/users-controller/unsub', {
-      method: "PATCH",
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ email, targetEmail })
-    })
-    const newArr = popularList.map(el => {
-      if (targetEmail === el.email) {
-        const filteredSubs = el.subscribes.filter(item => item !== email)
-        return {
-          ...el,
-          subscribes: filteredSubs,
-        }
-      } else {
-        return el
-      }
-    })
-    setPopularList(newArr)
-  }
+  useEffect(() => {
+    registerServiceWorker()
+  }, [])
 
-  if (newFeechModal) {
-    feechWindow = <div>
-      <h3>Теперь вы можете сделать свой аккаунт закрытым, для этого нужно нажать на замочек в вашем профиле!</h3>
-      <p onClick={() => {
-        localStorage.setItem('feech', 'true')
-        window.location.href='/myacc'
-      }}>Перейти в профиль</p>
-      <p onClick={() => {
-        localStorage.setItem('feech', 'true')
-        setNewFeechModal(false)
-      }}>Ок</p>
-    </div>
-  }
+  useEffect(() => {
+    
+  const socket = io('http://localhost:4000');
+
+  socket.on('connect', () => {
+    if (socket.id) {
+      setSocketId(socket.id)
+    }
+  });
+
+  socket.on('replyMessage', (message) => {
+      if (message.type === 'message') {
+        if (document.visibilityState !== 'visible') {
+          showNotification('Новое сообщение', `Новое сообщение от ${message.user}`)
+        }
+        //Функция увеличения счетчика сообщений
+      }
+      })
+
+  return () => {
+    socket.disconnect(); 
+  };
+}, []);
+
+
+  useEffect(() => {
+    if (socketId !== '' && trueEmail !== '') {
+      console.log(socketId)
+      const addSocket = async () => {
+          const email = trueEmail
+          await fetch('http://localhost:4000/users-controller/add/socket', {
+          method: "PATCH",
+              headers: {
+                'Content-Type': 'application/json',
+              },
+          body: JSON.stringify({ email, socketId })
+      })
+      }
+      addSocket()
+    }
+  }, [socketId, trueEmail])
 
   if (sharePost !== '') {
     sharePostWindow = <ShareWindow sharePost={sharePost} setSharePost={setSharePost}/>
@@ -292,8 +269,8 @@ export default function Home() {
   if (photos === null) {
     photosList = <RingLoader/>
     } else {
-      if (photos.length !== 0 && email !== '' && mySavePosts !== null) {
-      photosList = <List photos={photos} setPhotos={setPhotos} email={email} setSavePhotos={setSavePhotos} setSharePost={setSharePost} mySavePosts={mySavePosts} setMySavePosts={setMySavePosts}/>
+      if (photos.length !== 0 && email !== '' && trueEmail !== '') {
+      photosList = <List photos={photos} setPhotos={setPhotos} email={email} setSavePhotos={setSavePhotos} setSharePost={setSharePost} trueEmail={trueEmail}/>
     } else {
       photosList = <h2>Фото не найдены</h2>
     }
@@ -310,47 +287,11 @@ export default function Home() {
     </select>
   }
 
-  if (popularList.length !== 0) {
-    if (countOfPopular === 1) {
-      showPopular = <div><ul style={{display: 'flex', flexDirection: 'row'}}>
-        {popularList.map((item, index) => {
-          if (index < 5) {
-            return <li key={index} style={{marginLeft: 10}} onClick={() => window.location.href=`${item.email}`}>
-              <div>
-                {item.avatar === '' ? <div style={{width: 150, height: 200, backgroundColor: 'gray'}}></div> : <img src={item.avatar} style={{width: 150, height: 200}}/>}
-                <p>{item.name}</p>
-                {item.subscribes.includes(email) ? <button onClick={() => unFollowPopular(item.email)}>Отписаться</button> : <button onClick={() => followPopular(item.email)}>Подписаться</button>}
-              </div>
-            </li>
-          }
-        })}
-      </ul>
-      <p onClick={() => setCountOfPopular(countOfPopular + 1)}>Дальше</p>
-      </div>
-    } else {
-      showPopular = <div><ul style={{display: 'flex', flexDirection: 'row'}}>
-        {popularList.map((item, index) => {
-          if (index >=5) {
-            return <li key={index} style={{marginLeft: 10}} onClick={() => window.location.href=`${item.email}`}>
-              <div>
-                {item.avatar === '' ? <div style={{width: 150, height: 200, backgroundColor: 'gray'}}></div> : <img src={item.avatar} style={{width: 150, height: 200}}/>}
-                <p>{item.name}</p>
-                {item.subscribes.includes(email) ? <button onClick={() => unFollowPopular(item.email)}>Отписаться</button> : <button onClick={() => followPopular(item.email)}>Подписаться</button>}
-              </div>
-            </li>
-          }
-        })}
-      </ul>
-      <p onClick={() => setCountOfPopular(countOfPopular - 1)}>Назад</p>
-      </div>
-    }
-  }
-
   return (
     <div className={styles.container}>
       <header className={styles.header}>
         <h3 onClick={() => window.location.href='/chats'}>Сообщения</h3>
-        <h1 className={styles.logo}>Photogram</h1>
+        <h1 className={styles.logo} onClick={() => window.location.reload()}>Photogram</h1>
         <FeedbackBtn/>
         <div className={styles.controls}>
           <div 
@@ -364,7 +305,6 @@ export default function Home() {
             🔔 {Array.isArray(notifs) ? notifs.length : 0}
           </div>
           <Link href={'/myacc'} className={styles.myAccLink}>Мой аккаунт</Link>
-          <ExitBtn/>
         </div>
       </header>
       

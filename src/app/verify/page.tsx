@@ -55,7 +55,10 @@ const VerifyCode: FC = () => {
       const resultData = JSON.parse(dataForRegOrEnter);
       
       if (resultData.status === 'enter') {
-        localStorage.setItem('photogram-enter', JSON.stringify(resultData.email));
+        const email = resultData.email
+        const getCode = await fetch(`http://localhost:4000/users-controller/get/code/${email}`)
+        const resultCode = await getCode.text()
+        localStorage.setItem('photogram-enter', JSON.stringify(resultCode));
         localStorage.removeItem('dataForRegPhotoGram');
         window.location.href = '/';
       } 
@@ -101,7 +104,7 @@ const VerifyCode: FC = () => {
             })
           });
 
-          localStorage.setItem('photogram-enter', JSON.stringify(resultEmail));
+          localStorage.setItem('photogram-enter', JSON.stringify(code));
           localStorage.removeItem('dataForRegPhotoGram');
           window.location.href = '/';
           

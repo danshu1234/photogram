@@ -9,7 +9,8 @@ import ExitBtn from "../Exit";
 import Avatar from "../Avatar";
 import Photo from "../PhotoInterface";
 import List from "../List";
-import useGetSavePhotos from "../useGetSavePhotos";
+import getUserEmail from "../getUserEmail"
+import useNotif from "../useNotif"
 
 async function getUserPhoto(email: string): Promise<Photo[]> {
     const myPhotosResponse = await fetch(`http://localhost:4000/photos/get/user/photos/${email}`);
@@ -19,12 +20,12 @@ async function getUserPhoto(email: string): Promise<Photo[]> {
 
 export default function MyPage() {
 
+  const {} = useNotif()
   const {} = useCheckReg();
-  const { email } = useGetEmail();
+  const { email, trueEmail } = useGetEmail();
 
   const [width, setWidth] = useState <number> (30)
 
-  const { mySavePosts, setMySavePosts } = useGetSavePhotos()
   const [openAcc, setOpenAcc] = useState <boolean> (false) 
   const [subs, setSubs] = useState <string[]> ([])
   const [isModal, setIsModal] = useState<boolean>(false)
@@ -75,12 +76,16 @@ export default function MyPage() {
 
   if (width === 200) {
     exitBtnAndFeedback = <div>
-      <ExitBtn/>
+      <ExitBtn trueEmail={trueEmail}/>
+      <p onClick={() => {
+        localStorage.removeItem('photogram-enter')
+        window.location.reload()
+      }}>Выйти</p>
     </div>
   }
 
-  if (myPhotos !== null && myPhotos.length !== 0 && mySavePosts !== null) {
-    photosList = <List photos={myPhotos} setPhotos={setMyPhotos} email={email} mySavePosts={mySavePosts} setMySavePosts={setMySavePosts}/>
+  if (myPhotos !== null && myPhotos.length !== 0 && trueEmail !== '') {
+    photosList = <List photos={myPhotos} setPhotos={setMyPhotos} email={email} trueEmail={trueEmail}/>
   } else if (myPhotos !== null && myPhotos.length === 0) {
     photosList = <h2 className={styles.noPhotos}>Вы еще не публиковали фото</h2>
   } else {
@@ -91,8 +96,10 @@ export default function MyPage() {
     if (email !== '') {
       const fetchPhotos = async () => {
         try {
-          const resultMyPhotos = await getUserPhoto(email);
-          if (resultMyPhotos.length !== 0) {
+          const userEmail = await getUserEmail()
+          if (userEmail) {
+            const resultMyPhotos = await getUserPhoto(userEmail);
+            if (resultMyPhotos.length !== 0) {
             const resultArr = resultMyPhotos.map(el => {
               return {
                 ...el,
@@ -103,6 +110,7 @@ export default function MyPage() {
           } else {
             setMyPhotos([])
           }
+          }   
         } catch (error) {
           console.error('Ошибка при получении фото', error);
         }

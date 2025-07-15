@@ -7,10 +7,15 @@ import Comment from '@/app/CommentInterface';
 import useGetEmail from '@/app/useGetEmail';
 import Stickers from '@/app/Stickers';
 import Photo from '@/app/PhotoInterface';
+import useCheckReg from '@/app/CheckReg';
+import useNotif from '@/app/useNotif';
 
 const BigPhoto = () => {
 
-    const { email } = useGetEmail()
+    const {} = useNotif()
+    const { trueEmail } = useGetEmail()
+
+    const {} = useCheckReg()
 
     const params = useParams();
     const [url, setUrl] = useState<string>('');
@@ -35,7 +40,7 @@ const BigPhoto = () => {
         window.location.reload()
     }
 
-    if (photoInfo?.email === email) {
+    if (photoInfo?.email === trueEmail) {
         if (photoInfo.commentsPerm === true) {
             permCommentsBtn = <button onClick={() => permComments(false)}>Запретить комментарии</button>
         } else if (photoInfo.commentsPerm === false) {
@@ -87,12 +92,12 @@ const BigPhoto = () => {
                         <p onClick={() => setStickers(!stickers)}>Стикеры</p>
                         <button onClick={async() => {
                             if (commentInput !== '') {
-                                const getUserName = await fetch(`http://localhost:4000/users-controller/get/user/name/${email}`)
+                                const getUserName = await fetch(`http://localhost:4000/users-controller/get/user/name/${trueEmail}`)
                                 const resultName = await getUserName.text()
 
                                 const targetId = params.photoId
                                 const resultComment: Comment = {
-                                    user: email,
+                                    user: trueEmail,
                                     comment: commentInput,
                                     userName: resultName,
                                 }

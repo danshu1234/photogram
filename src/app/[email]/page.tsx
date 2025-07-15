@@ -8,13 +8,17 @@ import { PulseLoader } from "react-spinners";
 import List from "../List";
 import useGetTrueParamEmail from "../useGetTrueParamEmail";
 import ChatBtn from "../ChatBtn";
-import useGetSavePhotos from "../useGetSavePhotos";
+import getUserEmail from "../getUserEmail";
+import useCheckReg from "../CheckReg";
+import useNotif from "../useNotif";
 
 export default function UserPage() {
 
-    const { email } = useGetEmail()
-
-    const { mySavePosts, setMySavePosts } = useGetSavePhotos()
+    const {} = useNotif()
+    const {} = useCheckReg()
+    
+    const { email, trueEmail } = useGetEmail()
+    const [myEmail, setMyEmail] = useState <string | null> (null)
     const [mySubs, setMySubs] = useState <string[] | null> (null)
     const { trueParamEmail } = useGetTrueParamEmail()
     const [user, setUser] = useState <null | UserInterface> (null)
@@ -36,6 +40,7 @@ export default function UserPage() {
         photoShow = <div>
             <h3>Пользователь скрыл свои фото</h3>
             <button onClick={async() => {
+                const resultEmail = await getUserEmail()
                 const userEmail = trueParamEmail
                 const type = 'perm'
                 await fetch('http://localhost:4000/users-controller/new/notif', {
@@ -43,18 +48,18 @@ export default function UserPage() {
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ email, userEmail, type })
+                    body: JSON.stringify({ resultEmail, userEmail, type })
                 })
                 window.location.reload()
             }}>Отправить запрос</button>
         </div>
     } else if (photos === 'send') {
         photoShow = <h3>Запрос отправлен</h3>
-    } else if (Array.isArray(photos) && mySavePosts !== null) {
+    } else if (Array.isArray(photos) && trueEmail !== '') {
         if (photos?.length === 0) {
             photoShow = <h3>Пользователь еще не публиковал фото</h3>
         } else {
-            photoShow = <List photos={photos} setPhotos={setPhotos} email={email} mySavePosts={mySavePosts} setMySavePosts={setMySavePosts}/>
+            photoShow = <List photos={photos} setPhotos={setPhotos} email={email} trueEmail={trueEmail}/>
         }
     }
 
@@ -64,7 +69,7 @@ export default function UserPage() {
         avatar = <img src={user?.avatar} style={{width: 200, height: 200, borderRadius: '100%'}}/>
     }
 
-    if (user !== null && photos !== null && mySubs !== null) {
+    if (user !== null && photos !== null && mySubs !== null && myEmail !== null && trueEmail !== '') {
         mainShow = <div>
             <h3>{user.email}</h3>
             {avatar}
@@ -73,28 +78,31 @@ export default function UserPage() {
             {chatBtn}
             <img src='https://ggkp3.by/Img/eye.png' width={40} height={40}/>
             <p>{user.visits.length}</p>
-            {user.subscribes.includes(email) ? <button onClick={async() => {
+            {user.subscribes.includes(myEmail) ? <button onClick={async() => {
+                const resultEmail = trueEmail
                 const targetEmail = trueParamEmail
                 await fetch('http://localhost:4000/users-controller/unsub', {
                     method: "PATCH",
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ targetEmail, email })
+                    body: JSON.stringify({ targetEmail, resultEmail })
                 })
                 window.location.reload()
             }}>Отписаться</button> : <button onClick={async() => {
+                const resultEmail = await getUserEmail()
                 const targetEmail = trueParamEmail
                 await fetch('http://localhost:4000/users-controller/sub', {
                     method: "PATCH",
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ targetEmail, email })
+                    body: JSON.stringify({ targetEmail, resultEmail })
                 })
                 window.location.reload()
             }}>Подписаться</button>}
-            {user.reports.includes(email) ? <p>Жалоба отправлена</p> : <button onClick={async() => {
+            {user.reports.includes(trueEmail) ? <p>Жалоба отправлена</p> : <button onClick={async() => {
+                const email = trueEmail
                 const targetEmail = trueParamEmail
                 await fetch('http://localhost:4000/users-controller/new/report', {
                     method: "PATCH",
@@ -145,21 +153,29 @@ export default function UserPage() {
                 const resultSubs = await mySubs.json()
                 setMySubs(resultSubs.subscribes)
             }
+
+            const getMyEmail = async () => {
+                const resultMyEmail = await getUserEmail()
+                if (resultMyEmail) {
+                    setMyEmail(resultMyEmail)
+                }
+            }
             getMySubs()
+            getMyEmail()
         }
     }, [email])
 
     useEffect(() => {
-        if (user !== null) {
+        if (user !== null && trueEmail) {
             if (user.open || user.email === email) {
                 getUserPhotos()
             } else if (user.open === false) {
-                if (user.permUsers.includes(email)) {
+                if (user.permUsers.includes(trueEmail)) {
                     getUserPhotos()
                 } else {
                     let resultArr = []
                     for (let item of user.notifs) {
-                        if (item.type === 'perm' && item.user === email) {
+                        if (item.type === 'perm' && item.user === trueEmail) {
                             resultArr.push(item)
                         }
                     }
@@ -172,8 +188,8 @@ export default function UserPage() {
             }
 
             if (user?.visits) {
-            if (!user.visits.includes(email)) {
-                const visitsWithMe = [...user.visits, email]
+            if (!user.visits.includes(trueEmail)) {
+                const visitsWithMe = [...user.visits, trueEmail]
                 const targetEmail = trueParamEmail
                 const updateVisits = async () => {
                     await fetch('http://localhost:4000/users-controller/update/visits', {

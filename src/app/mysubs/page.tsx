@@ -5,10 +5,13 @@ import useGetEmail from "../useGetEmail";
 import { PacmanLoader } from "react-spinners";
 import useCheckReg from "../CheckReg";
 import styles from "./MySubsList.module.css";
+import useNotif from "../useNotif";
 
 const MySubsList: FC = () => {
+
+    const {} = useNotif()
     const {} = useCheckReg()
-    const { email } = useGetEmail()
+    const { trueEmail } = useGetEmail()
 
     const [subsList, setSubsList] = useState<string[]>([])
     let list;
@@ -32,8 +35,9 @@ const MySubsList: FC = () => {
     }
 
     useEffect(() => {
-        if (email !== '') {
+        if (trueEmail !== '') {
             const getSubsList = async () => {
+                const email = trueEmail
                 const getAllSubs = await fetch(`http://localhost:4000/users-controller/all/subs/${email}`)
                 const resultSubs = await getAllSubs.json()
                 const result = resultSubs.slice(1, resultSubs.length)
@@ -41,7 +45,7 @@ const MySubsList: FC = () => {
             }
             getSubsList()
         }
-    }, [email])
+    }, [trueEmail])
 
     return (
         <div className={styles.container}>

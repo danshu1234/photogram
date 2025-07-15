@@ -27,7 +27,7 @@ const SendBtn: FC <SendBtnProps> = (props) => {
                 const isPhotos = props.imageBase64.length !== 0
                 if ((isText && isPhotos) || (isText && !isPhotos) || (!isText && isPhotos)) {
                     try {
-                        const email = props.email
+                    const email = props.email
                     const trueParamEmail = props.trueParamEmail
                     const editMess = props.editMess
                     const inputMess = props.inputMess

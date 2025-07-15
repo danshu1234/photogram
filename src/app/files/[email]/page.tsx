@@ -3,6 +3,7 @@
 import { FC, useEffect, useState } from "react"
 import useGetTrueParamEmail from "@/app/useGetTrueParamEmail"
 import useGetEmail from "@/app/useGetEmail"
+import useNotif from "@/app/useNotif"
 
 interface PhotoInfo{
     url: string;
@@ -12,7 +13,9 @@ interface PhotoInfo{
 
 const Files: FC = () => {
 
-    const { email } = useGetEmail()
+    const {} = useNotif()
+
+    const { trueEmail } = useGetEmail()
     const { trueParamEmail } = useGetTrueParamEmail()
 
     const [bigPhoto, setBigPhoto] = useState <PhotoInfo | null> (null)
@@ -30,6 +33,7 @@ const Files: FC = () => {
     }
 
     const getFiles = async () => {
+        const email = trueEmail
         const getMess = await fetch(`http://localhost:4000/users-controller/get/mess`, {
             method: "POST",
             headers: {
@@ -50,10 +54,10 @@ const Files: FC = () => {
     }
 
     useEffect(() => {
-        if (email !== '' && trueParamEmail !== '') {
+        if (trueEmail !== '' && trueParamEmail !== '') {
             getFiles()
         }
-    }, [email, trueParamEmail])
+    }, [trueEmail, trueParamEmail])
 
     return (
         <div>

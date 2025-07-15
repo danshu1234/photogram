@@ -12,6 +12,7 @@
     margin-bottom: 30px;
     padding-bottom: 15px;
     border-bottom: 1px solid #eee;
+    position: fixed;
   }
   
   .logo {
@@ -55,4 +56,5 @@
   
   .main {
     padding: 20px 0;
+    margin-top: 50px;
   }

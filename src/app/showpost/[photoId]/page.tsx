@@ -3,8 +3,11 @@
 import { FC, useEffect, useState } from "react"
 import { useParams } from "next/navigation";
 import Photo from "@/app/PhotoInterface";
+import useNotif from "@/app/useNotif";
 
 const ShowPost: FC = () => {
+
+    const {} = useNotif()
 
     const params = useParams()
     

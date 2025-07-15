@@ -2,6 +2,7 @@ import Notif from "./NotifInterface"
 import Chat from "./Chat"
 
 interface UserInterface {
+    code: string,
     email: string,
     name: string,
     latitude: number | null,

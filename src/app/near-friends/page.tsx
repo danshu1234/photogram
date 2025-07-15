@@ -5,11 +5,13 @@ import useGetEmail from "../useGetEmail"
 import useCheckReg from "../CheckReg"
 import UserInterface from "../UserInterface"
 import Map from "../Map"
+import useNotif from "../useNotif"
 
 const NearFriends: FC = () => {
 
+    const {} = useNotif()
     const {} = useCheckReg()
-    const { email } = useGetEmail() 
+    const { trueEmail } = useGetEmail() 
 
     const [nearUsers, setNearUsers] = useState <UserInterface[] | null> (null)
     const [targetUser, setTargetUser] = useState <UserInterface | null> (null)
@@ -23,7 +25,7 @@ const NearFriends: FC = () => {
             nearArr = <div>
                 <ul>
                     {nearUsers.map((item, index) => {
-                       if (item.email !== email) {
+                       if (item.email !== trueEmail) {
                         return <li key={index}>
                         <div>
                             <h3 onClick={() => window.location.href=`${item.email}`}>{item.email}</h3>
@@ -48,12 +50,12 @@ const NearFriends: FC = () => {
     }
 
     useEffect(() => {
-        if (email !== '') {
+        if (trueEmail !== '') {
             const getNearUsers = async () => {
                 const allUsers = await fetch('http://localhost:4000/users-controller/get/all/users')
                 const resultUsers = await allUsers.json()
                 const onlyCoordsUsers = resultUsers.filter((el: any) => el.latitude !== null)
-                const findMe = onlyCoordsUsers.find((el: any) => el.email === email)
+                const findMe = onlyCoordsUsers.find((el: any) => el.email === trueEmail)
                 const myLatitude = findMe.latitude
                 const myLongitude = findMe.longitude
                 let resultNearUsers = []
@@ -80,7 +82,7 @@ const NearFriends: FC = () => {
             }
             getNearUsers()
         }
-    }, [email])
+    }, [trueEmail])
 
     return (
         <div>

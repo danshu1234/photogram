@@ -6,7 +6,8 @@ import Chat from "../Chat"
 import { io } from "socket.io-client";
 import Message from "../../../server-for-photogram/src/Message";
 import UserInterface from "../UserInterface"
-import CalendarComp from "../Calendar";
+import useCheckReg from "../CheckReg";
+import showNotification from "../ShowNotif";
 
 const Chats: FC = () => {
 
@@ -14,11 +15,10 @@ const Chats: FC = () => {
 
     const [socketId, setSocketId] = useState ('')
 
-    const { email, setEmail } = useGetEmail()
+    const {} = useCheckReg()
 
-    const [birthdayFriends, setBirthdayFriends] = useState <string[]> ([])
-    const [calendar, setCalendar] = useState <boolean> (false)
-    const [birhday, setBirthday] = useState <string | null> (null)
+    const { trueEmail, setTrueEmail } = useGetEmail()
+
     const [shareMess, setShareMess] = useState <Message | null> (null)
     const [basePerm, setBasePerm] = useState <string> ('')
     const [changePerm, setChangePerm] = useState <string> ('')
@@ -34,6 +34,7 @@ const Chats: FC = () => {
 
     if (changePerm !== '' && changePerm !== basePerm) {
         saveChangePermBtn = <button onClick={async() => {
+            const email = trueEmail
             await fetch('http://localhost:4000/users-controller/new/perm/mess', {
                 method: "PATCH",
                 headers: {
@@ -74,7 +75,7 @@ const Chats: FC = () => {
             const resultChats = await chats.json()
             resChats = resultChats
         } else {
-            const chats = await fetch(`http://localhost:4000/users-controller/get/chats/${email}`)
+            const chats = await fetch(`http://localhost:4000/users-controller/get/chats/${trueEmail}`)
             const resultChats = await chats.json()
             resChats = resultChats
         }
@@ -95,6 +96,7 @@ const Chats: FC = () => {
     }
 
     const pinUnpinChat = async (user: string, pin: boolean) => {
+        const email = trueEmail
         const newChats = await fetch('http://localhost:4000/users-controller/pin/chat', {
             method: "PATCH",
             headers: {
@@ -151,7 +153,7 @@ const Chats: FC = () => {
                                     headers: {
                                         'Content-Type': 'application/json',
                                     },
-                                    body: JSON.stringify({ email, trueParamEmail })
+                                    body: JSON.stringify({ trueEmail, trueParamEmail })
                                 })
                                 const resultMess = await thisUserMess.json()
                                 const newMessages = [...resultMess, {user: shareMess.user, text: shareMess.text, photos: shareMess.photos, date: shareMess.date, id: shareMess.id, ans: shareMess.ans, edit: false, typeMess: shareMess.typeMess, per: shareMess.per}]
@@ -161,12 +163,13 @@ const Chats: FC = () => {
                                     headers: {
                                         'Content-Type': 'application/json',
                                     },
-                                    body: JSON.stringify({ newMessages, email, trueParamEmail, socketId })
+                                    body: JSON.stringify({ newMessages, trueEmail, trueParamEmail, socketId })
                                 })
                                 localStorage.removeItem('shareMess')
                                 window.location.reload()
                             }
                             }}>{item.user}</h3>
+                            {item.messages[item.messages.length - 1].user === trueEmail ? <p>Вы: </p>: null}
                             {lastMess}
                             {item.messCount !== 0 ? <p>{item.messCount}</p> : null}
                         </div>
@@ -180,10 +183,10 @@ const Chats: FC = () => {
     }
 
     useEffect(() => {
-        if (email !== '') {
+        if (trueEmail !== '') {
             getChats()
         }
-    }, [email])
+    }, [trueEmail])
 
     useEffect(() => {
         socket.on('connect', () => {
@@ -192,11 +195,16 @@ const Chats: FC = () => {
             }
         })
 
-        socket.on('replyMessage', (message: Message) => {
-            setEmail(prev => {
+        socket.on('replyMessage', (message: any) => {
+            setTrueEmail(prev => {
                 getChats(prev)
                 return prev
             })
+            if (message.type === 'message') {
+                if (document.visibilityState !== 'visible') {
+                    showNotification('Новое сообщение', `Новое сообщение от ${message.user}`)
+                }
+            }
         })
     }, [])
 
@@ -208,47 +216,17 @@ const Chats: FC = () => {
     }, [])
 
     const getPerm = async () => {
-        const myPerm = await fetch(`http://localhost:4000/users-controller/get/perm/mess/${email}`)
+        const myPerm = await fetch(`http://localhost:4000/users-controller/get/perm/mess/${trueEmail}`)
         const resultPerm = await myPerm.text()
         setBasePerm(resultPerm)
         setChangePerm(resultPerm)
     }
 
-    const getMyBirthday = async () => {
-        const myBirthday = await fetch(`http://localhost:4000/users-controller/get/birthday/${email}`)
-        const resultBirthday = await myBirthday.text()
-        setBirthday(resultBirthday)
-    }
-
-    const getBirthdayFriends = async () => {
-        const allUsers = await fetch('http://localhost:4000/users-controller/get/all/users')
-        const resultAllUsers = await allUsers.json()
-        const getMySubs = await fetch(`http://localhost:4000/users-controller/all/subs/and/country/${email}`)
-        const resultMySubs = await getMySubs.json()
-        const mySubs = resultMySubs.subscribes
-        let friendsArr: UserInterface[] = []
-        for (let item of mySubs) {
-            if (typeof item !== 'number') {
-            const thisSubUser = resultAllUsers.find((el: UserInterface) => el.email === item)
-            if (thisSubUser.subscribes.includes(email)) {
-                friendsArr.push(thisSubUser)
-            }
-        }
-        }
-        let resultBirthdayFriends: string[] = []
-        const nowDate = new Date()
-        const resultDate = nowDate.getDate() + '.' + (nowDate.getMonth() + 1)
-        for (let item of friendsArr) {
-            if (item.birthday === resultDate) {
-                resultBirthdayFriends.push(item.email)
-            }
-        }
-        setBirthdayFriends(resultBirthdayFriends)
-    }
     
         useEffect(() => {
-            if (socketId !== '' && email !== '') {
+            if (socketId !== '' && trueEmail !== '') {
             const addSocket = async () => {
+                const email = trueEmail
                 await fetch('http://localhost:4000/users-controller/add/socket', {
                     method: "PATCH",
                     headers: {
@@ -259,21 +237,11 @@ const Chats: FC = () => {
             }
             addSocket()
             getPerm()
-            getMyBirthday()
-            getBirthdayFriends()
         }
-    }, [socketId, email])
+    }, [socketId, trueEmail])
     
     return (
         <div>
-            {birhday === '' ? <p onClick={() => setCalendar(true)}>Укажите дату вашего рождения, чтобы друзья знали, когда вас поздравить</p> : null}
-            {birthdayFriends.length !== 0 ? <div>
-                <h3>Сегодня день рождения у: </h3>
-                <ul>
-                    {birthdayFriends.map((item, index) => <li key={index} onClick={() => window.location.href=`/chats/${item}`}>{item}</li>)}
-                </ul>
-            </div> : null}
-            {calendar === true ? <CalendarComp setCalendar={setCalendar} email={email} setBirthday={setBirthday}/> : null}
             {shareMessage}
             {showChangePerm}
             {saveChangePermBtn}

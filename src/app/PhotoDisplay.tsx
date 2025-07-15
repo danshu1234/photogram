@@ -1,6 +1,7 @@
 import { FC, useEffect } from "react";
 import Photo from "./PhotoInterface";
 import styles from './PhotoDisplay.module.css';
+import getUserEmail from "./getUserEmail";
 
 interface PropsPhotoDisplay{
     url: string[],
@@ -14,9 +15,8 @@ interface PropsPhotoDisplay{
     descript: string,
     commentsCount: number,
     date: string,
+    trueEmail: string,
     photoIndex: number,
-    mySavePosts: string[],
-    setMySavePosts: Function,
     setSavePhotos: Function | undefined,
     setSharePost: Function | undefined,
 }
@@ -53,26 +53,13 @@ const PhotoDisplay: FC <PropsPhotoDisplay> = (props) => {
 
     const goToBigPhoto = () => {
         localStorage.setItem('photoIndex', JSON.stringify(props.photoIndex))
-         window.location.href=`bigphoto/${props.id}`
+        window.location.href=`bigphoto/${props.id}`
     }
 
-    const saveUnsavePost = async (type: string) => {
-        const email = props.email
-        const postId = props.id
-        const savePost = await fetch('http://localhost:4000/users-controller/save/unsave/post', {
-            method: "PATCH",
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ email, postId, type })
-        })
-        const newSavePosts = await savePost.json()
-        props.setMySavePosts(newSavePosts)
-    }
 
     const likeUnlikePhoto = async () => {
         const id = props.id
-                const email = props.email
+                const email = props.trueEmail
                 const userEmail = props.userEmail
                 const photoId = props.id
                 const type = 'photo'
@@ -84,12 +71,13 @@ const PhotoDisplay: FC <PropsPhotoDisplay> = (props) => {
                         },
                         body: JSON.stringify({ id, email })
                     })
+                    const resultEmail = await getUserEmail()
                     await fetch('http://localhost:4000/users-controller/new/notif', {
                         method: "PATCH",
                         headers: {
                             'Content-Type': 'application/json',
                         },
-                        body: JSON.stringify({ email, userEmail, photoId, type })
+                        body: JSON.stringify({ resultEmail, userEmail, photoId, type })
                     })
                     const newArr = props.photos.map(el => {
                         if (el.id !== props.id) {
@@ -112,7 +100,8 @@ const PhotoDisplay: FC <PropsPhotoDisplay> = (props) => {
                     })
                     const findPhoto = props.photos.find((el: Photo) => el.id === props.id)
                     const prevLikes = findPhoto?.likes
-                    const filteredLikes = prevLikes?.filter((el: string) => el !== props.email)
+                    console.log(prevLikes)
+                    const filteredLikes = prevLikes?.filter((el: string) => el !== props.trueEmail)
                     const newArr = props.photos.map(el => {
                         if (el.id !== props.id) {
                             return el
@@ -123,6 +112,7 @@ const PhotoDisplay: FC <PropsPhotoDisplay> = (props) => {
                             }
                         }
                     })
+                    console.log(newArr)
                     props.setPhotos(newArr)
                 }
     }
@@ -130,23 +120,25 @@ const PhotoDisplay: FC <PropsPhotoDisplay> = (props) => {
     let showPhoto;
 
     if (props.url.length === 1) {
-        showPhoto = <img src={props.url[props.photoIndex]} style={{width: 150, height: 100, borderRadius: 4, objectFit: 'cover', cursor: 'pointer'}} onClick={goToBigPhoto}/>
+        showPhoto = <div>
+                <img src={props.url[props.photoIndex]} style={{width: 150, height: 100, borderRadius: 4, objectFit: 'cover', cursor: 'pointer'}} onClick={goToBigPhoto}/>
+            </div>
     } else {
         if (props.photoIndex === 0) {
             showPhoto = <div>
-                <img src={props.url[props.photoIndex]} style={{width: 150, height: 100, borderRadius: 4, objectFit: 'cover', cursor: 'pointer'}} onClick={goToBigPhoto}/>
-                <button onClick={nextPhoto}>Дальше</button>
+                    <img src={props.url[props.photoIndex]} style={{width: 150, height: 100, borderRadius: 4, objectFit: 'cover', cursor: 'pointer'}} onClick={goToBigPhoto}/>
+                    <button onClick={nextPhoto}>Дальше</button>
             </div>
         } else if (props.photoIndex === props.url.length - 1) {
             showPhoto = <div>
-                <img src={props.url[props.photoIndex]} style={{width: 150, height: 100, borderRadius: 4, objectFit: 'cover', cursor: 'pointer'}} onClick={goToBigPhoto}/>
-                <button onClick={prevPhoto}>Назад</button>
+                    <img src={props.url[props.photoIndex]} style={{width: 150, height: 100, borderRadius: 4, objectFit: 'cover', cursor: 'pointer'}} onClick={goToBigPhoto}/>
+                    <button onClick={prevPhoto}>Назад</button>
             </div>
         } else if (props.photoIndex !== 0 && props.photoIndex !== props.url.length - 1) {
             showPhoto = <div>
-                <img src={props.url[props.photoIndex]} style={{width: 150, height: 100, borderRadius: 4, objectFit: 'cover', cursor: 'pointer'}} onClick={goToBigPhoto}/>
-                <button onClick={nextPhoto}>Дальше</button>
-                <button onClick={prevPhoto}>Назад</button>
+                    <img src={props.url[props.photoIndex]} style={{width: 150, height: 100, borderRadius: 4, objectFit: 'cover', cursor: 'pointer'}} onClick={goToBigPhoto}/>
+                    <button onClick={nextPhoto}>Дальше</button>
+                    <button onClick={prevPhoto}>Назад</button>
             </div>
         }
     }
@@ -204,11 +196,11 @@ const PhotoDisplay: FC <PropsPhotoDisplay> = (props) => {
                     }}/>
                 <p>{props.commentsCount}</p>
                 <p onClick={() => {
+                    console.log('save function')
                     if (props.setSavePhotos) {
                       props.setSavePhotos(props.url)  
                     }
                 }}>Сохранить</p>
-                {props.mySavePosts.includes(props.id) ? <img src='https://cdn3.iconfinder.com/data/icons/complete-common-version-6-2/1024/bookmark-1024.png' width={30} height={30} onClick={() => saveUnsavePost('unsave')}/> : <img src='https://avatars.mds.yandex.net/i?id=4d8b277216049a435115f3a5492d8ee06ed9ed63-2417438-images-thumbs&n=13' width={30} height={30} onClick={() => saveUnsavePost('save')}/>}
                 <button onClick={() => {
                     if (props.setSharePost !== undefined) {
                         props.setSharePost(props.id)
