@@ -1,9 +1,6 @@
 'use client'
 
 import { ChangeEvent, FC, useEffect, useState } from "react"
-import TestingInter from "../TestingInter"
-import { v4 as uuidv4 } from 'uuid';
-
 
 const Testing: FC = () => {
 

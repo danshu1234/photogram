@@ -134,7 +134,7 @@ export default function MyPage() {
       getMySubs()
     }
   }, [email])
-
+  
   useEffect(() => {
     if (email !== '') {
       const checkOpenStatus = async () => {
