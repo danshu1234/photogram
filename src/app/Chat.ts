@@ -19,6 +19,7 @@ interface Chat{
     messCount: number;
     avatar: string;
     pin: boolean;
+    notifs: boolean;
 }
 
 export default Chat

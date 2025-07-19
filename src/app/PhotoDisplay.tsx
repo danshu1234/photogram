@@ -2,6 +2,7 @@ import { FC, useEffect } from "react";
 import Photo from "./PhotoInterface";
 import styles from './PhotoDisplay.module.css';
 import getUserEmail from "./getUserEmail";
+import { usePathname } from 'next/navigation';  
 
 interface PropsPhotoDisplay{
     url: string[],
@@ -17,11 +18,15 @@ interface PropsPhotoDisplay{
     date: string,
     trueEmail: string,
     photoIndex: number,
+    bonuce: boolean,
+    pin: boolean,
     setSavePhotos: Function | undefined,
     setSharePost: Function | undefined,
 }
 
 const PhotoDisplay: FC <PropsPhotoDisplay> = (props) => {
+
+    const params = usePathname()
 
     const nextPhoto = () => {
         const newArr = props.photos.map(el => {
@@ -56,6 +61,17 @@ const PhotoDisplay: FC <PropsPhotoDisplay> = (props) => {
         window.location.href=`bigphoto/${props.id}`
     }
 
+    const pinUnpinPhoto = async (type: boolean) => {
+        const id = props.id
+        await fetch('http://localhost:4000/photos/pin/photo', {
+            method: "PATCH",
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ id, type })
+        })
+        window.location.reload()
+    }
 
     const likeUnlikePhoto = async () => {
         const id = props.id
@@ -118,6 +134,25 @@ const PhotoDisplay: FC <PropsPhotoDisplay> = (props) => {
     }
 
     let showPhoto;
+    let pinBtn;
+    let deleteBtn;
+
+    if (params === '/myacc') {
+        deleteBtn = <button onClick={async() => {
+            const photoId = props.id
+            await fetch(`http://localhost:4000/photos/delete/photo/${photoId}`, {method: "DELETE"})
+            const resultPhotos = props.photos.filter(el => el.id !== photoId)
+            props.setPhotos(resultPhotos)
+        }}>Удалить</button>
+    }
+
+    if (params === '/myacc') {
+        if (props.pin === false) {
+            pinBtn = <button onClick={() => pinUnpinPhoto(true)}>Закрепить</button>
+        } else {
+            pinBtn = <button onClick={() => pinUnpinPhoto(false)}>Открепить</button>
+        }
+    }
 
     if (props.url.length === 1) {
         showPhoto = <div>
@@ -195,7 +230,8 @@ const PhotoDisplay: FC <PropsPhotoDisplay> = (props) => {
                     }
                     }}/>
                 <p>{props.commentsCount}</p>
-                <p onClick={() => {
+                {props.bonuce === true ? <div>
+                    <p onClick={() => {
                     console.log('save function')
                     if (props.setSavePhotos) {
                       props.setSavePhotos(props.url)  
@@ -206,6 +242,33 @@ const PhotoDisplay: FC <PropsPhotoDisplay> = (props) => {
                         props.setSharePost(props.id)
                     }
                 }}>Поделиться</button>
+                {pinBtn}
+                {deleteBtn}
+                <img src='https://cdn-icons-png.flaticon.com/512/6488/6488593.png' width={40} height={40} onClick={() => {
+                    const newPhotos = props.photos.map(el => {
+                        return {
+                            ...el,
+                            bonuce: false,
+                        }
+                    })
+                    props.setPhotos(newPhotos)
+                }}/>
+                </div> : <img src='https://cdn-icons-png.flaticon.com/512/6488/6488593.png' width={40} height={40} onClick={() => {
+                    const newPhotos = props.photos.map(el => {
+                        if (el.id === props.id) {
+                            return {
+                                ...el,
+                                bonuce: true,
+                            }
+                        } else {
+                            return {
+                                ...el,
+                                bonuce: false,
+                            }
+                        }
+                    })
+                    props.setPhotos(newPhotos)
+                }}/>}
             </div>
         </div>
     )

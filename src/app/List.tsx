@@ -14,6 +14,7 @@ interface PropsList{
 }
 
 const List: FC <PropsList> = (props) => {
+
     return (
         <div className={styles.list}>
             <ul className={styles.photoGrid}>
@@ -36,6 +37,8 @@ const List: FC <PropsList> = (props) => {
                                 setSavePhotos={props.setSavePhotos}
                                 setSharePost={props.setSharePost}
                                 trueEmail={props.trueEmail}
+                                bonuce={item.bonuce}
+                                pin={item.pin}
                                 likeUrl={
                                     item.likes.find(el => el === props.trueEmail) === undefined ? 
                                     "https://avatars.mds.yandex.net/i?id=e3e0e2429c17d22c59253ed4a53292cdb278ffc5-4283205-images-thumbs&n=13" : 

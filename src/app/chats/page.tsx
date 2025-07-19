@@ -7,7 +7,7 @@ import { io } from "socket.io-client";
 import Message from "../../../server-for-photogram/src/Message";
 import UserInterface from "../UserInterface"
 import useCheckReg from "../CheckReg";
-import showNotification from "../ShowNotif";
+import getUserChats from "../getChats";
 
 const Chats: FC = () => {
 
@@ -116,6 +116,29 @@ const Chats: FC = () => {
             })
         sortChats(finalChats)
     }
+
+    const changeNotifs = async (notifs: boolean, user: string) => {
+        await fetch('http://localhost:4000/users-controller/change/notifs', {
+            method: "PATCH",
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ notifs, trueEmail, user })
+        })
+        if (chats !== null) {
+            const newChats = chats.map(el => {
+                if (el.user === user) {
+                    return {
+                        ...el,
+                        notifs: notifs,
+                    }
+                } else {
+                    return el
+                }
+            })
+            setChats(newChats)
+        }
+    }
     
     if (chats !==  null) {
         if (chats.length === 0) {
@@ -172,6 +195,7 @@ const Chats: FC = () => {
                             {item.messages[item.messages.length - 1].user === trueEmail ? <p>Вы: </p>: null}
                             {lastMess}
                             {item.messCount !== 0 ? <p>{item.messCount}</p> : null}
+                            {item.notifs === true ? <img src='https://cdn4.iconfinder.com/data/icons/design-and-development-bold-line-1/48/38-1024.png' width={30} height={30} onClick={() => changeNotifs(false, item.user)}/> : <img src='https://icon-library.com/images/img_99829.png' width={30} height={30} onClick={() => changeNotifs(true, item.user)}/>}
                         </div>
                     </li>
                     })}
@@ -195,16 +219,30 @@ const Chats: FC = () => {
             }
         })
 
-        socket.on('replyMessage', (message: any) => {
+        socket.on('replyMessage', async(message: any) => {
             setTrueEmail(prev => {
                 getChats(prev)
                 return prev
             })
             if (message.type === 'message') {
-                if (document.visibilityState !== 'visible') {
-                    showNotification('Новое сообщение', `Новое сообщение от ${message.user}`)
-                }
-            }
+                const user = message.user
+                setTrueEmail(prev => {
+                    let email = prev
+                    if (document.visibilityState !== 'visible') {
+                        getUserChats(email, user)
+                    }
+                return prev
+                })
+            } else if (message.type === 'onlineStatus') {
+                const userEmail = message.user
+                await fetch('http://localhost:4000/users-controller/give/online/status', {
+                    method: "POST",
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ userEmail })
+                })
+        }
         })
     }, [])
 

@@ -11,6 +11,7 @@ import Photo from "../PhotoInterface";
 import List from "../List";
 import getUserEmail from "../getUserEmail"
 import useNotif from "../useNotif"
+import sortPhotos from "../SortPhotos";
 
 async function getUserPhoto(email: string): Promise<Photo[]> {
     const myPhotosResponse = await fetch(`http://localhost:4000/photos/get/user/photos/${email}`);
@@ -104,9 +105,11 @@ export default function MyPage() {
               return {
                 ...el,
                 photoIndex: 0,
+                bonuce: false,
               }
-            })
-            setMyPhotos(resultArr.reverse());
+            }).reverse()
+            const resultSortedArr = sortPhotos(resultArr)
+            setMyPhotos(resultSortedArr);
           } else {
             setMyPhotos([])
           }

@@ -10,6 +10,8 @@ interface Photo{
     comments: Comment[],
     date: string,
     commentsPerm: boolean,
+    bonuce: boolean,
+    pin: boolean,
 }
 
 export default Photo

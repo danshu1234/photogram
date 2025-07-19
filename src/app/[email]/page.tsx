@@ -11,6 +11,7 @@ import ChatBtn from "../ChatBtn";
 import getUserEmail from "../getUserEmail";
 import useCheckReg from "../CheckReg";
 import useNotif from "../useNotif";
+import sortPhotos from "../SortPhotos";
 
 export default function UserPage() {
 
@@ -69,6 +70,8 @@ export default function UserPage() {
         avatar = <img src={user?.avatar} style={{width: 200, height: 200, borderRadius: '100%'}}/>
     }
 
+    console.log(photos)
+
     if (user !== null && photos !== null && mySubs !== null && myEmail !== null && trueEmail !== '') {
         mainShow = <div>
             <h3>{user.email}</h3>
@@ -126,9 +129,11 @@ export default function UserPage() {
             return {
                 ...el,
                 photoIndex: 0,
+                bonuce: false,
             }
-        })
-        setPhotos(resultArr.reverse())
+        }).reverse()
+        const resultSortedArr = sortPhotos(resultArr)
+        setPhotos(resultSortedArr)
     }
 
     useEffect(() => {
@@ -166,8 +171,8 @@ export default function UserPage() {
     }, [email])
 
     useEffect(() => {
-        if (user !== null && trueEmail) {
-            if (user.open || user.email === email) {
+        if (user !== null && trueEmail !== '') {
+            if (user.open || user.email === trueEmail) {
                 getUserPhotos()
             } else if (user.open === false) {
                 if (user.permUsers.includes(trueEmail)) {
@@ -204,7 +209,7 @@ export default function UserPage() {
         } 
     }
     }
-    }, [user])
+    }, [user, trueEmail])
 
     return (
         <div>

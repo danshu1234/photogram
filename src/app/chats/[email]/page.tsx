@@ -12,7 +12,7 @@ import MessDisplay from "@/app/MessDisplay"
 import gifs from "@/app/gifs"
 import PinList from "@/app/PinList"
 import useCheckReg from "@/app/CheckReg"
-import showNotification from "@/app/ShowNotif"
+import getUserChats from "@/app/getChats"
 
 const UserChat: FC = () => {
 
@@ -25,9 +25,10 @@ const UserChat: FC = () => {
 
     const [socketId, setSocketId] = useState ('')
 
-    const { trueEmail, setEmail } = useGetEmail()
+    const { trueEmail, setEmail, setTrueEmail } = useGetEmail()
     const { trueParamEmail, setTrueParamEmail } = useGetTrueParamEmail()
 
+    const [onlineStatus, setOnlineStatus] = useState <string> ('Offline')
     const [showPin, setShowPin] = useState <boolean> (false)
     const [pinMess, setPinMess] = useState <string[]> ([])
     const [sucCopy, setSucCopy] = useState <boolean> (false)
@@ -229,6 +230,21 @@ const UserChat: FC = () => {
     }, [typing])
 
     useEffect(() => {
+        if (trueEmail !== '' && trueParamEmail !== '') {
+            const getOnlineStatus = async () => {
+                await fetch('http://localhost:4000/users-controller/get/online/status', {
+                    method: "POST",
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ trueEmail, trueParamEmail })
+                })
+            }
+            getOnlineStatus()
+        }
+    }, [trueEmail, trueParamEmail])
+
+    useEffect(() => {
         if (sucCopy === true) {
             setTimeout(() => {
                 setSucCopy(false)
@@ -325,9 +341,14 @@ const UserChat: FC = () => {
                 })
                 return prev
             })
-            if (document.visibilityState !== 'visible') {
-                showNotification('Новое сообщение', `Новое сообщение от ${message.user}`)
-            }
+            const user = message.user
+            setTrueEmail(prev => {
+                let email = prev
+                if (document.visibilityState !== 'visible') {
+                    getUserChats(email, user)
+                }
+                return prev
+            })
             const userSocket = message.socketId
             await fetch(`http://localhost:4000/users-controller/zero/mess/count/${userSocket}`)
             } else if (message.type === 'typing') {
@@ -374,6 +395,17 @@ const UserChat: FC = () => {
                         setTyping('')
                     }
                     return prev
+                })
+            } else if (message.type === 'giveOnlineStatus') {
+                setOnlineStatus('Online')
+            } else if (message.type === 'onlineStatus') {
+                const userEmail = message.user
+                await fetch('http://localhost:4000/users-controller/give/online/status', {
+                    method: "POST",
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ userEmail })
                 })
             }
         });
@@ -463,6 +495,7 @@ const UserChat: FC = () => {
     return (
         <div style={{height: '100vh'}}>
             <h3 onClick={() => window.location.href=`/${trueParamEmail}`}>{trueParamEmail}</h3>
+            <p>{onlineStatus}</p>
             {bonuceAction === true ? <div>
                 {banBtn}
                 {messages?.length !== 0 ? <button onClick={() => window.location.href=`/files/${trueParamEmail}`}>Файлы чата</button> : null}

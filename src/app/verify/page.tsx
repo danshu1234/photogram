@@ -1,29 +1,29 @@
 'use client'
 
 import { ChangeEvent, FC, useEffect, useState } from "react"
-import useCheckReg from "../CheckReg"
 import useGetEmail from '../useGetEmail'
 import styles from './VerifyCode.module.css';
 const { v4: uuidv4 } = require('uuid');
 
 const VerifyCode: FC = () => {
 
-    const { email } = useGetEmail()
-
     const [code, setCode] = useState <string> ('')
     const [inputCode, setInputCode] = useState <string> ('')
 
     const giveCode = async () => {
-        await fetch('https://formspree.io/f/mdkejvop', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              email: email,
-              message: code,       
-            }),
-        });
+      const dataForRegOrEnter = localStorage.getItem('dataForRegPhotoGram');
+      if (dataForRegOrEnter) {
+        const resultData = JSON.parse(dataForRegOrEnter);
+        const targetEmail = resultData.email
+        const subject = 'Код подтверждения для Photogram'
+        await fetch('http://localhost:4000/users-controller/verify/code', {
+          method: "POST",
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ targetEmail, subject, code })
+        })
+      }
     }
 
     useEffect(() => {
@@ -43,7 +43,6 @@ const VerifyCode: FC = () => {
 
     useEffect(() => {
         if (code !== '') {
-            console.log(code)
             giveCode()
         }
     }, [code])
@@ -60,7 +59,7 @@ const VerifyCode: FC = () => {
         const resultCode = await getCode.text()
         localStorage.setItem('photogram-enter', JSON.stringify(resultCode));
         localStorage.removeItem('dataForRegPhotoGram');
-        window.location.href = '/';
+        window.location.href = '/home';
       } 
       else if (resultData.status === 'reg') {
         const getLocal = localStorage.getItem('dataForRegPhotoGram');
@@ -106,7 +105,7 @@ const VerifyCode: FC = () => {
 
           localStorage.setItem('photogram-enter', JSON.stringify(code));
           localStorage.removeItem('dataForRegPhotoGram');
-          window.location.href = '/';
+          window.location.href = '/home';
           
         } catch (error) {
           console.error('Ошибка при регистрации:', error);
@@ -123,7 +122,7 @@ const VerifyCode: FC = () => {
               longitude: '',
             })
           });
-          window.location.href = '/';
+          window.location.href = '/home';
         }
       }
     }

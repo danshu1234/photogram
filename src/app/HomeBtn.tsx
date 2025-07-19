@@ -6,9 +6,9 @@ const HomeBtn = () => {
     return (
         <button className={styles.butt} onClick={() => {
             if (localStorage.getItem('photogram-enter')) {
-                window.location.href='/'
+                window.location.href='/home'
             } else {
-                window.location.href='/'
+                window.location.href='/home'
             }
         }}>На домашнюю</button>
     )
