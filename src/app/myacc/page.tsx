@@ -150,6 +150,7 @@ export default function MyPage() {
     <div className={styles.container}>
       <header className={styles.header}>
         {showAva}
+        {trueEmail}
         <h1 className={styles.title}>Мои фото</h1>
         <h3 style={{cursor: 'pointer'}} onClick={() => {
           if (subs.length !== 0) {

@@ -1,6 +1,6 @@
 'use client'
 
-import { FC, useEffect, useState } from "react"
+import { FC, useEffect, useState, memo } from "react"
 
 interface PhotoSaveProps{
     savePhotos: string[],
@@ -82,4 +82,4 @@ const PhotoSave: FC <PhotoSaveProps> = (props) => {
     )
 }
 
-export default PhotoSave
+export default memo(PhotoSave)

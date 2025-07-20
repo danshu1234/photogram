@@ -1,6 +1,5 @@
-import { FC } from "react";
+import { FC, memo } from "react";
 import styles from './NotifsList.module.css';
-import Link from "next/link";
 import useGetEmail from "./useGetEmail";
 
 interface Notif{
@@ -18,7 +17,7 @@ interface NotifsListProps{
 
 const NotifsList: FC <NotifsListProps> = (props) => {
 
-    const { email, trueEmail } = useGetEmail()
+    const { trueEmail } = useGetEmail()
 
     let notifs;
 
@@ -114,4 +113,4 @@ const NotifsList: FC <NotifsListProps> = (props) => {
     )
 }
 
-export default NotifsList;
+export default memo(NotifsList);

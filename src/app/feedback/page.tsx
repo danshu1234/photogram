@@ -5,6 +5,7 @@ import { QRCodeSVG } from "qrcode.react"
 import styles from '../Feedback.module.css'
 
 const Feedback = () => {
+    
     const {} = useCheckReg()
 
     return (

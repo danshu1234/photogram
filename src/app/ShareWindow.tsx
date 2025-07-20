@@ -1,10 +1,9 @@
 'use client'
 
-import { FC, useEffect, useState } from "react"
+import { FC, useEffect, useState, memo } from "react"
 import useGetEmail from "./useGetEmail";
 import Chat from "./Chat";
 import getMessIdAndDate from "./getMessIdAndDate";
-import useGetTrueParamEmail from "./useGetTrueParamEmail";
 
 interface ShareWindowProps{
     sharePost: string;
@@ -13,7 +12,7 @@ interface ShareWindowProps{
 
 const ShareWindow: FC <ShareWindowProps> = (props) => {
 
-    const { email, trueEmail } = useGetEmail()
+    const { trueEmail } = useGetEmail()
 
     const [chats, setChats] = useState <Chat[] | null> (null)
     let chatsList;
@@ -70,4 +69,4 @@ const ShareWindow: FC <ShareWindowProps> = (props) => {
     )
 }
 
-export default ShareWindow
+export default memo(ShareWindow)

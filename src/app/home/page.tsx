@@ -11,7 +11,6 @@ import Link from "next/link";
 import styles from './Home.module.css';
 import Search from "../Search";
 import { RingLoader } from "react-spinners";
-import SearchPhoto from "../SearchPhoto";
 import NameSearch from "../NameSearch";
 import UserInterface from "../UserInterface";
 import PhotoSave from "../PhotoSave";
@@ -349,7 +348,6 @@ export default function Home() {
         {subsListBtn}
         {nearBtn}
         <Search/>
-        <SearchPhoto photos={photos} setPhotos={setPhotos} allPhotos={allPhotos}/>
         <NameSearch allUsers={allUsers}/>
         <h3>Сортировать по дате</h3>
         {datesList}

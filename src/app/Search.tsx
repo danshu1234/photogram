@@ -1,9 +1,10 @@
 'use client'
 
-import { ChangeEvent, FC, useState } from "react"
+import { ChangeEvent, FC, useState, memo } from "react"
 import styles from './Search.module.css'
 
 const Search: FC = () => {
+
     const [inputLogin, setInputLogin] = useState<string>('')
 
     const handleSearch = () => {
@@ -34,4 +35,4 @@ const Search: FC = () => {
     )
 }
 
-export default Search
+export default memo(Search)

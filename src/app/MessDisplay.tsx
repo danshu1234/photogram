@@ -1,6 +1,6 @@
 'use client'
 
-import { FC, useEffect, useState } from "react"
+import { FC, useState, memo } from "react"
 import { Message } from "@/app/Chat"
 import ImgList from "./ImgList"
 import ShareBtn from "./ShareBtn"
@@ -226,4 +226,4 @@ const MessDisplay: FC <MessDisplayProps> = (props) => {
     )
 }
 
-export default MessDisplay
+export default memo(MessDisplay)

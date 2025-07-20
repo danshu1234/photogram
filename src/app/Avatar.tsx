@@ -1,6 +1,6 @@
 'use client'
 
-import { ChangeEvent, FC, useEffect, useState } from "react"
+import { FC, useEffect, useState, memo } from "react"
 import FileChanger from "./FileChanger"
 
 interface AvaProps{
@@ -53,4 +53,4 @@ const Avatar: FC <AvaProps> = (props) => {
     )
 }
 
-export default Avatar
+export default memo(Avatar)

@@ -1,4 +1,4 @@
-import { FC } from "react";
+import { FC, memo } from "react";
 import Photo from "./PhotoInterface";
 import PhotoDisplay from "./PhotoDisplay";
 import Link from "next/link";
@@ -14,6 +14,8 @@ interface PropsList{
 }
 
 const List: FC <PropsList> = (props) => {
+
+    console.log('List render')
 
     return (
         <div className={styles.list}>
@@ -53,4 +55,4 @@ const List: FC <PropsList> = (props) => {
     )
 }
 
-export default List;
+export default memo(List);

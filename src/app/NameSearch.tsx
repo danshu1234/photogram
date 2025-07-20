@@ -1,6 +1,6 @@
 'use client'
 
-import { ChangeEvent, FC, useEffect, useState } from "react"
+import { ChangeEvent, FC, useEffect, useState, memo } from "react"
 
 interface NameSearchProps{
     allUsers: any[],
@@ -39,4 +39,4 @@ const NameSearch: FC <NameSearchProps> = (props) => {
     )
 }
 
-export default NameSearch
+export default memo(NameSearch)
