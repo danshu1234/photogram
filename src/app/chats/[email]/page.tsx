@@ -10,12 +10,16 @@ import getMessIdAndDate from "@/app/getMessIdAndDate"
 import SendBtn from "@/app/SendBtn"
 import MessDisplay from "@/app/MessDisplay"
 import gifs from "@/app/gifs"
-import PinList from "@/app/PinList"
 import useCheckReg from "@/app/CheckReg"
 import getUserChats from "@/app/getChats"
 
-const UserChat: FC = () => {
+interface SendPhoto{
+    file: File;
+    base64: string;
+}
 
+const UserChat: FC = () => {
+    
     const { startRecording, stopRecording, mediaBlobUrl } = useReactMediaRecorder({audio: true});
     
 
@@ -25,11 +29,10 @@ const UserChat: FC = () => {
 
     const [socketId, setSocketId] = useState ('')
 
-    const { trueEmail, setEmail, setTrueEmail } = useGetEmail()
+    const { email, trueEmail, setEmail, setTrueEmail } = useGetEmail()
     const { trueParamEmail, setTrueParamEmail } = useGetTrueParamEmail()
 
     const [onlineStatus, setOnlineStatus] = useState <string> ('Offline')
-    const [showPin, setShowPin] = useState <boolean> (false)
     const [pinMess, setPinMess] = useState <string[]> ([])
     const [sucCopy, setSucCopy] = useState <boolean> (false)
     const [bonuceAction, setBonuceAction] = useState <boolean> (false)
@@ -43,7 +46,7 @@ const UserChat: FC = () => {
     const [myBanArr, setMyBanArr] = useState <string[] | null> (null)
     const [usersBan, setUsersBan] = useState <string[] | null> (null)
     const [typing, setTyping] = useState <string> ('')
-    const [imageBase64, setImageBase64] = useState <string[]> ([])
+    const [imageBase64, setImageBase64] = useState <SendPhoto[]> ([])
     const [inputMess, setInputMess] = useState <string> ('')
     const [messages, setMessages] = useState <Message[] | null> (null)
     let showMess;
@@ -51,8 +54,6 @@ const UserChat: FC = () => {
     let showMessInter;
     let banBtn;
     let showGifs;
-    let pinBtn;
-    let pinList;
 
     if (Array.isArray(myBanArr)) {
         if (myBanArr.includes(trueParamEmail)) {
@@ -69,7 +70,6 @@ const UserChat: FC = () => {
             }}>Разблокировать</button>
         } else {
             banBtn = <button onClick={async() => {
-                const email = trueEmail
                 await fetch('http://localhost:4000/users-controller/ban/user', {
                     method: "PATCH",
                     headers: {
@@ -95,18 +95,34 @@ const UserChat: FC = () => {
             <ul>
                 {gifsArr.map((item, index) => <li key={index}><img src={item} width={150} height={150} onClick={async() => {
                     const { formattedDate, messId } = getMessIdAndDate()
-                    if (messages) {
-                        const email = trueEmail
-                        const newMessages = [...messages, {user: trueEmail, text: item, photos: [], date: formattedDate, id: messId, ans: answMess, edit: false, typeMess: 'gif', per: ''}]
-                        await fetch('http://localhost:4000/users-controller/new/mess', {
-                            method: "PATCH",
-                            headers: {
-                                'Content-Type': 'application/json',
-                            },
-                            body: JSON.stringify({ newMessages, email, trueParamEmail, socketId })
-                        })
-                        setMessages([...messages, {user: trueEmail, text: item, photos: [], date: formattedDate, id: messId, ans: answMess, edit: false, typeMess: 'gif', per: '', controls: false, pin: false}])
-                        setGifsArr([])
+                    if (messages) { 
+                        if (messages.length !== 0) {
+                            const newMessages = [...messages, {user: trueEmail, text: item, photos: [], date: formattedDate, id: messId, ans: answMess, edit: false, typeMess: 'gif', per: ''}]
+                            await fetch('http://localhost:4000/users-controller/new/mess', {
+                                method: "PATCH",
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                },
+                                body: JSON.stringify({ newMessages, email, trueParamEmail, socketId })
+                            })
+                            setMessages([...messages, {user: trueEmail, text: item, photos: [], date: formattedDate, id: messId, ans: answMess, edit: false, typeMess: 'gif', per: '', controls: false, pin: false}])
+                            setGifsArr([])
+                            setAnswMess('')
+                        } else {
+                            const imageBase64: any = []
+                            const inputMess = item
+                            const typeMessage = 'gif'
+                            const per = ''
+                            await fetch('http://localhost:4000/users-controller/new/chat', {
+                                method: "PATCH",
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                },
+                                body: JSON.stringify({ email, trueParamEmail, imageBase64, inputMess, typeMessage, per })
+                            })
+                            setMessages([{user: trueEmail, text: item, photos: [], date: formattedDate, id: messId, ans: answMess, edit: false, typeMess: 'gif', per: '', controls: false, pin: false}])
+                            setGifsArr([])
+                        }
                     }
                 }}/></li>)}
             </ul>
@@ -120,25 +136,18 @@ const UserChat: FC = () => {
                         <p onClick={() => {
                             let resultImages = []
                             for (let el of imageBase64) {
-                                if (el !== item) {
+                                if (el.base64 !== item.base64) {
                                     resultImages.push(el)
                                 }
                             }
                             setImageBase64(resultImages)
                         }}>X</p>
-                        {item.includes('image') ? <img src={item} width={100} height={100}/> : <video src={item} width={200} height={200} controls/>}
+                        <img src={item.base64} width={100} height={100}/>
                     </div></li>)}
             </ul>
         </div>
     }
 
-    if (pinMess.length !== 0) {
-        pinBtn = <p onClick={() => setShowPin(!showPin)}>Закрепленные сообщения</p>
-    }
-
-    if (showPin === true) {
-        pinList = <PinList pinMess={pinMess}/>
-    }
 
     if (messages !== null) {
         if (messages.length === 0) {
@@ -155,7 +164,11 @@ const UserChat: FC = () => {
         if (file) {
             const reader = new FileReader();
             reader.onload = (event) => {
-                setImageBase64([...imageBase64, event.target?.result as string]);
+                const newSendPhoto: SendPhoto = {
+                    file: file,
+                    base64: event.target?.result as string,
+                }
+                setImageBase64([...imageBase64, newSendPhoto]);
             };
             reader.readAsDataURL(file);
         }
@@ -172,7 +185,6 @@ const UserChat: FC = () => {
     }
 
      const getMessages = async () => {
-        const email = trueEmail
         const getMess = await fetch(`http://localhost:4000/users-controller/get/mess`, {
             method: "POST",
             headers: {
@@ -222,7 +234,7 @@ const UserChat: FC = () => {
     }
 
     useEffect(() => {
-        if (typing !== '') {
+        if (typing !== '' && typing !== 'Записывает голосовое сообщение') {
             setTimeout(() => {
                 setTyping('')
             }, 1000);
@@ -253,14 +265,14 @@ const UserChat: FC = () => {
     }, [sucCopy])
 
     useEffect(() => {
-        if (trueParamEmail !== '' && trueEmail !== '') {
+        if (trueParamEmail !== '' && trueEmail !== '' && email !== '') {
             getMessages()
             getBanArr()
             getMyBanArr()
             getUserPermAndSubs()
         }
-        zeroMess(trueEmail, trueParamEmail)
-    }, [trueParamEmail, trueEmail])
+        zeroMess(email, trueParamEmail)
+    }, [trueParamEmail, trueEmail, email])
 
     useEffect(() => {
         if (mediaBlobUrl !== undefined) {
@@ -282,7 +294,6 @@ const UserChat: FC = () => {
                     const { formattedDate, messId } = getMessIdAndDate()
                 if (messages) {
                     if (messages.length !== 0) {
-                        const email = trueEmail
                         const newMessages = [...messages, {user: trueEmail, text: base64String, photos: imageBase64, date: formattedDate, id: messId, ans: answMess, edit: false, typeMess: 'voice', per: ''}]
                         await fetch('http://localhost:4000/users-controller/new/mess', {
                             method: "PATCH",
@@ -291,11 +302,12 @@ const UserChat: FC = () => {
                             },
                             body: JSON.stringify({ newMessages, email, trueParamEmail, socketId })
                         })
-                        setMessages([...messages, {user: trueEmail, text: base64String, photos: imageBase64, date: formattedDate, id: messId, ans: answMess, edit: false, typeMess: 'voice', controls: false, per: '', pin: false}])
+                        setMessages([...messages, {user: trueEmail, text: base64String, photos: [], date: formattedDate, id: messId, ans: answMess, edit: false, typeMess: 'voice', controls: false, per: '', pin: false}])
+                        setAnswMess('')
                     } else {
                         const inputMess = base64String
                         const typeMessage = 'voice'
-                        const email = trueEmail
+                        console.log('New chat')
                         await fetch('http://localhost:4000/users-controller/new/chat', {
                             method: "PATCH",
                             headers: {
@@ -304,7 +316,7 @@ const UserChat: FC = () => {
                             body: JSON.stringify({ inputMess, email, trueParamEmail, imageBase64, typeMessage })
                         })
                         const { formattedDate, messId } = getMessIdAndDate()
-                        setMessages([{user: trueEmail, text: base64String, photos: imageBase64, date: formattedDate, id: messId, ans: '', edit: false, typeMess: 'voice', controls: false, per: '', pin: false}])
+                        setMessages([{user: trueEmail, text: base64String, photos: [], date: formattedDate, id: messId, ans: '', edit: false, typeMess: 'voice', controls: false, per: '', pin: false}])
                     }                  
                 }
                 }
@@ -414,7 +426,6 @@ const UserChat: FC = () => {
     useEffect(() => {
         if (socketId !== '' && trueEmail !== '') {
         const addSocket = async () => {
-            const email = trueEmail
             await fetch('http://localhost:4000/users-controller/add/socket', {
                 method: "PATCH",
                     headers: {
@@ -449,14 +460,14 @@ const UserChat: FC = () => {
                 }} value={inputMess}/>
             <input type="file" onChange={handleFileChange}/>
             {showGifs}
-            <img src='https://avatars.mds.yandex.net/i?id=539217ca79eb2925b40b0b17765b6f8e_l-5256374-images-thumbs&n=13' width={40} height={40} onClick={() => {
+            <img src='/images/images.png' width={40} height={40} onClick={() => {
                 if (gifsArr.length === 0) {
                     getAllGifs()
                 } else {
                     setGifsArr([])
                 }
             }}/>
-            <SendBtn inputMess={inputMess} editMess={editMess} setAnswMess={setAnswMess} setEditMess={setEditMess} setMessages={setMessages} setInputMess={setInputMess} setImageBase64={setImageBase64} imageBase64={imageBase64} messages={messages} email={trueEmail} trueParamEmail={trueParamEmail} socketId={socketId} answMess={answMess}/>
+            <SendBtn inputMess={inputMess} editMess={editMess} setAnswMess={setAnswMess} setEditMess={setEditMess} setMessages={setMessages} setInputMess={setInputMess} setImageBase64={setImageBase64} imageBase64={imageBase64} messages={messages} email={email} trueEmail={trueEmail} trueParamEmail={trueParamEmail} socketId={socketId} answMess={answMess}/>
             {startStop === false ? <button onClick={async() => {
                 startRecording()
                 setStartStop(true)
@@ -502,8 +513,6 @@ const UserChat: FC = () => {
                 <button onClick={() => setBonuceAction(false)}>Закрыть</button>
             </div> : <button onClick={() => setBonuceAction(true)}>Раскрыть</button>}
             <p>{typing}</p>
-            {pinBtn}
-            {pinList}
             {sucCopy === true ? <p>Текст успешно скопирован!</p> : null}
             {showMess}
             {photos}

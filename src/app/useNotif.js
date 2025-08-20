@@ -7,7 +7,7 @@ import getUserChats from "./getChats";
 
 const useNotif = () => {
 
-    const { trueEmail, setTrueEmail } = useGetEmail()
+    const { email, trueEmail, setEmail } = useGetEmail()
     
     const [socketId, setSocketId] = useState ('')
 
@@ -21,7 +21,6 @@ const useNotif = () => {
         if (socketId !== '' && trueEmail !== '') {
             console.log(socketId)
             const addSocket = async () => {
-                const email = trueEmail
                 await fetch('http://localhost:4000/users-controller/add/socket', {
                 method: "PATCH",
                 headers: {
@@ -45,7 +44,7 @@ const useNotif = () => {
         socket.on('replyMessage', async(message) => {
             if (message.type === 'message' && document.visibilityState !== 'visible') {
                 const user = message.user
-                setTrueEmail(prev => {
+                setEmail(prev => {
                     let email = prev
                     if (document.visibilityState !== 'visible') {
                         getUserChats(email, user)

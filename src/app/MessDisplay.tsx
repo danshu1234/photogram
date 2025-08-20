@@ -48,29 +48,6 @@ const MessDisplay: FC <MessDisplayProps> = (props) => {
         }
     }
 
-    const pinMess = async (messId: string, pin: boolean) => {
-        const email = props.email
-        const trueParamEmail = props.trueParamEmail
-        await fetch('http://localhost:4000/users-controller/pin/mess', {
-            method: "PATCH",
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ email, trueParamEmail, messId, pin })
-        })
-        const newMess = props.messages?.map(el => {
-            if (el.id === messId) {
-                return {
-                    ...el,
-                    pin: pin,
-                }
-            } else {
-                return el
-            }
-        })
-        props.setMessages(newMess)
-        props.setPinMess([...props.pinMess, messId])
-    }
 
     return (
         <div>
@@ -89,7 +66,7 @@ const MessDisplay: FC <MessDisplayProps> = (props) => {
 
                     if (item.typeMess === 'text') {
                         showMess = <p>{item.text}</p>
-                    } else if (item.typeMess === 'voice'){
+                    } else if (item.typeMess === 'voice') {
                         showMess = <audio src={item.text} controls/>
                     } else if (item.typeMess === 'gif') {
                         showMess = <img src={item.text} width={100} height={100}/>
@@ -120,10 +97,10 @@ const MessDisplay: FC <MessDisplayProps> = (props) => {
                                 <p>{item.ans}</p>
                                 {showMess}
                                 {item.edit ? <p style={{scale: '70%'}}>Ред.</p> : null}
-                                {item.photos.length !== 0 ? <ul>
+                                {item.photos.length !== 0 ? <ul style={{listStyle: 'none'}}>
                                 {item.photos.map((el, index) => 
                                 <li key={index}>
-                                    {el.includes('image') ? <img src={el} width={200} height={200} onClick={() => {
+                                    {el.includes('image') ? <img src={el} width={150} height={150} onClick={() => {
                                     setImgArr(item.photos)
                                     setStartIndex(index)
                                     }}/> : <video src={el} width={200} height={200} controls/>}
@@ -164,7 +141,6 @@ const MessDisplay: FC <MessDisplayProps> = (props) => {
                                     navigator.clipboard.writeText(item.text)
                                     props.setSucCopy(true)
                                 }}>Копировать</button> : null}
-                                {item.pin === true ? <button onClick={() => pinMess(item.id, false)}>Открепить</button> : <button onClick={() => pinMess(item.id, true)}>Закрепить</button>}
                                 </div> : null}
                             </div>
                         </Element>
@@ -191,8 +167,8 @@ const MessDisplay: FC <MessDisplayProps> = (props) => {
                                 <p>{item.ans}</p>
                                 {showMess}
                                 {item.edit ? <p style={{scale: '70%'}}>Ред.</p> : null}
-                                {item.photos.length !== 0 ? <ul>
-                                    {item.photos.map((el, index) => <li key={index}><img src={el} width={100} height={100} onClick={() => {
+                                {item.photos.length !== 0 ? <ul style={{listStyle: 'none'}}>
+                                    {item.photos.map((el, index) => <li key={index}><img src={el} width={150} height={150} onClick={() => {
                                         setImgArr(item.photos)
                                         setStartIndex(index)
                                     }}/></li>)}
@@ -216,7 +192,6 @@ const MessDisplay: FC <MessDisplayProps> = (props) => {
                                     navigator.clipboard.writeText(item.text)
                                     props.setSucCopy(true)
                                 }}>Копировать</button> : null}
-                                {item.pin === true ? <button onClick={() => pinMess(item.id, false)}>Открепить</button> : <button onClick={() => pinMess(item.id, true)}>Закрепить</button>}
                                 </div> : null}
                             </div>
                         </Element>

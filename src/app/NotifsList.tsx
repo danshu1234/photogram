@@ -17,7 +17,7 @@ interface NotifsListProps{
 
 const NotifsList: FC <NotifsListProps> = (props) => {
 
-    const { trueEmail } = useGetEmail()
+    const { email, trueEmail } = useGetEmail()
 
     let notifs;
 
@@ -57,7 +57,6 @@ const NotifsList: FC <NotifsListProps> = (props) => {
                             <p><span style={{cursor: 'pointer', color: 'blue'}} onClick={() => window.location.href=`/${item.user}`}>{item.user}</span> хочет посмотреть ваши фото</p>
                             <button onClick={async() => {
                                 const newUserEmail = item.user
-                                const email = trueEmail
                                 const addNewPermUser = async () => {
                                     await fetch('http://localhost:4000/users-controller/new/perm/user', {
                                         method: "PATCH",
@@ -94,7 +93,6 @@ const NotifsList: FC <NotifsListProps> = (props) => {
                 <button 
                     className={styles.closeButton}
                     onClick={async() => {
-                        const email = trueEmail
                         const clearNotifs = await fetch('http://localhost:4000/users-controller/clear/notifs', {
                             method: "PATCH",
                             headers: {

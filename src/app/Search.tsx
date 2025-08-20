@@ -1,6 +1,6 @@
 'use client'
 
-import { ChangeEvent, FC, useState, memo } from "react"
+import { ChangeEvent, FC, memo, useState } from "react"
 import styles from './Search.module.css'
 
 const Search: FC = () => {

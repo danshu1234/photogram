@@ -15,7 +15,7 @@ const Files: FC = () => {
 
     const {} = useNotif()
 
-    const { trueEmail } = useGetEmail()
+    const { email, trueEmail } = useGetEmail()
     const { trueParamEmail } = useGetTrueParamEmail()
 
     const [bigPhoto, setBigPhoto] = useState <PhotoInfo | null> (null)
@@ -33,7 +33,6 @@ const Files: FC = () => {
     }
 
     const getFiles = async () => {
-        const email = trueEmail
         const getMess = await fetch(`http://localhost:4000/users-controller/get/mess`, {
             method: "POST",
             headers: {

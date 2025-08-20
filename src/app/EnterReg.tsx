@@ -9,66 +9,64 @@ interface Props{
 }
 
 const EnterReg: FC <Props> = (props) => {
-
-    const [email, setEmail] = useState <string> ('')
+    
     const [name, setName] = useState <string> ('')
-    const [isNameInput, setisNameInput] = useState <boolean> (false)
-    let nameInput;
-
-    if (isNameInput) {
-        nameInput = <input placeholder="Name" onChange={(event: ChangeEvent<HTMLInputElement>) => setName(event.target.value)} className={styles.input}/>
-    }
-
-    useEffect(() => {
-        if (props.status === 'reg') {
-            setisNameInput(true)
-        }
-    }, [])
-
-    const checkEmail = async () => {
-        const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (regex.test(email)) {
-            if (props.status === 'reg') {
-                if (name !== '') {
-                    localStorage.setItem('dataForRegPhotoGram', JSON.stringify({status: 'reg', name: name, email: email}))
-                    window.location.href = '/verify'
-                } else {
-                    alert('Введите имя')
-                }
-            } else {
-                const findThisEmail = await fetch(`http://localhost:4000/users-controller/check/find/user/${email}`)
-                const resultCheckUser = await findThisEmail.text()
-                if (resultCheckUser === 'OK') {
-                    localStorage.setItem('dataForRegPhotoGram', JSON.stringify({status: 'enter', email: email}))
-                    window.location.href = '/verify'
-                } else {
-                    alert('Такого пользователя не существует')
-                }
-            }
-        } else {
-            alert('Введите корректный Email')
-        }
-    }
+    const [login, setLogin] = useState <string> ('')
+    const [firstPass, setFirstPass] = useState <string> ('')
+    const [secondPass, setSecondPass] = useState <string> ('')
 
     return (
         <div className={styles.container}>
-            <h2 className={styles.title}>{props.status === 'reg' ? 'Регистрация' : 'Вход'}</h2>
-            <input 
-                placeholder="Email" 
-                className={styles.input}
-                onChange={(event: ChangeEvent<HTMLInputElement>) => setEmail(event.target.value)}
-            />
-            {nameInput}
-            <button 
-                className={styles.button}
-                onClick={checkEmail}
-            >{props.status === 'reg' ? 'Регистрация' : 'Вход'}</button>
-            <div className={styles.switch}>
-                {props.status === 'enter' ? 
-                    <p>Нет аккаунта? <Link href={'/reg'} className={styles.link}>Регистрация</Link></p> : 
-                    <Link href={'/enter'} className={styles.link}>Вход</Link>
+            {props.status === 'reg' ? <input placeholder="Name" onChange={(event: ChangeEvent<HTMLInputElement>) => setName(event.target.value)}/> : null}
+            <input placeholder="Email" onChange={(event: ChangeEvent<HTMLInputElement>) => setLogin(event.target.value)}/>
+            <input type="password" placeholder="Password" onChange={(event: ChangeEvent<HTMLInputElement>) => setFirstPass(event.target.value)}/>
+            {props.status === 'reg' ? <input type="password" placeholder="Repeat the password" onChange={(event: ChangeEvent<HTMLInputElement>) => setSecondPass(event.target.value)}/> : null}
+            {props.status === 'reg' ? <button onClick={async() => {
+                const regUser = await fetch('http://localhost:4000/users-controller/reg', {
+                    method: "POST",
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ login, firstPass, secondPass, name })
+                })
+                if (regUser.ok) {
+                    const resultRegUser = await regUser.text()
+                    if (resultRegUser === 'FIRST_ERR') {
+                        alert('Пользователь с таким email уже существует')
+                    } else if (resultRegUser === 'SECOND_ERR') {
+                        alert('Введенные пароли не совпадают')
+                    } else if (resultRegUser === 'THIRD_ERR'){
+                        alert('Пароль должен сожержать хотя бы одну латинскую строчную букву и один из символов: !, #, №, $, %, &, ?, -, *')
+                    } else {
+                        localStorage.setItem('photogram-enter', resultRegUser)
+                        window.location.href='/home'
+                    }
+                } else {
+                    const validateErr = await regUser.json()
+                    alert(validateErr.message[0])
                 }
-            </div>
+            }}>Зарегистрироваться</button> : <button onClick={async() => {
+                if (login !== '' && firstPass !== '') {
+                    const password = firstPass
+                    const enter = await fetch('http://localhost:4000/users-controller/enter', {
+                        method: "POST",
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ login, password })
+                    })
+                    const resultEnter = await enter.text()
+                    if (resultEnter !== 'ERR') {
+                        localStorage.setItem('photogram-enter', resultEnter)
+                        window.location.href='/home'
+                    } else {
+                        alert('Неверный логин или пароль')
+                    }
+                } else {
+                    alert('Введите логин и пароль')
+                }
+            }}>Войти</button>}
+            {props.status === 'reg' ? <p>Уже есть аккаунт? <span style={{color: 'blue'}} onClick={() => window.location.href='/enter'}>Войти</span></p> : <p>Нет аккаунта? <span style={{color: 'blue'}} onClick={() => window.location.href='/reg'}>Зарегистрироваться</span></p>}
         </div>
     )
 }

@@ -13,21 +13,12 @@ import Search from "../Search";
 import { RingLoader } from "react-spinners";
 import NameSearch from "../NameSearch";
 import UserInterface from "../UserInterface";
-import PhotoSave from "../PhotoSave";
-import ShareWindow from "../ShareWindow";
 import { io } from "socket.io-client";
 import registerServiceWorker from "../RegisterServiceWorker";
 import Chat from "../Chat";
 import getUserChats from "../getChats";
 
 export default function Home() {
-
-  interface User{
-    email: string,
-    name: string,
-    subscribes: string[],
-    avatar: string,
-  }
 
   interface Notif{
     type: string,
@@ -36,13 +27,12 @@ export default function Home() {
   }
 
   const {} = useCheckReg()
-  const { email, trueEmail, setTrueEmail } = useGetEmail()
+  const { email, setEmail, trueEmail, setTrueEmail } = useGetEmail()
 
   const getMyNotifs = async () => {
     const getEmailFromStorage = localStorage.getItem('photogram-enter')
     if (getEmailFromStorage) {
-      const myEmail = JSON.parse(getEmailFromStorage)
-      const getNotifs = await fetch(`http://localhost:4000/users-controller/get/notifs/${myEmail}`)
+      const getNotifs = await fetch(`http://localhost:4000/users-controller/get/notifs/${getEmailFromStorage}`)
       const resultNotifs = await getNotifs.json()
       setNotifs(resultNotifs)
     }
@@ -60,32 +50,46 @@ export default function Home() {
   const [sharePost, setSharePost] = useState <string> ('')
   const [isNotifs, setIsNotifs] = useState <boolean> (false)
   const [notifs, setNotifs] = useState <Notif[]> ([])
+
   const [subs, setSubs] = useState <Photo[]> ([])
+
   const [opacity, setOpacity] = useState <{all: number, sub: number}> ({all: 1, sub: 0.6})
-  const [popularList, setPopularList] = useState <User[]> ([])
+
   const [allUsers, setAllUsers] = useState <UserInterface[]> ([])
-  const [nearFriends, setNearFriends] = useState <boolean> (false)
+
   const [allPhotos, setAllPhotos] = useState <Photo[] | null> ([])
+  const [photoIndex, setPhotoIndex] = useState <{start: number, finish: number}> ({start: 0, finish: 6})
+  const [moreBtn, setMoreBtn] = useState <boolean> (true)
+
   const [savePhotos, setSavePhotos] = useState <string[]> ([])
+
   const [datesArr, setDatesArr] = useState <string[]> ([])
+
   const [date, setDate] = useState <string> ('')
+
   const [photos, setPhotos] = useState <Photo[] | null> (null)
+
   let photosList;
   let notifsList;
   let subsListBtn;
   let feechWindow;
-  let showPopular;
-  let nearBtn;
   let datesList;
-  let photoSave;
-  let sharePostWindow;
 
   const getAllPhotosAndSort = async () => {
-  const allPhotos = await fetch('http://localhost:4000/photos/all')
-  const resultPhotosArr = await allPhotos.json()
-  resultPhotosArr.sort((a: Photo, b: Photo) => Number(b.id) - Number(a.id))
-  let resultArr = []
-  for (let item of resultPhotosArr) {
+    const start = photoIndex.start
+    const finish =photoIndex.finish
+    const allPhotosRes = await fetch('http://localhost:4000/photos/all', {
+      method: "POST",
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ start, finish })
+    })
+    const resultPhotosArr = await allPhotosRes.json()
+    console.log(resultPhotosArr)
+    resultPhotosArr.photos.sort((a: Photo, b: Photo) => Number(b.id) - Number(a.id))
+    let resultArr = []
+    for (let item of resultPhotosArr.photos) {
     const findUser = allUsers.find(el => el.email === item.email)
     if (findUser?.open === true) {
       resultArr.push(item)
@@ -102,8 +106,25 @@ export default function Home() {
       bonuce: false,
     }
   })
-  setPhotos(finalArr)
-  setAllPhotos(finalArr)
+  let resultPhotos = []
+  if (photos && allPhotos) {
+    setPhotos([...photos, ...finalArr])
+    setAllPhotos([...allPhotos, ...finalArr])
+    resultPhotos = [...photos, ...finalArr]
+  } else {
+    setPhotos(finalArr)
+    setAllPhotos(finalArr)
+    resultPhotos = [...finalArr]
+  }
+  if (resultPhotosArr.allLength - resultPhotos.length) {
+      setPhotoIndex({start: photoIndex.start + 6, finish: photoIndex.finish + 6})
+    } else if (resultPhotosArr.allLength - resultPhotos.length === 2) {
+      setPhotoIndex({start: photoIndex.start + 6, finish: photoIndex.finish + 5})
+    } else if (resultPhotosArr.allLength - resultPhotos.length === 1) {
+      setPhotoIndex({start: photoIndex.start + 6, finish: photoIndex.finish + 4})
+    } else if (resultPhotosArr.allLength - resultPhotos.length === 0) {
+      setMoreBtn(false)
+  }
   }
 
   
@@ -154,7 +175,7 @@ export default function Home() {
   }, [photos])
 
   useEffect(() => {
-    if (allUsers.length !== null && trueEmail !== '') {
+    if (allUsers.length !== 0 && trueEmail !== '') {
       getAllPhotosAndSort()
       getMessCount()
     }
@@ -175,34 +196,11 @@ export default function Home() {
         const allUsers = await fetch('http://localhost:4000/users-controller/get/all/users')
         const resultUsers = await allUsers.json()
         setAllUsers(resultUsers)
-        resultUsers.sort((a: any, b: any) => b.subscribes.length - a.subscribes.length)
-        let resultArr = []
-        for (let item of resultUsers) {
-          if (!item.subscribes.includes(email)) {
-            resultArr.push({email: item.email, name: item.name, subscribes: item.subscribes, avatar: item.avatar})
-          }
-        }
-        if (resultArr.length >= 10) {
-          setPopularList(resultArr)
-        }
       }
       getAllUsers()
     }
   }, [email])
 
-  useEffect(() => {
-    if (email !== '') {
-      const checkCoords = async () => {
-        const coordsCheck = await fetch(`http://localhost:4000/users-controller/check/coords/${email}`)
-        const resultCheck = await coordsCheck.text()
-        if (resultCheck === 'OK') {
-          setNearFriends(true)
-        }
-      }
-      checkCoords()
-    }
-  }, [email])
-  
   useEffect(() => {
     if (date === 'Все') {
       setPhotos(allPhotos)
@@ -232,10 +230,10 @@ export default function Home() {
   socket.on('replyMessage', async(message) => {
       if (message.type === 'message') {
         const user = message.user
-        setTrueEmail(prev => {
+        setEmail(prev => {
             let email = prev
             if (document.visibilityState !== 'visible') {
-                getUserChats(email, user)
+              getUserChats(email, user)
             }
             return prev
         })
@@ -245,7 +243,7 @@ export default function Home() {
             await fetch('http://localhost:4000/users-controller/give/online/status', {
                 method: "POST",
                 headers: {
-                    'Content-Type': 'application/json',
+                  'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({ userEmail })
             })
@@ -264,7 +262,6 @@ export default function Home() {
     if (socketId !== '' && trueEmail !== '') {
       console.log(socketId)
       const addSocket = async () => {
-          const email = trueEmail
           await fetch('http://localhost:4000/users-controller/add/socket', {
           method: "PATCH",
               headers: {
@@ -277,12 +274,8 @@ export default function Home() {
     }
   }, [socketId, trueEmail])
 
-  if (sharePost !== '') {
-    sharePostWindow = <ShareWindow sharePost={sharePost} setSharePost={setSharePost}/>
-  }
-
   if (subs.length !== 0) {
-    subsListBtn = <p style={{cursor: 'pointer', opacity: opacity.sub}} onClick={() => {
+    subsListBtn = <p className={styles.subsListBtn} style={{cursor: 'pointer', opacity: opacity.sub}} onClick={() => {
       setPhotos(subs)
       setOpacity({all: 0.6, sub: 1})
     }}>Мои подписки</p>
@@ -292,36 +285,42 @@ export default function Home() {
     notifsList = <NotifsList notifs={notifs} setIsNotifs={setIsNotifs} email={email} setNotifs={setNotifs}/>
   }
 
-  if (savePhotos.length !== 0) {
-    photoSave = <PhotoSave savePhotos={savePhotos} setSavePhotos={setSavePhotos}/>
-  }
+  useEffect(() => {
+    console.log(`Photos: ${photos}`)
+    console.log(`Code: ${email}`)
+    console.log(`Email: ${trueEmail}`)
+  }, [photos, email, trueEmail])
 
   if (photos === null) {
-    photosList = <RingLoader/>
+    photosList = <div style={{
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
+      height: '200px',
+      width: '100%'
+    }}>
+      <RingLoader/>
+    </div>
     } else {
       if (photos.length !== 0 && email !== '' && trueEmail !== '') {
       photosList = <List photos={photos} setPhotos={setPhotos} email={email} setSavePhotos={setSavePhotos} setSharePost={setSharePost} trueEmail={trueEmail}/>
     } else {
-      photosList = <h2>Фото не найдены</h2>
+      photosList = <h2 className={styles.noPhotos}>Фото не найдены</h2>
     }
   }
 
-  if (nearFriends) {
-    nearBtn = <h3 onClick={() => window.location.href='/near-friends'}>Друзья поблизости</h3>
-  }
-
   if (datesArr.length !== 0) {
-    datesList = <select onChange={(event: ChangeEvent<HTMLSelectElement>) => setDate(event.target.value)}>
+    datesList = <select className={styles.dateSelect} onChange={(event: ChangeEvent<HTMLSelectElement>) => setDate(event.target.value)}>
       <option value='Все'>Все</option>
       {datesArr.map((item, index) => <option value={item} key={index}>{item}</option>)}
     </select>
   }
 
   return (
-    <div className={styles.container}>
+    <div className={styles.home}>
       <header className={styles.header}>
-        <img src='https://cdn3.iconfinder.com/data/icons/unicons-vector-icons-pack/32/messages-512.png' width={50} height={50} onClick={() => window.location.href='/chats'}/>
-        {messCount !== 0 ? <p>{messCount}</p> : null}
+        <img src='/images/Circle-icons-chat.svg.png' width={50} height={50} className={styles.messagesIcon} onClick={() => window.location.href='/chats'}/>
+        {messCount > 0 ? <p className={styles.messCount}>{messCount}</p> : null}
         <h1 className={styles.logo} onClick={() => window.location.reload()}>Photogram</h1>
         <FeedbackBtn/>
         <div className={styles.controls}>
@@ -341,21 +340,16 @@ export default function Home() {
       
       {notifsList}
       <main className={styles.main}>
-        <p style={{cursor: 'pointer', opacity: opacity.all}} onClick={() => {
-          getAllPhotosAndSort()
-          setOpacity({all: 1, sub: 0.6})
-          }}>Все фото</p>
         {subsListBtn}
-        {nearBtn}
         <Search/>
         <NameSearch allUsers={allUsers}/>
-        <h3>Сортировать по дате</h3>
-        {datesList}
+        <div className={styles.dateSelect}>
+          <h3>Сортировать по дате</h3>
+          {datesList}
+        </div>
         {feechWindow}
         {photosList}
-        {sharePostWindow}
-        {showPopular}
-        {photoSave}
+        {moreBtn && photos ? <p onClick={getAllPhotosAndSort} style={{marginTop: '15px', cursor: 'pointer', color: 'blue', opacity: '0.5'}}>Показать больше</p> : null}
       </main>
     </div>
   );

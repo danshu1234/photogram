@@ -17,7 +17,7 @@ const Chats: FC = () => {
 
     const {} = useCheckReg()
 
-    const { trueEmail, setTrueEmail } = useGetEmail()
+    const { email, trueEmail, setEmail } = useGetEmail()
 
     const [shareMess, setShareMess] = useState <Message | null> (null)
     const [basePerm, setBasePerm] = useState <string> ('')
@@ -34,7 +34,6 @@ const Chats: FC = () => {
 
     if (changePerm !== '' && changePerm !== basePerm) {
         saveChangePermBtn = <button onClick={async() => {
-            const email = trueEmail
             await fetch('http://localhost:4000/users-controller/new/perm/mess', {
                 method: "PATCH",
                 headers: {
@@ -75,7 +74,7 @@ const Chats: FC = () => {
             const resultChats = await chats.json()
             resChats = resultChats
         } else {
-            const chats = await fetch(`http://localhost:4000/users-controller/get/chats/${trueEmail}`)
+            const chats = await fetch(`http://localhost:4000/users-controller/get/chats/${email}`)
             const resultChats = await chats.json()
             resChats = resultChats
         }
@@ -96,7 +95,6 @@ const Chats: FC = () => {
     }
 
     const pinUnpinChat = async (user: string, pin: boolean) => {
-        const email = trueEmail
         const newChats = await fetch('http://localhost:4000/users-controller/pin/chat', {
             method: "PATCH",
             headers: {
@@ -176,7 +174,7 @@ const Chats: FC = () => {
                                     headers: {
                                         'Content-Type': 'application/json',
                                     },
-                                    body: JSON.stringify({ trueEmail, trueParamEmail })
+                                    body: JSON.stringify({ email, trueParamEmail })
                                 })
                                 const resultMess = await thisUserMess.json()
                                 const newMessages = [...resultMess, {user: shareMess.user, text: shareMess.text, photos: shareMess.photos, date: shareMess.date, id: shareMess.id, ans: shareMess.ans, edit: false, typeMess: shareMess.typeMess, per: shareMess.per}]
@@ -186,7 +184,7 @@ const Chats: FC = () => {
                                     headers: {
                                         'Content-Type': 'application/json',
                                     },
-                                    body: JSON.stringify({ newMessages, trueEmail, trueParamEmail, socketId })
+                                    body: JSON.stringify({ newMessages, trueParamEmail, email, socketId })
                                 })
                                 localStorage.removeItem('shareMess')
                                 window.location.reload()
@@ -195,7 +193,7 @@ const Chats: FC = () => {
                             {item.messages[item.messages.length - 1].user === trueEmail ? <p>Вы: </p>: null}
                             {lastMess}
                             {item.messCount !== 0 ? <p>{item.messCount}</p> : null}
-                            {item.notifs === true ? <img src='https://cdn4.iconfinder.com/data/icons/design-and-development-bold-line-1/48/38-1024.png' width={30} height={30} onClick={() => changeNotifs(false, item.user)}/> : <img src='https://icon-library.com/images/img_99829.png' width={30} height={30} onClick={() => changeNotifs(true, item.user)}/>}
+                            {item.notifs === true ? <img src='/images/1191931.png' width={30} height={30} onClick={() => changeNotifs(false, item.user)}/> : <img src='https://icon-library.com/images/img_99829.png' width={30} height={30} onClick={() => changeNotifs(true, item.user)}/>}
                         </div>
                     </li>
                     })}
@@ -220,13 +218,13 @@ const Chats: FC = () => {
         })
 
         socket.on('replyMessage', async(message: any) => {
-            setTrueEmail(prev => {
+            setEmail(prev => {
                 getChats(prev)
                 return prev
             })
             if (message.type === 'message') {
                 const user = message.user
-                setTrueEmail(prev => {
+                setEmail(prev => {
                     let email = prev
                     if (document.visibilityState !== 'visible') {
                         getUserChats(email, user)
@@ -264,7 +262,6 @@ const Chats: FC = () => {
         useEffect(() => {
             if (socketId !== '' && trueEmail !== '') {
             const addSocket = async () => {
-                const email = trueEmail
                 await fetch('http://localhost:4000/users-controller/add/socket', {
                     method: "PATCH",
                     headers: {

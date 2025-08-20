@@ -1,89 +1,119 @@
-.container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 20px;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+.pageWrapper {
+    display: flex;
+    justify-content: center;
+    padding: 2rem;
+    background: #f4f6f8;
+    min-height: 100vh;
 }
 
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 30px;
-  padding: 20px;
-  background-color: #f8f9fa;
-  border-radius: 10px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+.profileContainer {
+    background: white;
+    padding: 2rem;
+    border-radius: 1rem;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    max-width: 900px;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+.headerSection {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 1.5rem;
 }
 
 .userInfo {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+    flex: 1;
 }
 
-.username {
-  font-size: 24px;
-  margin: 0;
-  color: #333;
-  font-weight: 600;
+.userEmail {
+    font-size: 0.9rem;
+    color: #888;
+    margin-bottom: 0.3rem;
+}
+
+.userName {
+    font-size: 1.8rem;
+    font-weight: bold;
 }
 
 .subCount {
-  color: #666;
-  margin: 0;
-  font-size: 16px;
+    margin: 0.5rem 0;
+    color: #666;
+}
+
+.avatar {
+    width: 180px;
+    height: 180px;
+    object-fit: cover;
+    border-radius: 50%;
+    border: 3px solid #eee;
+}
+
+.emptyAvatar {
+    width: 180px;
+    height: 180px;
+    background-color: #ccc;
+    border-radius: 50%;
 }
 
 .actions {
-  display: flex;
-  gap: 15px;
-  align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
 }
 
-.subButton {
-  padding: 10px 20px;
-  background-color: #3897f0;
-  color: white;
-  border: none;
-  border-radius: 5px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
+.primaryBtn, .secondaryBtn, .dangerBtn {
+    padding: 0.6rem 1.2rem;
+    border-radius: 0.5rem;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-weight: 500;
 }
 
-.subButton:hover {
-  background-color: #2680d9;
-  transform: translateY(-1px);
+.primaryBtn {
+    background: #2563eb;
+    color: white;
+}
+.primaryBtn:hover {
+    background: #1d4ed8;
 }
 
-.unsubButton {
-  padding: 10px 20px;
-  background-color: #f8f9fa;
-  color: #333;
-  border: 1px solid #ddd;
-  border-radius: 5px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
+.secondaryBtn {
+    background: #e5e7eb;
+    color: #111;
+}
+.secondaryBtn:hover {
+    background: #d1d5db;
 }
 
-.unsubButton:hover {
-  background-color: #e9ecef;
-  border-color: #ccc;
+.dangerBtn {
+    background: #dc2626;
+    color: white;
+}
+.dangerBtn:hover {
+    background: #b91c1c;
 }
 
-.photos {
-  margin-top: 20px;
-  padding: 20px;
-  background-color: #f8f9fa;
-  border-radius: 10px;
+.photosSection {
+    margin-top: 1rem;
 }
 
-.loading {
-  text-align: center;
-  color: #666;
-  padding: 40px 0;
+.photoRequest {
+    margin-top: 1rem;
+}
+
+.infoText {
+    color: #6b7280;
+    margin: 0.5rem 0;
+}
+
+.loader {
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }

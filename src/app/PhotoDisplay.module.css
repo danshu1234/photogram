@@ -1,35 +1,84 @@
 .photoContainer {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-  }
-  
-  .photoImage {
-    width: 100%;
-    height: auto;
-    border-radius: 4px;
-    object-fit: cover;
-    cursor: pointer;
-  }
-  
-  .likeSection {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-  
-  .likeButton {
-    width: 24px;
-    height: 24px;
-    cursor: pointer;
-    transition: transform 0.2s;
-  }
-  
-  .likeButton:hover {
-    transform: scale(1.1);
-  }
-  
-  .likesCount {
-    font-size: 14px;
-    color: #555;
-  }
+  padding: 12px;
+}
+
+.date {
+  margin: 0 0 8px 0;
+  font-size: 0.8rem;
+  color: #7f8c8d;
+}
+
+.navWrapper {
+  position: relative;
+  padding-top: 100%; 
+  overflow: hidden;
+}
+
+.photoImage {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  cursor: pointer;
+}
+
+.likeSection {
+  display: flex;
+  align-items: center;
+  padding: 8px 0;
+  border-top: 1px solid #eee;
+  margin-top: 8px;
+}
+
+.likeButton {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  margin-right: 8px;
+}
+
+.likesCount {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #7f8c8d;
+  flex-grow: 1;
+}
+
+.zoomIcon {
+  width: 28px;
+  height: 28px;
+  cursor: pointer;
+  margin-left: 10px;
+  opacity: 0.7;
+}
+
+.commentsCount {
+  margin: 0 10px;
+  font-size: 1rem;
+  color: #7f8c8d;
+}
+
+.menuIcon {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  opacity: 0.7;
+}
+
+.menuBlock {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.actionBtn {
+  padding: 4px 8px;
+  background-color: #e74c3c;
+  color: white;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 0.7rem;
+}

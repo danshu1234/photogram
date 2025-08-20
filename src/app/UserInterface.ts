@@ -2,14 +2,12 @@ import Notif from "./NotifInterface"
 import Chat from "./Chat"
 
 interface UserInterface {
-    code: string,
+    code?: string,
     email: string,
+    password: string,
     name: string,
-    latitude: number | null,
-    longitude: number | null,
     permUsers: string[],
     open: boolean,
-    country: string,
     usersBan: string[],
     socket: string,
     notifs: Notif[],
@@ -17,7 +15,7 @@ interface UserInterface {
     reports: string[],
     avatar: string,
     visits: string[],
-    messages: Chat[],
+    messages?: Chat[],
     banMess: string[],
     permMess: string,
     birthday: string,

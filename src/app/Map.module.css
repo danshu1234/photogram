@@ -1,0 +1,23 @@
+.mapWrapper {
+  max-width: 900px;
+  margin: 20px auto;
+  padding: 10px;
+  background-color: #fefefe;
+  border-radius: 10px;
+  box-shadow: 0 0 12px rgb(0 0 0 / 0.1);
+  font-family: Arial, sans-serif;
+}
+
+.backBtn {
+  color: #007bff;
+  cursor: pointer;
+  font-weight: 600;
+  margin-bottom: 10px;
+  user-select: none;
+  transition: color 0.3s ease;
+}
+
+.backBtn:hover {
+  color: #0056b3;
+  text-decoration: underline;
+}

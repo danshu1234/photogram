@@ -1,0 +1,12 @@
+.exitAllButton {
+  color: #e74c3c;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: color 0.3s;
+  margin-bottom: 10px;
+}
+
+.exitAllButton:hover {
+  color: #c0392b;
+  text-decoration: underline;
+}

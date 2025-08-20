@@ -9,15 +9,7 @@ import ExitBtn from "../Exit";
 import Avatar from "../Avatar";
 import Photo from "../PhotoInterface";
 import List from "../List";
-import getUserEmail from "../getUserEmail"
 import useNotif from "../useNotif"
-import sortPhotos from "../SortPhotos";
-
-async function getUserPhoto(email: string): Promise<Photo[]> {
-    const myPhotosResponse = await fetch(`http://localhost:4000/photos/get/user/photos/${email}`);
-    const resultUserPhotos = await myPhotosResponse.json();
-    return resultUserPhotos;
-}
 
 export default function MyPage() {
 
@@ -27,6 +19,7 @@ export default function MyPage() {
 
   const [width, setWidth] = useState <number> (30)
 
+  const [visitsCount, setVisitsCount] = useState <number> (0)
   const [openAcc, setOpenAcc] = useState <boolean> (false) 
   const [subs, setSubs] = useState <string[]> ([])
   const [isModal, setIsModal] = useState<boolean>(false)
@@ -64,9 +57,9 @@ export default function MyPage() {
   }
 
   if (openAcc) {
-    open = <img src='https://upload.wikimedia.org/wikipedia/commons/thumb/a/ab/OOjs_UI_icon_unLock-ltr.svg/60px-OOjs_UI_icon_unLock-ltr.svg.png' width={40} height={40} onClick={closeAcc}/>
+    open = <img src='/images/OOjs_UI_icon_unLock-ltr.svg.png' width={40} height={40} onClick={closeAcc}/>
   } else {
-    open = <img src='https://upload.wikimedia.org/wikipedia/commons/thumb/3/31/OOjs_UI_icon_secure-link.svg/640px-OOjs_UI_icon_secure-link.svg.png' width={40} height={40} onClick={openAccaunt}/>
+    open = <img src='/images/OOjs_UI_icon_secure-link.svg.png' width={40} height={40} onClick={openAccaunt}/>
   }
 
   let exitBtnAndFeedback;
@@ -77,7 +70,7 @@ export default function MyPage() {
 
   if (width === 200) {
     exitBtnAndFeedback = <div>
-      <ExitBtn trueEmail={trueEmail}/>
+      <ExitBtn email={email}/>
       <p onClick={() => {
         localStorage.removeItem('photogram-enter')
         window.location.reload()
@@ -94,34 +87,29 @@ export default function MyPage() {
   }
 
   useEffect(() => {
-    if (email !== '') {
-      const fetchPhotos = async () => {
-        try {
-          const userEmail = await getUserEmail()
-          if (userEmail) {
-            const resultMyPhotos = await getUserPhoto(userEmail);
-            if (resultMyPhotos.length !== 0) {
-            const resultArr = resultMyPhotos.map(el => {
-              return {
-                ...el,
-                photoIndex: 0,
-                bonuce: false,
-              }
-            }).reverse()
-            const resultSortedArr = sortPhotos(resultArr)
-            setMyPhotos(resultSortedArr);
-          } else {
-            setMyPhotos([])
-          }
-          }   
-        } catch (error) {
-          console.error('Ошибка при получении фото', error);
+    if (email !== '' && trueEmail !== '') {
+      const trueParamEmail = trueEmail
+      const getMyPhotos = async () => {
+        const getPhotos = await fetch(`http://localhost:4000/photos/get/user/photos`, {
+        method: "POST",
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, trueParamEmail })
+      })
+      const resultPhotos = await getPhotos.json()
+      setMyPhotos(resultPhotos.photos.map((el: any) => {
+        return {
+          ...el,
+          photoIndex: 0,
+          bonuce: false,
         }
-      };
-      
-      fetchPhotos();
+      }))
+      }
+      getMyPhotos()
     }
-  }, [email]);
+  }, [email, trueEmail]);
+
 
   useEffect(() => {
     if (email !== '') {
@@ -131,7 +119,14 @@ export default function MyPage() {
         const result = resultSubs.subscribes.slice(1, resultSubs.length)
         setSubs(result)
       }
+
+      const getMyVisits = async () => {
+        const myVisits = await fetch(`http://localhost:4000/users-controller/get/visits/${email}`)
+        const resultVisits = await myVisits.json()
+        setVisitsCount(resultVisits)
+      }
       getMySubs()
+      getMyVisits()
     }
   }, [email])
   
@@ -150,14 +145,21 @@ export default function MyPage() {
     <div className={styles.container}>
       <header className={styles.header}>
         {showAva}
-        {trueEmail}
+        <span>{trueEmail}</span>
+        <div className={styles.visitsCount}>
+          <img src='/images/118191.png' width={20} height={20}/>
+          <span>{visitsCount}</span>
+        </div>
         <h1 className={styles.title}>Мои фото</h1>
-        <h3 style={{cursor: 'pointer'}} onClick={() => {
-          if (subs.length !== 0) {
-            window.location.href='/mysubs'
-          }
-        }}>Мои подписчики: <span style={{color: 'green'}}>{subs.length}</span></h3>
-        {open}
+        <h3 
+          className={styles.subsLink} 
+          onClick={() => subs.length !== 0 && (window.location.href='/mysubs')}
+        >
+          Мои подписчики: <span className={styles.subsCount}>{subs.length}</span>
+        </h3>
+        <div className={styles.lockButton}>
+          {open}
+        </div>
         <button 
           className={styles.addButton}
           onClick={() => setIsModal(true)}
@@ -166,11 +168,26 @@ export default function MyPage() {
         </button>
       </header>
       
-      {isModal && <CreatePhoto setIsModal={setIsModal} />}
+      {isModal && <CreatePhoto setIsModal={setIsModal} email={email}/>}
       <div className={styles.photosContainer}>
         {photosList}
       </div>
-      <div style={{position: 'absolute', right: 0, bottom: 50, backgroundColor: 'turquoise', height: 100, width: width, transitionDuration: '0.7s'}} onMouseEnter={() => setWidth(200)} onMouseLeave={() => setWidth(20)}>{exitBtnAndFeedback}</div>
+      <div 
+        className={`${styles.exitPanel}`} 
+        onMouseEnter={() => setWidth(200)} 
+        onMouseLeave={() => setWidth(20)}
+      >
+        <ExitBtn email={email}/>
+        <span 
+          className={styles.exitButton} 
+          onClick={() => {
+            localStorage.removeItem('photogram-enter')
+            window.location.reload()
+          }}
+        >
+          Выйти
+        </span>
+      </div>
     </div>
   );
 }

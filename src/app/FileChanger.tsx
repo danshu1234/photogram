@@ -3,9 +3,9 @@
 import { ChangeEvent, FC } from "react"
 
 interface FileChangerProps{
-    newAva: string,
-    setNewAva: Function,
-    email: string,
+    newAva: string;
+    setNewAva: Function;
+    email: string;
 }
 
 const FileChanger: FC <FileChangerProps> = (props) => {
@@ -16,7 +16,7 @@ const FileChanger: FC <FileChangerProps> = (props) => {
             const reader = new FileReader();
             reader.onload = async (event) => {
                 const targetEmail=props.email
-                const newAva=event.target?.result as string
+                const newAva = event.target?.result as string
                 await fetch('http://localhost:4000/users-controller/new/avatar', {
                 method: "PATCH",
                 headers: { 'Content-Type': 'application/json' },

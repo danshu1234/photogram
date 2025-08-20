@@ -12,7 +12,7 @@ const useGetEmail = () => {
     useEffect(() => {
         const myEmail = localStorage.getItem('photogram-enter')
         if (myEmail) {
-            setEmail(JSON.parse(myEmail))
+            setEmail(myEmail)
         }
     }, [])
 

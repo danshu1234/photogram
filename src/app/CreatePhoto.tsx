@@ -1,24 +1,21 @@
 import { ChangeEvent, FC, useState } from "react";
 import useGetEmail from "./useGetEmail";
 import './CreatePhoto.css'; 
-import getUserEmail from "./getUserEmail";
 
 interface CreateProps {
     setIsModal: (value: boolean) => void;
+    email: string;
 }
 
-const CreatePhoto: FC<CreateProps> = ({ setIsModal }) => {
+const CreatePhoto: FC<CreateProps> = (props) => {
     const { email } = useGetEmail();
-    const [imageBase64, setImageBase64] = useState<string[]>([]);
-    const [descript, setDescript] = useState<string>('');
+    const [photo, setPhoto] = useState <{file: File, base64: string} | null> (null)
 
     let photosShow;
 
-    if (imageBase64.length !== 0) {
+    if (photo !== null) {
         photosShow = <div>
-            <ul>
-                {imageBase64.map((item, index) => <li key={index}><img src={item} style={{width: 100, height: 100}}/></li>)}
-            </ul>
+            <img src={photo.base64} width={150} height={150}/>
         </div>
     }
 
@@ -27,14 +24,14 @@ const CreatePhoto: FC<CreateProps> = ({ setIsModal }) => {
         if (file) {
             const reader = new FileReader();
             reader.onload = (event) => {
-                setImageBase64([...imageBase64, event.target?.result as string]);
+                setPhoto({file: file, base64: event.target?.result as string})
             };
             reader.readAsDataURL(file);
         }
     };
 
     const createNewPhoto = async () => {
-        if (imageBase64.length === 0 || !email) return;
+        if (photo === null || !email) return;
 
         const date = new Date(); 
         const day = date.getDate()
@@ -42,26 +39,31 @@ const CreatePhoto: FC<CreateProps> = ({ setIsModal }) => {
         const year = date.getFullYear();
         const result = `${day}.${month}.${year}`;
 
-        const resultEmail = await getUserEmail()
+        const resultEmail = props.email
 
-        await fetch('http://localhost:4000/photos/create', {
+        const formData = new FormData()
+
+        if (photo !== null && resultEmail) {
+            formData.append('photo', photo.file)
+            formData.append('id', Date.now().toString())
+            formData.append('date', result)
+            formData.append('email', resultEmail)
+        }
+
+        const createPhoto = await fetch('http://localhost:4000/photos/create', {
             method: "POST",
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                id: Date.now().toString(),
-                resultEmail,
-                img: imageBase64,
-                date: result,
-                descript: descript, 
-            })
+            body: formData,
         });
-        setIsModal(false);
-        window.location.reload();
+
+        if (createPhoto.ok) {
+            props.setIsModal(false);
+            window.location.reload();
+        }
     };
 
     return (
         <div className="container">
-            <button className="close-button" onClick={() => setIsModal(false)}>Закрыть</button>
+            <button className="close-button" onClick={() => props.setIsModal(false)}>Закрыть</button>
             
             {photosShow}
 
@@ -75,13 +77,7 @@ const CreatePhoto: FC<CreateProps> = ({ setIsModal }) => {
                 />
             </label>
 
-            <textarea 
-                placeholder="Описание" 
-                onChange={(event: ChangeEvent<HTMLTextAreaElement>) => setDescript(event.target.value)}
-                className="description-textarea"
-            />
-
-            <button className="publish-button" onClick={createNewPhoto} disabled={!imageBase64}>
+            <button className="publish-button" onClick={createNewPhoto} disabled={!photo}>
                 Опубликовать
             </button>
         </div>

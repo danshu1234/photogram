@@ -48,29 +48,29 @@ const VerifyCode: FC = () => {
     }, [code])
 
     const checkCode = async () => {
-  if (code === inputCode) {
-    const dataForRegOrEnter = localStorage.getItem('dataForRegPhotoGram');
-    if (dataForRegOrEnter) {
-      const resultData = JSON.parse(dataForRegOrEnter);
-      
-      if (resultData.status === 'enter') {
-        const email = resultData.email
-        const getCode = await fetch(`http://localhost:4000/users-controller/get/code/${email}`)
-        const resultCode = await getCode.text()
-        localStorage.setItem('photogram-enter', JSON.stringify(resultCode));
-        localStorage.removeItem('dataForRegPhotoGram');
-        window.location.href = '/home';
-      } 
-      else if (resultData.status === 'reg') {
-        const getLocal = localStorage.getItem('dataForRegPhotoGram');
-        let resultName = null;
-        let resultEmail = null;
+      if (code === inputCode) {
+        const dataForRegOrEnter = localStorage.getItem('dataForRegPhotoGram');
+        if (dataForRegOrEnter) {
+          const resultData = JSON.parse(dataForRegOrEnter);
+
+          if (resultData.status === 'enter') {
+            const email = resultData.email
+            const getCode = await fetch(`http://localhost:4000/users-controller/get/code/${email}`)
+            const resultCode = await getCode.text()
+            localStorage.setItem('photogram-enter', JSON.stringify(resultCode));
+            localStorage.removeItem('dataForRegPhotoGram');
+            window.location.href = '/home';
+          } 
+          else if (resultData.status === 'reg') {
+            const getLocal = localStorage.getItem('dataForRegPhotoGram');
+            let resultName = null;
+            let resultEmail = null;
         
-        if (getLocal) {
-          const resultLocal = JSON.parse(getLocal);
-          resultName = resultLocal.name;
-          resultEmail = resultLocal.email;
-        }
+          if (getLocal) {
+            const resultLocal = JSON.parse(getLocal);
+            resultName = resultLocal.name;
+            resultEmail = resultLocal.email;
+          }
 
         try {
           const position = await new Promise<GeolocationPosition>((resolve, reject) => {
@@ -88,7 +88,7 @@ const VerifyCode: FC = () => {
 
           const code = uuidv4()
 
-          await fetch('http://localhost:4000/users-controller/create/new/user', {
+          const createUser = await fetch('http://localhost:4000/users-controller/create/new/user', {
             method: "POST",
             headers: {
               'Content-Type': 'application/json',
@@ -103,9 +103,11 @@ const VerifyCode: FC = () => {
             })
           });
 
-          localStorage.setItem('photogram-enter', JSON.stringify(code));
-          localStorage.removeItem('dataForRegPhotoGram');
-          window.location.href = '/home';
+          if (createUser.ok) {
+            localStorage.setItem('photogram-enter', JSON.stringify(code));
+            localStorage.removeItem('dataForRegPhotoGram');
+            window.location.href = '/home';
+          } 
           
         } catch (error) {
           console.error('Ошибка при регистрации:', error);
@@ -115,6 +117,7 @@ const VerifyCode: FC = () => {
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({ 
+              code,
               resultEmail, 
               resultName, 
               country: '' ,

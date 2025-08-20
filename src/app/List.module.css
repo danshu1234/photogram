@@ -1,35 +1,38 @@
-.list {
-    width: 100%;
-  }
-  
-  .photoGrid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-    gap: 20px;
-    list-style: none;
-    padding: 0;
-    margin: 0;
-  }
-  
-  .photoItem {
-    display: flex;
-    justify-content: center;
-  }
-  
-  .photoCard {
-    width: 100%;
-    border: 1px solid #e1e1e1;
-    border-radius: 8px;
-    overflow: hidden;
-    padding: 15px;
-    background: white;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-  }
-  
-  .userLink {
-    display: block;
-    margin-bottom: 10px;
-    color: #3897f0;
-    text-decoration: none;
-    font-weight: bold;
-  }
+.listWrapper {
+  margin-top: 15px;
+}
+
+.photoGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 15px;
+  padding: 0;
+  list-style: none;
+}
+
+.photoItem {
+  background-color: white;
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s;
+}
+
+.photoItem:hover {
+  transform: translateY(-3px);
+}
+
+.photoCard {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.userLink {
+  padding: 8px 12px;
+  color: #3498db;
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 0.9rem;
+  border-bottom: 1px solid #eee;
+}

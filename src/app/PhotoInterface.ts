@@ -3,7 +3,7 @@ import Comment from "./CommentInterface"
 interface Photo{
     photoIndex: number,
     id: string,
-    url: string[],
+    url: string,
     likes: string[],
     email: string,
     descript: string,
