@@ -43,7 +43,7 @@ const SendBtn: FC <SendBtnProps> = (props) => {
                         if (props.messages) {
                             if (editMess === '') {
                                 const { formattedDate, messId } = getMessIdAndDate() 
-                                const newMessages = [...props.messages, {user: props.trueEmail, text: inputMess, photos: imageBase64, date: formattedDate, id: messId, ans: props.answMess, edit: false, typeMess: 'text', per: ''}]
+                                const newMessages = [...props.messages, {user: props.trueEmail, text: inputMess, photos: imageBase64.map(el => el.base64), date: formattedDate, id: messId, ans: props.answMess, edit: false, typeMess: 'text', per: ''}]
                                 const formData = new FormData()
                                 for (let item of props.imageBase64) {
                                     formData.append('photo', item.file)
@@ -91,17 +91,22 @@ const SendBtn: FC <SendBtnProps> = (props) => {
                         }
                     } else {
                         if (props.messages) {
-                            const typeMessage = 'text'
-                            const per = ''
+                            const { formattedDate, messId } = getMessIdAndDate()
+                            const formData = new FormData()
+                            formData.append('user', props.trueEmail)
+                            formData.append('text', inputMess)
+                            formData.append('date', formattedDate)
+                            formData.append('id', messId)
+                            formData.append('ans', props.answMess)
+                            formData.append('code', email)
+                            formData.append('trueParamEmail', trueParamEmail)
+                            formData.append('per', '')
+                            formData.append('type', 'text')
                             await fetch('http://localhost:4000/users-controller/new/chat', {
                                 method: "PATCH",
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                },
-                                body: JSON.stringify({ inputMess, email, trueParamEmail, imageBase64, typeMessage, per })
+                                body: formData,
                             })
-                            const { formattedDate, messId } = getMessIdAndDate()
-                            props.setMessages([{user: props.trueEmail, text: inputMess, photos: imageBase64, date: formattedDate, id: messId, ans: '', edit: false, typeMess: 'text', per: ''}])
+                            props.setMessages([{user: props.trueEmail, text: inputMess, photos: imageBase64.map(el => el.base64), date: formattedDate, id: messId, ans: '', edit: false, typeMess: 'text', per: ''}])
                         }
                     }
                     props.setInputMess('')

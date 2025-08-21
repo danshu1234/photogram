@@ -97,28 +97,37 @@ const UserChat: FC = () => {
                     const { formattedDate, messId } = getMessIdAndDate()
                     if (messages) { 
                         if (messages.length !== 0) {
-                            const newMessages = [...messages, {user: trueEmail, text: item, photos: [], date: formattedDate, id: messId, ans: answMess, edit: false, typeMess: 'gif', per: ''}]
+                            const formData = new FormData()
+                            formData.append('user', trueEmail)
+                            formData.append('text', item)
+                            formData.append('date', formattedDate)
+                            formData.append('id', messId)
+                            formData.append('ans', answMess)
+                            formData.append('code', email)
+                            formData.append('trueParamEmail', trueParamEmail)
+                            formData.append('per', '')
+                            formData.append('type', 'gif')
                             await fetch('http://localhost:4000/users-controller/new/mess', {
                                 method: "PATCH",
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                },
-                                body: JSON.stringify({ newMessages, email, trueParamEmail, socketId })
+                                body: formData,
                             })
                             setMessages([...messages, {user: trueEmail, text: item, photos: [], date: formattedDate, id: messId, ans: answMess, edit: false, typeMess: 'gif', per: '', controls: false, pin: false}])
                             setGifsArr([])
                             setAnswMess('')
                         } else {
-                            const imageBase64: any = []
-                            const inputMess = item
-                            const typeMessage = 'gif'
-                            const per = ''
+                            const formData = new FormData()
+                            formData.append('user', trueEmail)
+                            formData.append('text', item)
+                            formData.append('date', formattedDate)
+                            formData.append('id', messId)
+                            formData.append('ans', answMess)
+                            formData.append('code', email)
+                            formData.append('trueParamEmail', trueParamEmail)
+                            formData.append('per', '')
+                            formData.append('type', 'gif')
                             await fetch('http://localhost:4000/users-controller/new/chat', {
                                 method: "PATCH",
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                },
-                                body: JSON.stringify({ email, trueParamEmail, imageBase64, inputMess, typeMessage, per })
+                                body: formData,
                             })
                             setMessages([{user: trueEmail, text: item, photos: [], date: formattedDate, id: messId, ans: answMess, edit: false, typeMess: 'gif', per: '', controls: false, pin: false}])
                             setGifsArr([])
@@ -294,28 +303,39 @@ const UserChat: FC = () => {
                     const { formattedDate, messId } = getMessIdAndDate()
                 if (messages) {
                     if (messages.length !== 0) {
-                        const newMessages = [...messages, {user: trueEmail, text: base64String, photos: imageBase64, date: formattedDate, id: messId, ans: answMess, edit: false, typeMess: 'voice', per: ''}]
+                        const formData = new FormData()
+                        formData.append('user', trueEmail)
+                        formData.append('text', base64String)
+                        formData.append('date', formattedDate)
+                        formData.append('id', messId)
+                        formData.append('ans', answMess)
+                        formData.append('code', email)
+                        formData.append('trueParamEmail', trueParamEmail)
+                        formData.append('per', '')
+                        formData.append('type', 'voice')
                         await fetch('http://localhost:4000/users-controller/new/mess', {
                             method: "PATCH",
-                            headers: {
-                                'Content-Type': 'application/json',
-                            },
-                            body: JSON.stringify({ newMessages, email, trueParamEmail, socketId })
+                            body: formData,
                         })
                         setMessages([...messages, {user: trueEmail, text: base64String, photos: [], date: formattedDate, id: messId, ans: answMess, edit: false, typeMess: 'voice', controls: false, per: '', pin: false}])
                         setAnswMess('')
                     } else {
-                        const inputMess = base64String
-                        const typeMessage = 'voice'
-                        console.log('New chat')
+                        const formData = new FormData()
+                        formData.append('user', trueEmail)
+                        formData.append('text', base64String)
+                        formData.append('date', formattedDate)
+                        formData.append('id', messId)
+                        formData.append('ans', answMess)
+                        formData.append('code', email)
+                        formData.append('trueParamEmail', trueParamEmail)
+                        formData.append('per', '')
+                        formData.append('type', 'voice')
                         await fetch('http://localhost:4000/users-controller/new/chat', {
                             method: "PATCH",
-                            headers: {
-                                'Content-Type': 'application/json',
-                            },
-                            body: JSON.stringify({ inputMess, email, trueParamEmail, imageBase64, typeMessage })
+                            body: formData,
                         })
-                        const { formattedDate, messId } = getMessIdAndDate()
+                        setMessages([...messages, {user: trueEmail, text: base64String, photos: [], date: formattedDate, id: messId, ans: answMess, edit: false, typeMess: 'voice', controls: false, per: '', pin: false}])
+                        setAnswMess('')
                         setMessages([{user: trueEmail, text: base64String, photos: [], date: formattedDate, id: messId, ans: '', edit: false, typeMess: 'voice', controls: false, per: '', pin: false}])
                     }                  
                 }
@@ -354,7 +374,7 @@ const UserChat: FC = () => {
                 return prev
             })
             const user = message.user
-            setTrueEmail(prev => {
+            setEmail(prev => {
                 let email = prev
                 if (document.visibilityState !== 'visible') {
                     getUserChats(email, user)
