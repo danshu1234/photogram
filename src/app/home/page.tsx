@@ -320,7 +320,6 @@ export default function Home() {
     <div className={styles.home}>
       <header className={styles.header}>
         <img src='/images/Circle-icons-chat.svg.png' width={50} height={50} className={styles.messagesIcon} onClick={() => window.location.href='/chats'}/>
-        {messCount > 0 ? <p className={styles.messCount}>{messCount}</p> : null}
         <h1 className={styles.logo} onClick={() => window.location.reload()}>Photogram</h1>
         <FeedbackBtn/>
         <div className={styles.controls}>

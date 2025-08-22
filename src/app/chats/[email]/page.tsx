@@ -193,7 +193,7 @@ const UserChat: FC = () => {
         })
     }
 
-     const getMessages = async () => {
+    const getMessages = async () => {
         const getMess = await fetch(`http://localhost:4000/users-controller/get/mess`, {
             method: "POST",
             headers: {

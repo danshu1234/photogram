@@ -26,7 +26,10 @@ const MessDisplay: FC <MessDisplayProps> = (props) => {
     let imgList;
 
     if (imgArr.length !== 0) {
-        imgList = <ImgList imgArr={imgArr} startIndex={startIndex} setStartIndex={setStartIndex}/>
+        imgList = <div>
+            <p onClick={() => setImgArr([])}>X</p>
+            <ImgList imgArr={imgArr} startIndex={startIndex} setStartIndex={setStartIndex}/>
+        </div>
     }
 
     const openMessControls = (messId: string) => {
