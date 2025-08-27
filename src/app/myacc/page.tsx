@@ -12,18 +12,15 @@ import List from "../List";
 import useNotif from "../useNotif"
 
 export default function MyPage() {
-
   const {} = useNotif()
   const {} = useCheckReg();
   const { email, trueEmail } = useGetEmail();
 
-  const [width, setWidth] = useState <number> (30)
-
-  const [visitsCount, setVisitsCount] = useState <number> (0)
-  const [openAcc, setOpenAcc] = useState <boolean> (false) 
-  const [subs, setSubs] = useState <string[]> ([])
+  const [openAcc, setOpenAcc] = useState<boolean>(false) 
+  const [subs, setSubs] = useState<string[]>([])
   const [isModal, setIsModal] = useState<boolean>(false)
   const [myPhotos, setMyPhotos] = useState<Photo[] | null>(null)
+
   let photosList;
   let showAva;
   let open;
@@ -57,25 +54,25 @@ export default function MyPage() {
   }
 
   if (openAcc) {
-    open = <img src='/images/OOjs_UI_icon_unLock-ltr.svg.png' width={40} height={40} onClick={closeAcc}/>
+    open = <img 
+      src='/images/OOjs_UI_icon_unLock-ltr.svg.png' 
+      width={30} 
+      height={30} 
+      onClick={closeAcc}
+      alt="Открытый аккаунт"
+    />
   } else {
-    open = <img src='/images/OOjs_UI_icon_secure-link.svg.png' width={40} height={40} onClick={openAccaunt}/>
+    open = <img 
+      src='/images/OOjs_UI_icon_secure-link.svg.png' 
+      width={30} 
+      height={30} 
+      onClick={openAccaunt}
+      alt="Закрытый аккаунт"
+    />
   }
-
-  let exitBtnAndFeedback;
 
   if (email !== '') {
     showAva = <Avatar email={email} type='edit'/>
-  }
-
-  if (width === 200) {
-    exitBtnAndFeedback = <div>
-      <ExitBtn email={email}/>
-      <p onClick={() => {
-        localStorage.removeItem('photogram-enter')
-        window.location.reload()
-      }}>Выйти</p>
-    </div>
   }
 
   if (myPhotos !== null && myPhotos.length !== 0 && trueEmail !== '') {
@@ -91,25 +88,24 @@ export default function MyPage() {
       const trueParamEmail = trueEmail
       const getMyPhotos = async () => {
         const getPhotos = await fetch(`http://localhost:4000/photos/get/user/photos`, {
-        method: "POST",
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, trueParamEmail })
-      })
-      const resultPhotos = await getPhotos.json()
-      setMyPhotos(resultPhotos.photos.map((el: any) => {
-        return {
-          ...el,
-          photoIndex: 0,
-          bonuce: false,
-        }
-      }))
+          method: "POST",
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ email, trueParamEmail })
+        })
+        const resultPhotos = await getPhotos.json()
+        setMyPhotos(resultPhotos.photos.map((el: any) => {
+          return {
+            ...el,
+            photoIndex: 0,
+            bonuce: false,
+          }
+        }))
       }
       getMyPhotos()
     }
   }, [email, trueEmail]);
-
 
   useEffect(() => {
     if (email !== '') {
@@ -119,14 +115,7 @@ export default function MyPage() {
         const result = resultSubs.subscribes.slice(1, resultSubs.length)
         setSubs(result)
       }
-
-      const getMyVisits = async () => {
-        const myVisits = await fetch(`http://localhost:4000/users-controller/get/visits/${email}`)
-        const resultVisits = await myVisits.json()
-        setVisitsCount(resultVisits)
-      }
       getMySubs()
-      getMyVisits()
     }
   }, [email])
   
@@ -145,11 +134,7 @@ export default function MyPage() {
     <div className={styles.container}>
       <header className={styles.header}>
         {showAva}
-        <span>{trueEmail}</span>
-        <div className={styles.visitsCount}>
-          <img src='/images/118191.png' width={20} height={20}/>
-          <span>{visitsCount}</span>
-        </div>
+        <span className={styles.email}>{trueEmail}</span>
         <h1 className={styles.title}>Мои фото</h1>
         <h3 
           className={styles.subsLink} 
@@ -172,11 +157,7 @@ export default function MyPage() {
       <div className={styles.photosContainer}>
         {photosList}
       </div>
-      <div 
-        className={`${styles.exitPanel}`} 
-        onMouseEnter={() => setWidth(200)} 
-        onMouseLeave={() => setWidth(20)}
-      >
+      <div className={styles.exitPanel}>
         <ExitBtn email={email}/>
         <span 
           className={styles.exitButton} 

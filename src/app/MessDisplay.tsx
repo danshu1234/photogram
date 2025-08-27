@@ -5,6 +5,7 @@ import { Message } from "@/app/Chat"
 import ImgList from "./ImgList"
 import ShareBtn from "./ShareBtn"
 import { Element } from 'react-scroll'
+import "./MessDisplay.css"
 
 interface MessDisplayProps{
     messages: Message[] | null;
@@ -26,9 +27,11 @@ const MessDisplay: FC <MessDisplayProps> = (props) => {
     let imgList;
 
     if (imgArr.length !== 0) {
-        imgList = <div>
-            <p onClick={() => setImgArr([])}>X</p>
-            <ImgList imgArr={imgArr} startIndex={startIndex} setStartIndex={setStartIndex}/>
+        imgList = <div className="image-modal-overlay" onClick={() => setImgArr([])}>
+            <div className="image-modal-content" onClick={(e) => e.stopPropagation()}>
+                <button className="image-modal-close" onClick={() => setImgArr([])}>×</button>
+                <ImgList imgArr={imgArr} startIndex={startIndex} setStartIndex={setStartIndex}/>
+            </div>
         </div>
     }
 
@@ -53,153 +56,136 @@ const MessDisplay: FC <MessDisplayProps> = (props) => {
 
 
     return (
-        <div>
+        <div className="messages-display">
             {imgList}
-                {props.messages?.map((item, index) => {
-                    const email = props.email
-                    const trueParamEmail = props.trueParamEmail
-                    let dateShow;
-                    if (props.messages) {
-                        if (index === 0 || props.messages[index - 1].date !== item.date) {
-                        dateShow = <p>{item.date}</p>
-                    }
-                    }
+            {props.messages?.map((item, index) => {
+                const email = props.email
+                const trueParamEmail = props.trueParamEmail
+                let dateShow;
+                if (props.messages) {
+                    if (index === 0 || props.messages[index - 1].date !== item.date) {
+                    dateShow = <div className="message-date-divider">{item.date}</div>
+                }
+                }
 
-                    let showMess;
+                let showMess;
 
-                    if (item.typeMess === 'text') {
-                        showMess = <p>{item.text}</p>
-                    } else if (item.typeMess === 'voice') {
-                        showMess = <audio src={item.text} controls/>
-                    } else if (item.typeMess === 'gif') {
-                        showMess = <img src={item.text} width={100} height={100}/>
-                    } else if (item.typeMess === 'post') {
-                        showMess = <p style={{color: 'blue'}} onClick={() => window.location.href=`/showpost/${item.text}`}>Пересланный пост</p>
-                    }
+                if (item.typeMess === 'text') {
+                    showMess = <p className="message-text">{item.text}</p>
+                } else if (item.typeMess === 'voice') {
+                    showMess = <audio src={item.text} controls className="voice-message"/>
+                } else if (item.typeMess === 'gif') {
+                    showMess = <img src={item.text} className="gif-message"/>
+                } else if (item.typeMess === 'post') {
+                    showMess = <p className="post-message" onClick={() => window.location.href=`/showpost/${item.text}`}>Пересланный пост</p>
+                }
 
-                    if (item.user === email) {
-                        return <Element name={item.id} key={index} style={{marginLeft: 600, marginTop: 20}} onClick={(e) => {
-                            if (item.controls === false) {
-                                openMessControls(item.id)
-                            } else {
-                                e.stopPropagation()
-                                if (props.messages) {
-                                    const newMessages = props.messages.map(el => {
-                                    return {
-                                        ...el,
-                                        controls: false,
-                                    }
-                                })
-                                props.setMessages(newMessages)
+                const messageClass = item.user === email ? "message my-message" : "message their-message"
+
+                return (
+                    <Element name={item.id} key={index} className={messageClass} onClick={(e) => {
+                        if (item.controls === false) {
+                            openMessControls(item.id)
+                        } else {
+                            e.stopPropagation()
+                            if (props.messages) {
+                                const newMessages = props.messages.map(el => {
+                                return {
+                                    ...el,
+                                    controls: false,
                                 }
+                            })
+                            props.setMessages(newMessages)
                             }
-                        }}>
-                            <div>
-                                {dateShow}
-                                {item.per !== '' ? <p>Переслано от {item.per}</p> : null}
-                                <p>{item.ans}</p>
+                        }
+                    }}>
+                        <div className="message-content">
+                            {dateShow}
+                            {item.per !== '' && <div className="forwarded-from">Переслано от {item.per}</div>}
+                            {item.ans && <div className="reply-preview">{item.ans}</div>}
+                            
+                            <div className="message-body">
                                 {showMess}
-                                {item.edit ? <p style={{scale: '70%'}}>Ред.</p> : null}
-                                {item.photos.length !== 0 ? <ul style={{listStyle: 'none'}}>
-                                {item.photos.map((el, index) => 
-                                <li key={index}>
-                                    {el.includes('image') ? <img src={el} width={150} height={150} onClick={() => {
-                                    setImgArr(item.photos)
-                                    setStartIndex(index)
-                                    }}/> : <video src={el} width={200} height={200} controls/>}
-                                </li>
-                                )}
-                                </ul> : null}
-                                {item.controls ? <div><img src='https://avatars.mds.yandex.net/i?id=a6fcfdf2bd0a086ba7c6f917c6c7f317f1190054-10703429-images-thumbs&n=13' width={20} height={20} onClick={async() => {
-                                    const messId = item.id
-                                    const deleteMess = await fetch('http://localhost:4000/users-controller/delete/mess', {
-                                        method: "PATCH",
-                                        headers: {
-                                            'Content-Type': 'application/json',
-                                        },
-                                        body: JSON.stringify({ email, trueParamEmail, index, messId })
-                                    })
-                                    const resultMess = await deleteMess.json()
-                                    props.setMessages(resultMess)
-                                }}/>
-                                <button onClick={() => {
-                                    if (item.typeMess === 'text') {
-                                        if (item.text !== '') {
-                                            props.setAnswMess(item.text)
-                                        } else {
-                                            props.setAnswMess('Фото')
-                                        }
-                                    } else if (item.typeMess === 'voice') {
-                                        props.setAnswMess('Голосовое сообщение')
-                                    } else if (item.typeMess === 'gif') {
-                                        props.setAnswMess('GIF')
-                                    }
-                                }}>Ответить</button>
-                                {(item.typeMess === 'text' && item.text !== '') ? <button onClick={() => {
-                                    props.setEditMess(item.id)
-                                    props.setInputMess(item.text)
-                                }}>Редактировать</button> : null}
-                                <ShareBtn text={item.text} photos={item.photos} date={item.date} id={item.id} typeMess={item.typeMess} per={item.per} email={props.email} user={item.user}/>
-                                {item.typeMess === 'text' ? <button onClick={async() => {
-                                    navigator.clipboard.writeText(item.text)
-                                    props.setSucCopy(true)
-                                }}>Копировать</button> : null}
-                                </div> : null}
+                                {item.edit && <span className="edited-badge">Ред.</span>}
                             </div>
-                        </Element>
-                    } else {
-                        return <Element name={item.id} key={index} style={{marginTop: 20}} onClick={(e) => {
-                            if (item.controls === false) {
-                                openMessControls(item.id)
-                            } else {
-                                e.stopPropagation()
-                                if (props.messages) {
-                                    const newMessages = props.messages.map(el => {
-                                    return {
-                                        ...el,
-                                        controls: false,
-                                    }
-                                })
-                                props.setMessages(newMessages)
-                                }
-                            }
-                        }}>
-                            <div>
-                                {dateShow}
-                                {item.per !== '' ? <p>Переслано от {item.per}</p> : null}
-                                <p>{item.ans}</p>
-                                {showMess}
-                                {item.edit ? <p style={{scale: '70%'}}>Ред.</p> : null}
-                                {item.photos.length !== 0 ? <ul style={{listStyle: 'none'}}>
-                                    {item.photos.map((el, index) => <li key={index}><img src={el} width={150} height={150} onClick={() => {
-                                        setImgArr(item.photos)
-                                        setStartIndex(index)
-                                    }}/></li>)}
-                                </ul> : null}
-                                {item.controls ? <div>
-                                    <ShareBtn text={item.text} photos={item.photos} date={item.date} id={item.id} typeMess={item.typeMess} per={item.per} email={props.email} user={item.user}/>
-                                    <button onClick={() => {
-                                    if (item.typeMess === 'text') {
-                                        if (item.text !== '') {
-                                            props.setAnswMess(item.text)
-                                        } else {
-                                            props.setAnswMess('Фото')
+
+                            {item.photos.length !== 0 && (
+                                <div className="message-photos">
+                                    {item.photos.map((el, index) => (
+                                        <div key={index} className="photo-thumbnail">
+                                            {el.includes('image') ? (
+                                                <img src={el} onClick={() => {
+                                                    setImgArr(item.photos)
+                                                    setStartIndex(index)
+                                                }}/>
+                                            ) : (
+                                                <video src={el} controls/>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+
+                            {item.controls && (
+                                <div className="message-controls">
+                                    {item.user === email && (
+                                        <button className="control-btn delete-btn" onClick={async() => {
+                                            const messId = item.id
+                                            const deleteMess = await fetch('http://localhost:4000/users-controller/delete/mess', {
+                                                method: "PATCH",
+                                                headers: {
+                                                    'Content-Type': 'application/json',
+                                                },
+                                                body: JSON.stringify({ email, trueParamEmail, index, messId })
+                                            })
+                                            const resultMess = await deleteMess.json()
+                                            props.setMessages(resultMess)
+                                        }}>
+                                            🗑️
+                                        </button>
+                                    )}
+                                    
+                                    <button className="control-btn reply-btn" onClick={() => {
+                                        if (item.typeMess === 'text') {
+                                            if (item.text !== '') {
+                                                props.setAnswMess(item.text)
+                                            } else {
+                                                props.setAnswMess('Фото')
+                                            }
+                                        } else if (item.typeMess === 'voice') {
+                                            props.setAnswMess('Голосовое сообщение')
+                                        } else if (item.typeMess === 'gif') {
+                                            props.setAnswMess('GIF')
                                         }
-                                    } else if (item.typeMess === 'voice') {
-                                        props.setAnswMess('Голосовое сообщение')
-                                    } else if (item.typeMess === 'gif') {
-                                        props.setAnswMess('GIF')
-                                    }
-                                }}>Ответить</button>
-                                {item.typeMess === 'text' ? <button onClick={async() => {
-                                    navigator.clipboard.writeText(item.text)
-                                    props.setSucCopy(true)
-                                }}>Копировать</button> : null}
-                                </div> : null}
-                            </div>
-                        </Element>
-                    }
-                })}
+                                    }}>
+                                        ↩️
+                                    </button>
+
+                                    {item.user === email && item.typeMess === 'text' && item.text !== '' && (
+                                        <button className="control-btn edit-btn" onClick={() => {
+                                            props.setEditMess(item.id)
+                                            props.setInputMess(item.text)
+                                        }}>
+                                            ✏️
+                                        </button>
+                                    )}
+
+                                    {item.photos.length === 0 ? <ShareBtn text={item.text} photos={item.photos} date={item.date} id={item.id} typeMess={item.typeMess} per={item.per} email={props.email} user={item.user}/> : null}
+                          
+                                    {item.typeMess === 'text' && item.text !== '' && (
+                                        <button className="control-btn copy-btn" onClick={async() => {
+                                            navigator.clipboard.writeText(item.text)
+                                            props.setSucCopy(true)
+                                        }}>
+                                            📋
+                                        </button>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    </Element>
+                )
+            })}
         </div>
     )
 }

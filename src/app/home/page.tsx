@@ -156,15 +156,6 @@ export default function Home() {
     }
   }
 
-  const getMessCount = async () => {
-    const userChats = await fetch(`http://localhost:4000/users-controller/get/mess/count/${trueEmail}`)
-    const resultUserChats = await userChats.json()
-    if (resultUserChats.length !== 0) {
-        const onlyCountArr = resultUserChats.map((el: Chat) => el.messCount)
-        const resultCountSum = onlyCountArr.reduce((acuum: number, item: number) => acuum + item)
-        setMessCount(resultCountSum)
-    }
-  }
 
   useEffect(() => {
     if (photos !== null) {
@@ -177,7 +168,6 @@ export default function Home() {
   useEffect(() => {
     if (allUsers.length !== 0 && trueEmail !== '') {
       getAllPhotosAndSort()
-      getMessCount()
     }
   }, [allUsers, trueEmail])
 

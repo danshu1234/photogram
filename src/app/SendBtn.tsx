@@ -3,6 +3,7 @@
 import { Message } from "@/app/Chat"
 import { FC } from "react";
 import getMessIdAndDate from "./getMessIdAndDate";
+import "./SendBtn.css"
 
 interface SendPhoto{
     file: File;
@@ -28,8 +29,12 @@ interface SendBtnProps{
 
 
 const SendBtn: FC <SendBtnProps> = (props) => {
+    const isActive = props.inputMess.trim() !== '' || props.imageBase64.length > 0;
+    
     return (
-        <button onClick={async() => {
+        <button 
+            className={`send-btn ${isActive ? 'active' : 'inactive'}`}
+            onClick={async() => {
                 const isText = props.inputMess !== ''
                 const isPhotos = props.imageBase64.length !== 0
                 if ((isText && isPhotos) || (isText && !isPhotos) || (!isText && isPhotos)) {
@@ -116,7 +121,11 @@ const SendBtn: FC <SendBtnProps> = (props) => {
                         props.setInputMess('')
                     }                   
                 }
-            }}>Отправить</button>
+            }}
+            disabled={!isActive && props.editMess === ''}
+        >
+            {props.editMess ? '✏️' : '➤'}
+        </button>
     )
 }
 

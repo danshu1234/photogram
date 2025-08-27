@@ -12,6 +12,7 @@ import MessDisplay from "@/app/MessDisplay"
 import gifs from "@/app/gifs"
 import useCheckReg from "@/app/CheckReg"
 import getUserChats from "@/app/getChats"
+import "./UserChat.css"
 
 interface SendPhoto{
     file: File;
@@ -58,7 +59,7 @@ const UserChat: FC = () => {
     if (Array.isArray(myBanArr)) {
         if (myBanArr.includes(trueParamEmail)) {
             const email = trueEmail
-            banBtn = <button onClick={async() => {
+            banBtn = <button className="unban-btn" onClick={async() => {
                 await fetch('http://localhost:4000/users-controller/unban/user', {
                     method: "PATCH",
                     headers: {
@@ -69,7 +70,7 @@ const UserChat: FC = () => {
                 window.location.reload()
             }}>Разблокировать</button>
         } else {
-            banBtn = <button onClick={async() => {
+            banBtn = <button className="ban-btn" onClick={async() => {
                 await fetch('http://localhost:4000/users-controller/ban/user', {
                     method: "PATCH",
                     headers: {
@@ -87,13 +88,15 @@ const UserChat: FC = () => {
     }
 
     if (gifsArr.length !== 0) {
-        showGifs = <div>
-            <button onClick={getAllGifs}>Все</button>
-            <button onClick={() => setGifsArr(gifs.smile)}>Улыбка</button>
-            <button onClick={() => setGifsArr(gifs.money)}>Деньги</button>
-            <button onClick={() => setGifsArr(gifs.sad)}>Грустно</button>
-            <ul>
-                {gifsArr.map((item, index) => <li key={index}><img src={item} width={150} height={150} onClick={async() => {
+        showGifs = <div className="gifs-container">
+            <div className="gifs-header">
+                <button className="gif-filter-btn" onClick={getAllGifs}>Все</button>
+                <button className="gif-filter-btn" onClick={() => setGifsArr(gifs.smile)}>Улыбка</button>
+                <button className="gif-filter-btn" onClick={() => setGifsArr(gifs.money)}>Деньги</button>
+                <button className="gif-filter-btn" onClick={() => setGifsArr(gifs.sad)}>Грустно</button>
+            </div>
+            <div className="gifs-grid">
+                {gifsArr.map((item, index) => <div key={index} className="gif-item"><img src={item} onClick={async() => {
                     const { formattedDate, messId } = getMessIdAndDate()
                     if (messages) { 
                         if (messages.length !== 0) {
@@ -133,16 +136,16 @@ const UserChat: FC = () => {
                             setGifsArr([])
                         }
                     }
-                }}/></li>)}
-            </ul>
+                }}/></div>)}
+            </div>
         </div>
     }
 
     if (imageBase64.length !== 0) {
-        photos = <div>
-            <ul>
-                {imageBase64.map((item, index) => <li key={index}><div>
-                        <p onClick={() => {
+        photos = <div className="photos-preview">
+            <div className="photos-list">
+                {imageBase64.map((item, index) => <div key={index} className="photo-item">
+                        <div className="photo-remove" onClick={() => {
                             let resultImages = []
                             for (let el of imageBase64) {
                                 if (el.base64 !== item.base64) {
@@ -150,22 +153,22 @@ const UserChat: FC = () => {
                                 }
                             }
                             setImageBase64(resultImages)
-                        }}>X</p>
-                        <img src={item.base64} width={100} height={100}/>
-                    </div></li>)}
-            </ul>
+                        }}>×</div>
+                        <img src={item.base64}/>
+                    </div>)}
+            </div>
         </div>
     }
 
 
     if (messages !== null) {
         if (messages.length === 0) {
-            showMess = <h2>Этот чат пока пуст</h2>
+            showMess = <div className="empty-chat"><h2>Этот чат пока пуст</h2></div>
         } else if (messages.length !== 0) {
             showMess = <MessDisplay messages={messages} email={trueEmail} trueParamEmail={trueParamEmail} setMessages={setMessages} setAnswMess={setAnswMess} setEditMess={setEditMess} setInputMess={setInputMess} setSucCopy={setSucCopy} pinMess={pinMess} setPinMess={setPinMess}/>
         }
     } else {
-        showMess = <h2>Загрузка...</h2>
+        showMess = <div className="loading-chat"><h2>Загрузка...</h2></div>
     }
 
     const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -462,80 +465,107 @@ const UserChat: FC = () => {
     if (trueEmail !== '' && Array.isArray(usersBan) && mySubs !== null && userSubs !== null && userPermMess !== null) {
         if (usersBan.includes(trueEmail) === false) {
             if (userPermMess === 'Все' || (userPermMess === 'Только друзья' && mySubs.includes(trueParamEmail) && userSubs.includes(trueEmail))) {
-                showMessInter = <div>
-                <div>
+                showMessInter = <div className="message-input-container">
+                <div className="reply-indicator">
                     <p>{answMess}</p>
-                    {answMess !== '' ? <p onClick={() => setAnswMess('')}>X</p> : null}                        
+                    {answMess !== '' ? <div className="reply-close" onClick={() => setAnswMess('')}>×</div> : null}                        
                 </div>
-                <input placeholder="Сообщение" onChange={async(event: ChangeEvent<HTMLInputElement>) => {
-                setInputMess(event.target.value)
-                const email = trueEmail
-                await fetch('http://localhost:4000/users-controller/typing', {
-                    method: "POST",
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ email, trueParamEmail })
-                })
-                }} value={inputMess}/>
-            <input type="file" onChange={handleFileChange}/>
-            {showGifs}
-            <img src='/images/images.png' width={40} height={40} onClick={() => {
-                if (gifsArr.length === 0) {
-                    getAllGifs()
-                } else {
-                    setGifsArr([])
-                }
-            }}/>
-            <SendBtn inputMess={inputMess} editMess={editMess} setAnswMess={setAnswMess} setEditMess={setEditMess} setMessages={setMessages} setInputMess={setInputMess} setImageBase64={setImageBase64} imageBase64={imageBase64} messages={messages} email={email} trueEmail={trueEmail} trueParamEmail={trueParamEmail} socketId={socketId} answMess={answMess}/>
-            {startStop === false ? <button onClick={async() => {
-                startRecording()
-                setStartStop(true)
-                const email = trueEmail
-                await fetch('http://localhost:4000/users-controller/start/voice', {
-                    method: "POST",
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ email, trueParamEmail })
-                })
-            }}>Запись</button> : <button onClick={async() => {
-                stopRecording()
-                const email = trueEmail
-                await fetch('http://localhost:4000/users-controller/stop/voice', {
-                    method: "POST",
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ email, trueParamEmail })
-                })
-            }}>Стоп</button>}
+                <div className="input-group">
+                    <input 
+                        placeholder="Сообщение" 
+                        className="message-input"
+                        onChange={async(event: ChangeEvent<HTMLInputElement>) => {
+                        setInputMess(event.target.value)
+                        const email = trueEmail
+                        await fetch('http://localhost:4000/users-controller/typing', {
+                            method: "POST",
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({ email, trueParamEmail })
+                        })
+                        }} 
+                        value={inputMess}
+                    />
+                    <label className="file-upload-btn">
+                        📎
+                        <input type="file" onChange={handleFileChange} className="file-input"/>
+                    </label>
+                    <div className="gif-btn" onClick={() => {
+                        if (gifsArr.length === 0) {
+                            getAllGifs()
+                        } else {
+                            setGifsArr([])
+                        }
+                    }}>🎬</div>
+                    {startStop === false ? 
+                        <div className="record-btn" onClick={async() => {
+                            startRecording()
+                            setStartStop(true)
+                            const email = trueEmail
+                            await fetch('http://localhost:4000/users-controller/start/voice', {
+                                method: "POST",
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                },
+                                body: JSON.stringify({ email, trueParamEmail })
+                            })
+                        }}>🎤</div> : 
+                        <div className="stop-record-btn" onClick={async() => {
+                            setStartStop(false)
+                            stopRecording()
+                            const email = trueEmail
+                            await fetch('http://localhost:4000/users-controller/stop/voice', {
+                                method: "POST",
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                },
+                                body: JSON.stringify({ email, trueParamEmail })
+                            })
+                        }}>⏹️</div>
+                    }
+                    <SendBtn inputMess={inputMess} editMess={editMess} setAnswMess={setAnswMess} setEditMess={setEditMess} setMessages={setMessages} setInputMess={setInputMess} setImageBase64={setImageBase64} imageBase64={imageBase64} messages={messages} email={email} trueEmail={trueEmail} trueParamEmail={trueParamEmail} socketId={socketId} answMess={answMess}/>
+                </div>
             </div>
             } else {
-                showMessInter = <div>
+                showMessInter = <div className="restricted-message">
                 <p>Пользователь ограничил отправку сообщений</p>
             </div>
             }
         } else {
-            showMessInter = <div>
+            showMessInter = <div className="restricted-message">
                 <p>Пользователь ограничил отправку сообщений</p>
             </div>
         }
     }
 
     return (
-        <div style={{height: '100vh'}}>
-            <h3 onClick={() => window.location.href=`/${trueParamEmail}`}>{trueParamEmail}</h3>
-            <p>{onlineStatus}</p>
-            {bonuceAction === true ? <div>
-                {banBtn}
-                {messages?.length !== 0 ? <button onClick={() => window.location.href=`/files/${trueParamEmail}`}>Файлы чата</button> : null}
-                <button onClick={() => setBonuceAction(false)}>Закрыть</button>
-            </div> : <button onClick={() => setBonuceAction(true)}>Раскрыть</button>}
-            <p>{typing}</p>
-            {sucCopy === true ? <p>Текст успешно скопирован!</p> : null}
-            {showMess}
+        <div className="chat-container">
+            <div className="chat-header">
+                <h3 className="chat-user-name" onClick={() => window.location.href=`/${trueParamEmail}`}>{trueParamEmail}</h3>
+                <div className="online-status">
+                    <span className={`status-dot ${onlineStatus === 'Online' ? 'online' : 'offline'}`}></span>
+                    <span>{onlineStatus}</span>
+                </div>
+                {bonuceAction === true ? <div className="chat-actions">
+                    {banBtn}
+                    {messages?.length !== 0 ? <button className="files-btn" onClick={() => window.location.href=`/files/${trueParamEmail}`}>Файлы чата</button> : null}
+                    <button className="close-actions-btn" onClick={() => setBonuceAction(false)}>✕</button>
+                </div> : <button className="show-actions-btn" onClick={() => setBonuceAction(true)}>⋮</button>}
+            </div>
+
+            <div className="typing-indicator">
+                {typing && <p>{typing}</p>}
+            </div>
+
+            {sucCopy === true ? <div className="copy-notification"><p>Текст успешно скопирован!</p></div> : null}
+            
+            <div className="messages-container">
+                {showMess}
+            </div>
+
             {photos}
+            {showGifs}
             {showMessInter}
         </div>
     )

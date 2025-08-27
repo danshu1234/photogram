@@ -1,12 +1,15 @@
 .exitAllButton {
-  color: #e74c3c;
+  color: white;
   cursor: pointer;
-  font-size: 0.9rem;
-  transition: color 0.3s;
-  margin-bottom: 10px;
+  font-size: 1rem;
+  padding: 10px;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  background: rgba(255, 255, 255, 0.1);
+  margin: 0;
 }
 
 .exitAllButton:hover {
-  color: #c0392b;
-  text-decoration: underline;
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateX(-5px);
 }

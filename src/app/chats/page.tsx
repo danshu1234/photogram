@@ -8,52 +8,60 @@ import Message from "../../../server-for-photogram/src/Message";
 import UserInterface from "../UserInterface"
 import useCheckReg from "../CheckReg";
 import getUserChats from "../getChats";
+import styles from './Chats.module.css';
 
 const Chats: FC = () => {
-
     const socket = io('http://localhost:4000')
-
-    const [socketId, setSocketId] = useState ('')
-
+    const [socketId, setSocketId] = useState('')
     const {} = useCheckReg()
-
     const { email, trueEmail, setEmail } = useGetEmail()
+    const [shareMess, setShareMess] = useState<Message | null>(null)
+    const [basePerm, setBasePerm] = useState<string>('')
+    const [changePerm, setChangePerm] = useState<string>('')
+    const [chats, setChats] = useState<Chat[] | null>(null)  
 
-    const [shareMess, setShareMess] = useState <Message | null> (null)
-    const [basePerm, setBasePerm] = useState <string> ('')
-    const [changePerm, setChangePerm] = useState <string> ('')
-    const [chats, setChats] = useState <Chat[] | null> (null)  
     let showChats;
     let showChangePerm;
     let saveChangePermBtn;
     let shareMessage;
 
     if (shareMess) {
-        shareMessage = <h3>Переслать сообщение от {shareMess.per}</h3>
+        shareMessage = <div className={styles.shareMessage}>
+            Переслать сообщение от {shareMess.per}
+        </div>
     }
 
     if (changePerm !== '' && changePerm !== basePerm) {
-        saveChangePermBtn = <button onClick={async() => {
-            await fetch('http://localhost:4000/users-controller/new/perm/mess', {
-                method: "PATCH",
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ email, changePerm })
-            })
-            setBasePerm(changePerm)
-        }}>Сохранить</button>
+        saveChangePermBtn = <button 
+            className={styles.saveButton}
+            onClick={async() => {
+                await fetch('http://localhost:4000/users-controller/new/perm/mess', {
+                    method: "PATCH",
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ email, changePerm })
+                })
+                setBasePerm(changePerm)
+            }}
+        >
+            Сохранить
+        </button>
     }
 
     if (basePerm !== '') {
-        showChangePerm = <div>
-                <p>Кто может мне писать</p>
-                <p>Сейчас: {basePerm}</p>
-                <select value={changePerm} onChange={(event: ChangeEvent<HTMLSelectElement>) => setChangePerm(event.target.value)}>
-                    <option value='Все'>Все</option>
-                    <option value='Никто'>Никто</option>
-                    <option value='Только друзья'>Только друзья</option>
-                </select>
+        showChangePerm = <div className={styles.permSettings}>
+            <p>Кто может мне писать</p>
+            <p>Сейчас: {basePerm}</p>
+            <select 
+                value={changePerm} 
+                onChange={(event: ChangeEvent<HTMLSelectElement>) => setChangePerm(event.target.value)}
+            >
+                <option value='Все'>Все</option>
+                <option value='Никто'>Никто</option>
+                <option value='Только друзья'>Только друзья</option>
+            </select>
+            {saveChangePermBtn}
         </div>
     }
 
@@ -104,14 +112,14 @@ const Chats: FC = () => {
         })
         const resultChats = await newChats.json()
         const allUsers = await fetch('http://localhost:4000/users-controller/get/all/users')
-            const resultUsers = await allUsers.json()
-            const finalChats = resultChats.map((el: Chat) => {
-                const findUser = resultUsers.find((element: UserInterface) => element.email === el.user)
-                return {
-                    ...el,
-                    avatar: findUser.avatar,
-                }
-            })
+        const resultUsers = await allUsers.json()
+        const finalChats = resultChats.map((el: Chat) => {
+            const findUser = resultUsers.find((element: UserInterface) => element.email === el.user)
+            return {
+                ...el,
+                avatar: findUser.avatar,
+            }
+        })
         sortChats(finalChats)
     }
 
@@ -140,68 +148,125 @@ const Chats: FC = () => {
     
     if (chats !==  null) {
         if (chats.length === 0) {
-            showChats = <h2>Чатов пока нет</h2>
+            showChats = <div className={styles.noChats}>Чатов пока нет</div>
         } else {
-            showChats = <div>
+            showChats = <div className={styles.chatsList}>
                 <ul>
                     {chats.map((item, index) => {
                         let lastMess;
+                        const lastMessage = item.messages[item.messages.length - 1];
 
-                        if (item.messages[item.messages.length - 1].typeMess === 'text') {
-                            if (item.messages[item.messages.length - 1].text === '') {
-                                lastMess = <p>Фото</p>
+                        if (lastMessage.typeMess === 'text') {
+                            if (lastMessage.text === '') {
+                                lastMess = <span>Фото</span>
                             } else {
-                                lastMess = <p>{item.messages[item.messages.length - 1].text}</p>
+                                if (lastMessage.text.length < 50) {
+                                    lastMess = <span>{lastMessage.text}</span>
+                                } else {
+                                    lastMess = <span>{lastMessage.text.slice(0, 50)}...</span>
+                                }
                             }
-                        } else if (item.messages[item.messages.length - 1].typeMess === 'voice') {
-                            lastMess = <p>Голосовое сообщение</p>
-                        } else if (item.messages[item.messages.length - 1].typeMess === 'gif') {
-                            lastMess = <p>GIF</p>
+                        } else if (lastMessage.typeMess === 'voice') {
+                            lastMess = <span>Голосовое сообщение</span>
+                        } else if (lastMessage.typeMess === 'gif') {
+                            lastMess = <span>GIF</span>
                         } else {
-                            lastMess = <p>Пост</p>
+                            lastMess = <span>Пост</span>
                         }
-                        return <li key={index}>
-                        <div>
-                            {item.avatar === '' ? <div style={{width: 70, height: 70, borderRadius: '100%', backgroundColor: 'gray'}}></div> : <img src={item.avatar} style={{width: 70, height: 70, borderRadius: '100%'}}/>}
-                            {item.pin === false ? <button onClick={() => pinUnpinChat(item.user, true)}>Закрепить</button> : <button onClick={() => pinUnpinChat(item.user, false)}>Открепить</button>}
-                            <h3 onClick={async() => {
-                                if (shareMess === null) {
-                                window.location.href=`/chats/${item.user}`
-                            } else {
-                                const trueParamEmail = item.user
-                                const thisUserMess = await fetch('http://localhost:4000/users-controller/get/mess', {
-                                    method: "POST",
-                                    headers: {
-                                        'Content-Type': 'application/json',
-                                    },
-                                    body: JSON.stringify({ email, trueParamEmail })
-                                })
-                                const resultMess = await thisUserMess.json()
-                                const newMessages = [...resultMess, {user: shareMess.user, text: shareMess.text, photos: shareMess.photos, date: shareMess.date, id: shareMess.id, ans: shareMess.ans, edit: false, typeMess: shareMess.typeMess, per: shareMess.per}]
-                                const socketId = ''
-                                await fetch('http://localhost:4000/users-controller/new/mess', {
-                                    method: "PATCH",
-                                    headers: {
-                                        'Content-Type': 'application/json',
-                                    },
-                                    body: JSON.stringify({ newMessages, trueParamEmail, email, socketId })
-                                })
-                                localStorage.removeItem('shareMess')
-                                window.location.reload()
-                            }
-                            }}>{item.user}</h3>
-                            {item.messages[item.messages.length - 1].user === trueEmail ? <p>Вы: </p>: null}
-                            {lastMess}
-                            {item.messCount !== 0 ? <p>{item.messCount}</p> : null}
-                            {item.notifs === true ? <img src='/images/1191931.png' width={30} height={30} onClick={() => changeNotifs(false, item.user)}/> : <img src='https://icon-library.com/images/img_99829.png' width={30} height={30} onClick={() => changeNotifs(true, item.user)}/>}
-                        </div>
-                    </li>
+
+                        return <li key={index} className={`${styles.chatItem} ${item.pin ? styles.pinned : ''}`}>
+                            <div>
+                                {item.avatar === '' ? 
+                                    <div className={styles.avatarPlaceholder}>{item.user.charAt(0).toUpperCase()}</div> : 
+                                    <img src={item.avatar} className={styles.avatar} alt={item.user}/>
+                                }
+                            </div>
+                            <div className={styles.chatContent}>
+                                <h3 
+                                    className={styles.userName}
+                                    onClick={async() => {
+                                        if (shareMess === null) {
+                                            window.location.href=`/chats/${item.user}`
+                                        } else {
+                                            const formData = new FormData()
+                                            formData.append('user', shareMess.user)
+                                            formData.append('text', shareMess.text)
+                                            formData.append('date', shareMess.date)
+                                            formData.append('id', shareMess.id)
+                                            formData.append('ans', '')
+                                            formData.append('code', email)
+                                            formData.append('trueParamEmail', item.user)
+                                            formData.append('per', shareMess.per)
+                                            formData.append('type', shareMess.typeMess)
+                                            await fetch('http://localhost:4000/users-controller/new/mess', {
+                                                method: "PATCH",
+                                                body: formData,
+                                            })
+                                            localStorage.removeItem('shareMess')
+                                            const newChats = chats.map(el => {
+                                                if (el.user === item.user) {
+                                                    return {
+                                                        ...el,
+                                                        messages: [...el.messages, {user: shareMess.user, text: shareMess.text, photos: [], date: shareMess.date, id: shareMess.id, ans: '', edit: false, typeMess: shareMess.typeMess, pin: false, controls: false, per: ''}]
+                                                    }
+                                                } else {
+                                                    return el
+                                                }
+                                            })
+                                            setChats(newChats)
+                                            setShareMess(null)
+                                        }
+                                    }}
+                                >
+                                    {item.user}
+                                </h3>
+                                <div className={styles.lastMessage}>
+                                    {lastMessage.user === trueEmail && <span className={styles.youLabel}>Вы:</span>}
+                                    {lastMess}
+                                </div>
+                            </div>
+                            <div className={styles.chatActions}>
+                                {item.pin === false ? 
+                                    <button 
+                                        className={styles.pinButton}
+                                        onClick={() => pinUnpinChat(item.user, true)}
+                                    >
+                                        📌
+                                    </button> : 
+                                    <button 
+                                        className={styles.pinButton}
+                                        onClick={() => pinUnpinChat(item.user, false)}
+                                    >
+                                        ❌
+                                    </button>
+                                }
+                                {item.messCount !== 0 && 
+                                    <span className={styles.messageCount}>
+                                        {item.messCount}
+                                    </span>
+                                }
+                                {item.notifs === true ? 
+                                    <img 
+                                        src='/images/1191931.png' 
+                                        className={styles.notifButton}
+                                        onClick={() => changeNotifs(false, item.user)}
+                                        alt="Уведомления включены"
+                                    /> : 
+                                    <img 
+                                        src='/images/1691892266_grizly-club-p-kartinki-znachok-zvuka-bez-fona-28.png' 
+                                        className={styles.notifButton}
+                                        onClick={() => changeNotifs(true, item.user)}
+                                        alt="Уведомления выключены"
+                                    />
+                                }
+                            </div>
+                        </li>
                     })}
                 </ul>
             </div>
         }
     } else {
-        showChats = <h2>Загрузка...</h2>
+        showChats = <div className={styles.loading}>Загрузка...</div>
     }
 
     useEffect(() => {
@@ -229,7 +294,7 @@ const Chats: FC = () => {
                     if (document.visibilityState !== 'visible') {
                         getUserChats(email, user)
                     }
-                return prev
+                    return prev
                 })
             } else if (message.type === 'onlineStatus') {
                 const userEmail = message.user
@@ -240,7 +305,7 @@ const Chats: FC = () => {
                     },
                     body: JSON.stringify({ userEmail })
                 })
-        }
+            }
         })
     }, [])
 
@@ -258,9 +323,8 @@ const Chats: FC = () => {
         setChangePerm(resultPerm)
     }
 
-    
-        useEffect(() => {
-            if (socketId !== '' && trueEmail !== '') {
+    useEffect(() => {
+        if (socketId !== '' && trueEmail !== '') {
             const addSocket = async () => {
                 await fetch('http://localhost:4000/users-controller/add/socket', {
                     method: "PATCH",
@@ -276,10 +340,11 @@ const Chats: FC = () => {
     }, [socketId, trueEmail])
     
     return (
-        <div>
-            {shareMessage}
-            {showChangePerm}
-            {saveChangePermBtn}
+        <div className={styles.container}>
+            <div className={styles.header}>
+                {shareMessage}
+                {showChangePerm}
+            </div>
             {showChats}
         </div>
     )

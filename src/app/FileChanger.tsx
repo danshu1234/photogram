@@ -43,7 +43,7 @@ const FileChanger: FC <FileChangerProps> = (props) => {
             height: '100%',
             cursor: 'pointer'
         }}>
-            {props.newAva ? <img src={props.newAva} style={{width: '100%', height: '100%', borderRadius: '100%'}}/> : 'Загрузить аватар'}
+            {props.newAva ? <img src={props.newAva} style={{width: '100%', height: '100%', borderRadius: '100%'}}/> : <p style={{opacity: 0.7}}>Загрузить аватар</p>}
         </label>
     </div>
     )

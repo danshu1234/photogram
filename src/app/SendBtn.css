@@ -1,0 +1,61 @@
+.send-btn {
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    border: none;
+    background: #3498db;
+    color: white;
+    font-size: 18px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.send-btn.active {
+    background: #3498db;
+    transform: scale(1.05);
+}
+
+.send-btn.active:hover {
+    background: #2980b9;
+    transform: scale(1.1);
+}
+
+.send-btn.inactive {
+    background: #95a5a6;
+    cursor: not-allowed;
+    transform: scale(0.95);
+}
+
+.send-btn:disabled {
+    background: #95a5a6;
+    cursor: not-allowed;
+}
+
+@keyframes sendPulse {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(0.9);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+.send-btn:active:not(:disabled) {
+    animation: sendPulse 0.3s ease;
+}
+
+/* Edit mode styling */
+.send-btn:contains('✏️') {
+    background: #f39c12;
+}
+
+.send-btn:contains('✏️'):hover {
+    background: #e67e22;
+}
