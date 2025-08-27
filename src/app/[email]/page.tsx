@@ -14,6 +14,7 @@ import useNotif from "../useNotif";
 import styles from './UserPage.module.css';
 
 export default function UserPage() {
+    
     const {} = useNotif();
     const {} = useCheckReg();
     
