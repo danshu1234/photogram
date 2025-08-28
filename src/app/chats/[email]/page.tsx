@@ -230,6 +230,90 @@ const UserChat: FC = () => {
         setMyBanArr(resultBanArr)
     }
 
+    const sendMess = async () => {
+        const isText = inputMess !== ''
+                const isPhotos = imageBase64.length !== 0
+                if ((isText && isPhotos) || (isText && !isPhotos) || (!isText && isPhotos)) {
+                    try {
+                    if (messages?.length !== 0) {
+                        if (messages) {
+                            if (editMess === '') {
+                                const { formattedDate, messId } = getMessIdAndDate() 
+                                const newMessages = [...messages, {user: trueEmail, text: inputMess, photos: imageBase64.map(el => el.base64), date: formattedDate, id: messId, ans: answMess, edit: false, typeMess: 'text', per: '', controls: false, pin: false}]
+                                const formData = new FormData()
+                                for (let item of imageBase64) {
+                                    formData.append('photo', item.file)
+                                }
+                                formData.append('user', trueEmail)
+                                formData.append('text', inputMess)
+                                formData.append('date', formattedDate)
+                                formData.append('id', messId)
+                                formData.append('ans', answMess)
+                                formData.append('code', email)
+                                formData.append('trueParamEmail', trueParamEmail)
+                                formData.append('per', '')
+                                formData.append('type', 'text')
+                                await fetch('http://localhost:4000/users-controller/new/mess', {
+                                    method: "PATCH",
+                                    body: formData,
+                                })
+                                setMessages(newMessages)
+                                setAnswMess('')
+                                setImageBase64([])
+                            } else {
+                                const per = ''
+                                await fetch('http://localhost:4000/users-controller/edit/mess', {
+                                    method: "PATCH",
+                                    headers: {
+                                        'Content-Type': 'application/json',
+                                    },
+                                    body: JSON.stringify({ email, trueParamEmail, editMess, inputMess, per })
+                                })
+                                const newMess = messages.map(el => {
+                                    if (el.id === editMess) {
+                                        return {
+                                            ...el,
+                                            text: inputMess,
+                                            edit: true,
+                                        }
+                                    } else {
+                                        return el
+                                    }
+                                })
+                                setMessages(newMess)
+                                setEditMess('')
+                                setImageBase64([])
+                            }                        
+                        }
+                    } else {
+                        if (messages) {
+                            const { formattedDate, messId } = getMessIdAndDate()
+                            const formData = new FormData()
+                            formData.append('user', trueEmail)
+                            formData.append('text', inputMess)
+                            formData.append('date', formattedDate)
+                            formData.append('id', messId)
+                            formData.append('ans', answMess)
+                            formData.append('code', email)
+                            formData.append('trueParamEmail', trueParamEmail)
+                            formData.append('per', '')
+                            formData.append('type', 'text')
+                            await fetch('http://localhost:4000/users-controller/new/chat', {
+                                method: "PATCH",
+                                body: formData,
+                            })
+                            setMessages([{user: trueEmail, text: inputMess, photos: imageBase64.map(el => el.base64), date: formattedDate, id: messId, ans: '', edit: false, typeMess: 'text', per: '', controls: false, pin: false}])
+                        }
+                    }
+                    setInputMess('')
+                    } catch (e) {
+                        alert('Превышен допустимый объем файлов')
+                        setImageBase64([])
+                        setInputMess('')
+                    }                   
+                }
+    }
+
     const getUserPermAndSubs = async () => {
         const email = trueEmail
         const getPermData = await fetch('http://localhost:4000/users-controller/get/perm/data', {
@@ -267,6 +351,20 @@ const UserChat: FC = () => {
             getOnlineStatus()
         }
     }, [trueEmail, trueParamEmail])
+
+    useEffect(() => {
+        const handleGlobalKeyPress = (event: any) => {
+          if (event.key === 'Enter') {
+            sendMess()
+          }
+        };   
+
+        document.addEventListener('keydown', handleGlobalKeyPress);     
+        
+        return () => {
+          document.removeEventListener('keydown', handleGlobalKeyPress);
+        };
+    })
 
     useEffect(() => {
         if (sucCopy === true) {
@@ -524,7 +622,7 @@ const UserChat: FC = () => {
                             })
                         }}>⏹️</div>
                     }
-                    <SendBtn inputMess={inputMess} editMess={editMess} setAnswMess={setAnswMess} setEditMess={setEditMess} setMessages={setMessages} setInputMess={setInputMess} setImageBase64={setImageBase64} imageBase64={imageBase64} messages={messages} email={email} trueEmail={trueEmail} trueParamEmail={trueParamEmail} socketId={socketId} answMess={answMess}/>
+                    <SendBtn sendMess={sendMess} editMess={editMess} inputMess={inputMess} imageBase64={imageBase64}/>
                 </div>
             </div>
             } else {
