@@ -14,7 +14,13 @@ const Avatar: FC<AvaProps> = (props) => {
 
     useEffect(() => {
         const getAvatar = async () => {
-            const avatar = await fetch(`http://localhost:4000/users-controller/get/avatar/${props.email}`)
+            const avatar = await fetch('http://localhost:4000/users-controller/get/avatar', {
+                method: "GET",
+                headers: {
+                    'Authorization': `Bearer ${props.email}`,
+                    'Content-Type': 'application/json',
+                },
+            })
             const resultAvatar = await avatar.text()
             setAva(resultAvatar)
         }

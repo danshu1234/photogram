@@ -33,8 +33,11 @@ const PhotoDisplay: FC<PropsPhotoDisplay> = (props) => {
         if (!props.likeUrl.includes('сердце')) {
             await fetch('http://localhost:4000/photos/like/this/photo', {
                 method: "PATCH",
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id, email: email })
+                headers: {
+                    'Authorization': `Bearer ${email}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ id })
             });
             const resultEmail = await getUserEmail();
             await fetch('http://localhost:4000/users-controller/new/notif', {
@@ -48,8 +51,11 @@ const PhotoDisplay: FC<PropsPhotoDisplay> = (props) => {
         } else {
             await fetch('http://localhost:4000/photos/unlike/photo', {
                 method: "PATCH",
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id, email: email })
+                headers: {
+                    'Authorization': `Bearer ${email}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ id })
             });
             const findPhoto = props.photos.find(el => el.id === id);
             const filteredLikes = findPhoto?.likes.filter(el => el !== trueEmail) || [];

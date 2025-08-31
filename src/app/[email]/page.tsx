@@ -137,8 +137,11 @@ export default function UserPage() {
     const getUserPhotos = async () => {
         const getPhotos = await fetch(`http://localhost:4000/photos/get/user/photos`, {
             method: "POST",
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, trueParamEmail })
+            headers: {
+                'Authorization': `Bearer ${email}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ trueParamEmail })
         });
         const resultPhotos = await getPhotos.json();
         if (resultPhotos.type === 'photos') {

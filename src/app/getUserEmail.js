@@ -1,8 +1,14 @@
 
 const getUserEmail = async () => {
-    const storageCode = localStorage.getItem('photogram-enter')
-    if (storageCode) {
-        const userEmail = await fetch(`http://localhost:4000/users-controller/get/email/${storageCode}`)
+    const token = localStorage.getItem('photogram-enter')
+    if (token) {
+        const userEmail = await fetch(`http://localhost:4000/users-controller/get/email`, {
+            method: "GET",
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            }
+        })
         const resultEmail = await userEmail.text()
         return resultEmail
     }

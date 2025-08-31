@@ -19,8 +19,11 @@ const FileChanger: FC <FileChangerProps> = (props) => {
                 const newAva = event.target?.result as string
                 await fetch('http://localhost:4000/users-controller/new/avatar', {
                 method: "PATCH",
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ targetEmail, newAva })
+                headers: {
+                    'Authorization': `Bearer ${props.email}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ newAva })
                 })
                 window.location.reload()
             };

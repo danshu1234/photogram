@@ -15,7 +15,6 @@ import NameSearch from "../NameSearch";
 import UserInterface from "../UserInterface";
 import { io } from "socket.io-client";
 import registerServiceWorker from "../RegisterServiceWorker";
-import Chat from "../Chat";
 import getUserChats from "../getChats";
 
 export default function Home() {
@@ -27,12 +26,18 @@ export default function Home() {
   }
 
   const {} = useCheckReg()
-  const { email, setEmail, trueEmail, setTrueEmail } = useGetEmail()
+  const { email, setEmail, trueEmail } = useGetEmail()
 
   const getMyNotifs = async () => {
     const getEmailFromStorage = localStorage.getItem('photogram-enter')
     if (getEmailFromStorage) {
-      const getNotifs = await fetch(`http://localhost:4000/users-controller/get/notifs/${getEmailFromStorage}`)
+      const getNotifs = await fetch(`http://localhost:4000/users-controller/get/notifs`, {
+        method: "GET",
+        headers: {
+          'Authorization': `Bearer ${email}`,
+          'Content-Type': 'application/json',
+        },
+      })
       const resultNotifs = await getNotifs.json()
       setNotifs(resultNotifs)
     }
@@ -274,12 +279,6 @@ export default function Home() {
   if (isNotifs) {
     notifsList = <NotifsList notifs={notifs} setIsNotifs={setIsNotifs} email={email} setNotifs={setNotifs}/>
   }
-
-  useEffect(() => {
-    console.log(`Photos: ${photos}`)
-    console.log(`Code: ${email}`)
-    console.log(`Email: ${trueEmail}`)
-  }, [photos, email, trueEmail])
 
   if (photos === null) {
     photosList = <div style={{

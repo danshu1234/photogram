@@ -8,16 +8,21 @@ const useCheckReg = () => {
         if (localStorage.getItem('photogram-enter') === null) {
             window.location.href = '/enter'
         } else {
-            const checkDeleteUser = async () => {
-                const myEmail = localStorage.getItem('photogram-enter')
-                const checkDeleteUser = await fetch(`http://localhost:4000/users-controller/check/delete/${myEmail}`)
-                const resultCheck = await checkDeleteUser.text()
-                if (resultCheck === 'undefined') {
+            const checkToken = async () => {
+                const token = localStorage.getItem('photogram-enter')
+                const tokenCheck = await fetch(`http://localhost:4000/users-controller/check/token`, {
+                    method: "POST",
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                    }
+                })
+                if (!tokenCheck.ok) {
                     localStorage.removeItem('photogram-enter')
-                    window.location.href = '/enter'
+                    window.location.href='/home'
                 }
             }
-            checkDeleteUser()
+            checkToken()
         }
     }, [])
 

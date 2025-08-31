@@ -96,9 +96,9 @@ const NotifsList: FC <NotifsListProps> = (props) => {
                         const clearNotifs = await fetch('http://localhost:4000/users-controller/clear/notifs', {
                             method: "PATCH",
                             headers: {
+                                'Authorization': `Bearer ${email}`,
                                 'Content-Type': 'application/json',
                             },
-                            body: JSON.stringify({ email })
                         })
                         const resultNotifs = await clearNotifs.json()
                         props.setIsNotifs(false)

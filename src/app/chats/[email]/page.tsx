@@ -30,7 +30,7 @@ const UserChat: FC = () => {
 
     const [socketId, setSocketId] = useState ('')
 
-    const { email, trueEmail, setEmail, setTrueEmail } = useGetEmail()
+    const { email, setEmail, trueEmail, setTrueEmail } = useGetEmail()
     const { trueParamEmail, setTrueParamEmail } = useGetTrueParamEmail()
 
     const [onlineStatus, setOnlineStatus] = useState <string> ('Offline')

@@ -29,9 +29,9 @@ export default function MyPage() {
     const close = await fetch('http://localhost:4000/users-controller/close/acc', {
       method: "PATCH",
       headers: {
+        'Authorization': `Bearer ${email}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ email })
     })
     const resultClose = await close.text()
     if (resultClose === 'OK') {
@@ -43,9 +43,9 @@ export default function MyPage() {
     const opAcc = await fetch('http://localhost:4000/users-controller/open/acc', {
       method: "PATCH",
       headers: {
+        'Authorization': `Bearer ${email}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ email })
     })
     const resultOpen = await opAcc.text()
     if (resultOpen === 'OK') {
@@ -90,9 +90,10 @@ export default function MyPage() {
         const getPhotos = await fetch(`http://localhost:4000/photos/get/user/photos`, {
           method: "POST",
           headers: {
+            'Authorization': `Bearer ${email}`,
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ email, trueParamEmail })
+          body: JSON.stringify({ trueParamEmail })
         })
         const resultPhotos = await getPhotos.json()
         setMyPhotos(resultPhotos.photos.map((el: any) => {
@@ -110,7 +111,13 @@ export default function MyPage() {
   useEffect(() => {
     if (email !== '') {
       const getMySubs = async () => {
-        const getAllSubs = await fetch(`http://localhost:4000/users-controller/all/subs/and/country/${email}`)
+        const getAllSubs = await fetch('http://localhost:4000/users-controller/all/subs/and/country', {
+          method: "GET",
+          headers: {
+            'Authorization': `Bearer ${email}`,
+            'Content-Type': 'application/json',
+          },
+        })
         const resultSubs = await getAllSubs.json()
         const result = resultSubs.subscribes.slice(1, resultSubs.length)
         setSubs(result)
@@ -122,7 +129,13 @@ export default function MyPage() {
   useEffect(() => {
     if (email !== '') {
       const checkOpenStatus = async () => {
-        const checkStatus = await fetch(`http://localhost:4000/users-controller/check/open/${email}`)
+        const checkStatus = await fetch('http://localhost:4000/users-controller/check/open', {
+          method: "GET",
+          headers: {
+            'Authorization': `Bearer ${email}`,
+            'Content-Type': 'application/json',
+          },
+        })
         const resultStatus = await checkStatus.json()
         setOpenAcc(resultStatus)
       }
@@ -158,7 +171,6 @@ export default function MyPage() {
         {photosList}
       </div>
       <div className={styles.exitPanel}>
-        <ExitBtn email={email}/>
         <span 
           className={styles.exitButton} 
           onClick={() => {
