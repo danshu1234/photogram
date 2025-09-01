@@ -16,6 +16,7 @@ import UserInterface from "../UserInterface";
 import { io } from "socket.io-client";
 import registerServiceWorker from "../RegisterServiceWorker";
 import getUserChats from "../getChats";
+import exitAcc from "../exitAcc";
 
 export default function Home() {
 
@@ -38,8 +39,12 @@ export default function Home() {
           'Content-Type': 'application/json',
         },
       })
-      const resultNotifs = await getNotifs.json()
-      setNotifs(resultNotifs)
+      if (getNotifs.ok) {
+        const resultNotifs = await getNotifs.json()
+        setNotifs(resultNotifs)
+      } else {
+        exitAcc()
+      }
     }
   }
 

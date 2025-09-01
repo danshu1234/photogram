@@ -37,13 +37,15 @@ const PhotoDisplay: FC<PropsPhotoDisplay> = (props) => {
                     'Authorization': `Bearer ${email}`,
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ id })
+                body: JSON.stringify({ id, userEmail })
             });
-            const resultEmail = await getUserEmail();
             await fetch('http://localhost:4000/users-controller/new/notif', {
                 method: "PATCH",
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ resultEmail, userEmail, photoId: id, type: 'photo' })
+                headers: {
+                    'Authorization': `Bearer ${email}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ userEmail, photoId: id, type: 'photo' })
             });
             props.setPhotos(props.photos.map(el =>
                 el.id === id ? { ...el, likes: [...el.likes, trueEmail] } : el

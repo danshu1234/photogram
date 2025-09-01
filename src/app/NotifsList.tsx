@@ -1,6 +1,7 @@
 import { FC, memo } from "react";
 import styles from './NotifsList.module.css';
 import useGetEmail from "./useGetEmail";
+import exitAcc from "./exitAcc";
 
 interface Notif{
     type: string,
@@ -23,24 +24,24 @@ const NotifsList: FC <NotifsListProps> = (props) => {
 
     const tellUserAboutPerm = async (succOrErr: string, userEmail: string) => {
         const type = succOrErr
-        const resultEmail = trueEmail
         await fetch('http://localhost:4000/users-controller/new/notif', {
             method: "PATCH",
             headers: {
+                'Authorization': `Bearer ${email}`,
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ userEmail, type, resultEmail })
+            body: JSON.stringify({ userEmail, type })
         })
     }
 
     const deletePermNotif = async (user: string) => {
-        const email = trueEmail
         const deleteNotif = await fetch('http://localhost:4000/users-controller/delete/perm', {
             method: "PATCH",
             headers: {
+                'Authorization': `Bearer ${email}`,
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ user, email })
+            body: JSON.stringify({ user })
         })
         const resultNotifs = await deleteNotif.json()
         props.setNotifs(resultNotifs)
@@ -61,9 +62,10 @@ const NotifsList: FC <NotifsListProps> = (props) => {
                                     await fetch('http://localhost:4000/users-controller/new/perm/user', {
                                         method: "PATCH",
                                         headers: {
+                                            'Authorization': `Bearer ${email}`,
                                             'Content-Type': 'application/json',
                                         },
-                                        body: JSON.stringify({ newUserEmail, email })
+                                        body: JSON.stringify({ newUserEmail })
                                     })
                                 }
                                 addNewPermUser()
@@ -100,9 +102,13 @@ const NotifsList: FC <NotifsListProps> = (props) => {
                                 'Content-Type': 'application/json',
                             },
                         })
-                        const resultNotifs = await clearNotifs.json()
-                        props.setIsNotifs(false)
-                        props.setNotifs(resultNotifs)
+                        if (clearNotifs.ok) {
+                            const resultNotifs = await clearNotifs.json()
+                            props.setIsNotifs(false)
+                            props.setNotifs(resultNotifs)
+                        } else {
+                            exitAcc()
+                        }
                     }}
                 >X</button>
             </div>

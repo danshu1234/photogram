@@ -12,6 +12,7 @@ import getUserEmail from "../getUserEmail";
 import useCheckReg from "../CheckReg";
 import useNotif from "../useNotif";
 import styles from './UserPage.module.css';
+import exitAcc from "../exitAcc";
 
 export default function UserPage() {
     
@@ -45,13 +46,15 @@ export default function UserPage() {
             <div className={styles.photoRequest}>
                 <h3>Пользователь скрыл свои фото</h3>
                 <button className={styles.primaryBtn} onClick={async () => {
-                    const resultEmail = await getUserEmail();
                     const userEmail = trueParamEmail;
                     const type = 'perm';
                     await fetch('http://localhost:4000/users-controller/new/notif', {
                         method: "PATCH",
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ resultEmail, userEmail, type })
+                        headers: {
+                            'Authorization': `Bearer ${email}`,
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ userEmail, type })
                     });
                     window.location.reload();
                 }}>Отправить запрос</button>
@@ -143,15 +146,19 @@ export default function UserPage() {
             },
             body: JSON.stringify({ trueParamEmail })
         });
-        const resultPhotos = await getPhotos.json();
-        if (resultPhotos.type === 'photos') {
-            setPhotos(resultPhotos.photos.map((el: any) => ({
-                ...el,
-                photoIndex: 0,
-                bonuce: false,
-            })));
+        if (getPhotos.ok) {
+            const resultPhotos = await getPhotos.json();
+            if (resultPhotos.type === 'photos') {
+                setPhotos(resultPhotos.photos.map((el: any) => ({
+                    ...el,
+                    photoIndex: 0,
+                    bonuce: false,
+                })));
+            } else {
+                setPhotos(resultPhotos.type === 'send' ? 'send' : 'unsend');
+            }
         } else {
-            setPhotos(resultPhotos.type === 'send' ? 'send' : 'unsend');
+            exitAcc()
         }
     };
 
@@ -173,7 +180,13 @@ export default function UserPage() {
     useEffect(() => {
         if (email !== '') {
             const getMySubs = async () => {
-                const mySubs = await fetch(`http://localhost:4000/users-controller/all/subs/and/country/${email}`);
+                const mySubs = await fetch('http://localhost:4000/users-controller/all/subs/and/country', {
+                    method: "GET",
+                    headers: {
+                        'Authorization': `Bearer ${email}`,
+                        'Content-Type': 'application/json',
+                    },
+                });
                 const resultSubs = await mySubs.json();
                 setMySubs(resultSubs.subscribes);
             };

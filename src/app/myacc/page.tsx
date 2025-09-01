@@ -5,11 +5,11 @@ import useCheckReg from "../CheckReg";
 import useGetEmail from "../useGetEmail";
 import CreatePhoto from "../CreatePhoto";
 import styles from './MyPage.module.css';
-import ExitBtn from "../Exit";
 import Avatar from "../Avatar";
 import Photo from "../PhotoInterface";
 import List from "../List";
 import useNotif from "../useNotif"
+import exitAcc from '../exitAcc'
 
 export default function MyPage() {
   const {} = useNotif()
@@ -33,9 +33,13 @@ export default function MyPage() {
         'Content-Type': 'application/json',
       },
     })
-    const resultClose = await close.text()
-    if (resultClose === 'OK') {
-      setOpenAcc(false)
+    if (close.ok) {
+      const resultClose = await close.text()
+      if (resultClose === 'OK') {
+        setOpenAcc(false)
+      }
+    } else {
+      exitAcc()
     }
   }
 
@@ -47,9 +51,13 @@ export default function MyPage() {
         'Content-Type': 'application/json',
       },
     })
-    const resultOpen = await opAcc.text()
-    if (resultOpen === 'OK') {
-      setOpenAcc(true)
+    if (opAcc.ok) {
+      const resultOpen = await opAcc.text()
+      if (resultOpen === 'OK') {
+        setOpenAcc(true)
+      }
+    } else {
+      exitAcc()
     }
   }
 
@@ -95,14 +103,18 @@ export default function MyPage() {
           },
           body: JSON.stringify({ trueParamEmail })
         })
-        const resultPhotos = await getPhotos.json()
-        setMyPhotos(resultPhotos.photos.map((el: any) => {
-          return {
-            ...el,
-            photoIndex: 0,
-            bonuce: false,
-          }
-        }))
+        if (getPhotos.ok) {
+          const resultPhotos = await getPhotos.json()
+          setMyPhotos(resultPhotos.photos.map((el: any) => {
+            return {
+              ...el,
+              photoIndex: 0,
+              bonuce: false,
+            }
+          }))
+        } else {
+          exitAcc()
+        }
       }
       getMyPhotos()
     }
@@ -118,9 +130,13 @@ export default function MyPage() {
             'Content-Type': 'application/json',
           },
         })
-        const resultSubs = await getAllSubs.json()
-        const result = resultSubs.subscribes.slice(1, resultSubs.length)
-        setSubs(result)
+        if (getAllSubs.ok) {
+          const resultSubs = await getAllSubs.json()
+          const result = resultSubs.subscribes.slice(1, resultSubs.length)
+          setSubs(result)
+        } else {
+          exitAcc()
+        }
       }
       getMySubs()
     }
@@ -136,8 +152,12 @@ export default function MyPage() {
             'Content-Type': 'application/json',
           },
         })
-        const resultStatus = await checkStatus.json()
-        setOpenAcc(resultStatus)
+        if (checkStatus) {
+          const resultStatus = await checkStatus.json()
+          setOpenAcc(resultStatus)
+        } else {
+          exitAcc()
+        }
       }
       checkOpenStatus()
     }
