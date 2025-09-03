@@ -7,7 +7,7 @@ import getUserChats from "./getChats";
 
 const useNotif = () => {
 
-    const { email, trueEmail, setEmail } = useGetEmail()
+    const { email, setEmail } = useGetEmail()
     
     const [socketId, setSocketId] = useState ('')
 
@@ -18,20 +18,20 @@ const useNotif = () => {
     }, []);
 
     useEffect(() => {
-        if (socketId !== '' && trueEmail !== '') {
-            console.log(socketId)
+        if (socketId !== '' && email !== '') {
             const addSocket = async () => {
                 await fetch('http://localhost:4000/users-controller/add/socket', {
                 method: "PATCH",
                 headers: {
+                    'Authorization': `Bearer ${email}`,
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ email, socketId })
+                body: JSON.stringify({ socketId })
             })
             }
             addSocket()
         }
-    }, [socketId, trueEmail])
+    }, [socketId, email])
 
     useEffect(() => {
 

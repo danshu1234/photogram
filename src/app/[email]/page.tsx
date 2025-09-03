@@ -56,7 +56,7 @@ export default function UserPage() {
                         },
                         body: JSON.stringify({ userEmail, type })
                     });
-                    window.location.reload();
+                    setPhotos('send')
                 }}>Отправить запрос</button>
             </div>
         );
@@ -90,25 +90,29 @@ export default function UserPage() {
                 <div className={styles.actions}>
                     {user.subscribes.includes(myEmail) ? 
                         <button className={styles.secondaryBtn} onClick={async () => {
-                            const resultEmail = email
                             const targetEmail = trueParamEmail;
                             await fetch('http://localhost:4000/users-controller/unsub', {
                                 method: "PATCH",
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ targetEmail, resultEmail })
+                                headers: {
+                                    'Authorization': `Bearer ${email}`,
+                                    'Content-Type': 'application/json',
+                                },
+                                body: JSON.stringify({ targetEmail })
                             });
-                            window.location.reload();
+                            setUser({...user, subscribes: user.subscribes.filter(el => el !== myEmail)})
                         }}>Отписаться</button>
                         :
                         <button className={styles.primaryBtn} onClick={async () => {
-                            const resultEmail = email
                             const targetEmail = trueParamEmail;
                             await fetch('http://localhost:4000/users-controller/sub', {
                                 method: "PATCH",
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ targetEmail, resultEmail })
+                                headers: {
+                                    'Authorization': `Bearer ${email}`,
+                                    'Content-Type': 'application/json',
+                                },
+                                body: JSON.stringify({ targetEmail })
                             });
-                            window.location.reload();
+                            setUser({...user, subscribes: [...user.subscribes, myEmail]})
                         }}>Подписаться</button>
                     }
 
@@ -116,12 +120,14 @@ export default function UserPage() {
                         <p className={styles.infoText}>Жалоба отправлена</p>
                         :
                         <button className={styles.dangerBtn} onClick={async () => {
-                            const email = trueEmail;
                             const targetEmail = trueParamEmail;
                             await fetch('http://localhost:4000/users-controller/new/report', {
                                 method: "PATCH",
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ targetEmail, email })
+                                headers: {
+                                    'Authorization': `Bearer ${email}`,
+                                    'Content-Type': 'application/json',
+                                },
+                                body: JSON.stringify({ targetEmail })
                             });
                             window.location.reload();
                         }}>Пожаловаться</button>

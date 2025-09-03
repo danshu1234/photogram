@@ -30,7 +30,7 @@ const UserChat: FC = () => {
 
     const [socketId, setSocketId] = useState ('')
 
-    const { email, setEmail, trueEmail, setTrueEmail } = useGetEmail()
+    const { email, setEmail, trueEmail } = useGetEmail()
     const { trueParamEmail, setTrueParamEmail } = useGetTrueParamEmail()
 
     const [onlineStatus, setOnlineStatus] = useState <string> ('Offline')
@@ -58,14 +58,14 @@ const UserChat: FC = () => {
 
     if (Array.isArray(myBanArr)) {
         if (myBanArr.includes(trueParamEmail)) {
-            const email = trueEmail
             banBtn = <button className="unban-btn" onClick={async() => {
                 await fetch('http://localhost:4000/users-controller/unban/user', {
                     method: "PATCH",
                     headers: {
+                        'Authorization': `Bearer ${email}`,
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ email, trueParamEmail })
+                    body: JSON.stringify({ trueParamEmail })
                 })
                 window.location.reload()
             }}>Разблокировать</button>
@@ -74,9 +74,10 @@ const UserChat: FC = () => {
                 await fetch('http://localhost:4000/users-controller/ban/user', {
                     method: "PATCH",
                     headers: {
+                        'Authorization': `Bearer ${email}`,
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ email, trueParamEmail })
+                    body: JSON.stringify({ trueParamEmail })
                 })
                 window.location.reload()
             }}>Заблокировать</button>
@@ -106,12 +107,15 @@ const UserChat: FC = () => {
                             formData.append('date', formattedDate)
                             formData.append('id', messId)
                             formData.append('ans', answMess)
-                            formData.append('code', email)
                             formData.append('trueParamEmail', trueParamEmail)
                             formData.append('per', '')
                             formData.append('type', 'gif')
                             await fetch('http://localhost:4000/users-controller/new/mess', {
                                 method: "PATCH",
+                                headers: {
+                                    'Authorization': `Bearer ${email}`,
+                                    'Content-Type': 'application/json',
+                                },
                                 body: formData,
                             })
                             setMessages([...messages, {user: trueEmail, text: item, photos: [], date: formattedDate, id: messId, ans: answMess, edit: false, typeMess: 'gif', per: '', controls: false, pin: false}])
@@ -124,12 +128,15 @@ const UserChat: FC = () => {
                             formData.append('date', formattedDate)
                             formData.append('id', messId)
                             formData.append('ans', answMess)
-                            formData.append('code', email)
                             formData.append('trueParamEmail', trueParamEmail)
                             formData.append('per', '')
                             formData.append('type', 'gif')
                             await fetch('http://localhost:4000/users-controller/new/chat', {
                                 method: "PATCH",
+                                headers: {
+                                    'Authorization': `Bearer ${email}`,
+                                    'Content-Type': 'application/json',
+                                },
                                 body: formData,
                             })
                             setMessages([{user: trueEmail, text: item, photos: [], date: formattedDate, id: messId, ans: answMess, edit: false, typeMess: 'gif', per: '', controls: false, pin: false}])
@@ -190,19 +197,21 @@ const UserChat: FC = () => {
         await fetch('http://localhost:4000/users-controller/zero/mess', {
             method: "PATCH",
             headers: {
+                'Authorization': `Bearer ${email}`,
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ email, trueParamEmail })
+            body: JSON.stringify({ trueParamEmail })
         })
     }
 
     const getMessages = async () => {
-        const getMess = await fetch(`http://localhost:4000/users-controller/get/mess`, {
+        const getMess = await fetch('http://localhost:4000/users-controller/get/mess', {
             method: "POST",
             headers: {
+                'Authorization': `Bearer ${email}`,
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ email, trueParamEmail })
+            body: JSON.stringify({ trueParamEmail })
         })
         const resultMess = await getMess.json()
         const pinnedMess = resultMess.filter((el: any) => el.pin === true)
@@ -225,7 +234,13 @@ const UserChat: FC = () => {
     }
 
     const getMyBanArr = async () => {
-        const banArr = await fetch(`http://localhost:4000/users-controller/get/my/ban/mess/${trueEmail}`)
+        const banArr = await fetch('http://localhost:4000/users-controller/get/my/ban/mess', {
+            method: "GET",
+            headers: {
+                'Authorization': `Bearer ${email}`,
+                'Content-Type': 'application/json',
+            },
+        })
         const resultBanArr = await banArr.json()
         setMyBanArr(resultBanArr)
     }
@@ -249,12 +264,15 @@ const UserChat: FC = () => {
                                 formData.append('date', formattedDate)
                                 formData.append('id', messId)
                                 formData.append('ans', answMess)
-                                formData.append('code', email)
                                 formData.append('trueParamEmail', trueParamEmail)
                                 formData.append('per', '')
                                 formData.append('type', 'text')
                                 await fetch('http://localhost:4000/users-controller/new/mess', {
                                     method: "PATCH",
+                                    headers: {
+                                        'Authorization': `Bearer ${email}`,
+                                        'Content-Type': 'application/json',
+                                    },
                                     body: formData,
                                 })
                                 setMessages(newMessages)
@@ -265,9 +283,10 @@ const UserChat: FC = () => {
                                 await fetch('http://localhost:4000/users-controller/edit/mess', {
                                     method: "PATCH",
                                     headers: {
+                                        'Authorization': `Bearer ${email}`,
                                         'Content-Type': 'application/json',
                                     },
-                                    body: JSON.stringify({ email, trueParamEmail, editMess, inputMess, per })
+                                    body: JSON.stringify({ trueParamEmail, editMess, inputMess, per })
                                 })
                                 const newMess = messages.map(el => {
                                     if (el.id === editMess) {
@@ -294,12 +313,15 @@ const UserChat: FC = () => {
                             formData.append('date', formattedDate)
                             formData.append('id', messId)
                             formData.append('ans', answMess)
-                            formData.append('code', email)
                             formData.append('trueParamEmail', trueParamEmail)
                             formData.append('per', '')
                             formData.append('type', 'text')
                             await fetch('http://localhost:4000/users-controller/new/chat', {
                                 method: "PATCH",
+                                headers: {
+                                    'Authorization': `Bearer ${email}`,
+                                    'Content-Type': 'application/json',
+                                },
                                 body: formData,
                             })
                             setMessages([{user: trueEmail, text: inputMess, photos: imageBase64.map(el => el.base64), date: formattedDate, id: messId, ans: '', edit: false, typeMess: 'text', per: '', controls: false, pin: false}])
@@ -319,9 +341,10 @@ const UserChat: FC = () => {
         const getPermData = await fetch('http://localhost:4000/users-controller/get/perm/data', {
             method: "POST",
             headers: {
+                'Authorization': `Bearer ${email}`,
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ email, trueParamEmail })
+            body: JSON.stringify({ trueParamEmail })
         })
         const resultPermData = await getPermData.json()
         setMySubs(resultPermData.mySubs)
@@ -410,12 +433,15 @@ const UserChat: FC = () => {
                         formData.append('date', formattedDate)
                         formData.append('id', messId)
                         formData.append('ans', answMess)
-                        formData.append('code', email)
                         formData.append('trueParamEmail', trueParamEmail)
                         formData.append('per', '')
                         formData.append('type', 'voice')
                         await fetch('http://localhost:4000/users-controller/new/mess', {
                             method: "PATCH",
+                            headers: {
+                                'Authorization': `Bearer ${email}`,
+                                'Content-Type': 'application/json',
+                            },
                             body: formData,
                         })
                         setMessages([...messages, {user: trueEmail, text: base64String, photos: [], date: formattedDate, id: messId, ans: answMess, edit: false, typeMess: 'voice', controls: false, per: '', pin: false}])
@@ -427,12 +453,15 @@ const UserChat: FC = () => {
                         formData.append('date', formattedDate)
                         formData.append('id', messId)
                         formData.append('ans', answMess)
-                        formData.append('code', email)
                         formData.append('trueParamEmail', trueParamEmail)
                         formData.append('per', '')
                         formData.append('type', 'voice')
                         await fetch('http://localhost:4000/users-controller/new/chat', {
                             method: "PATCH",
+                            headers: {
+                                'Authorization': `Bearer ${email}`,
+                                'Content-Type': 'application/json',
+                            },
                             body: formData,
                         })
                         setMessages([...messages, {user: trueEmail, text: base64String, photos: [], date: formattedDate, id: messId, ans: answMess, edit: false, typeMess: 'voice', controls: false, per: '', pin: false}])
@@ -545,19 +574,20 @@ const UserChat: FC = () => {
     }, [])
     
     useEffect(() => {
-        if (socketId !== '' && trueEmail !== '') {
+        if (socketId !== '' && email !== '') {
         const addSocket = async () => {
             await fetch('http://localhost:4000/users-controller/add/socket', {
                 method: "PATCH",
                     headers: {
+                        'Authorization': `Bearer ${email}`,
                         'Content-Type': 'application/json',
                     },
-                body: JSON.stringify({ email, socketId })
+                body: JSON.stringify({ socketId })
             })
         }
         addSocket()
         }
-    }, [socketId, trueEmail])
+    }, [socketId, email])
 
 
     if (trueEmail !== '' && Array.isArray(usersBan) && mySubs !== null && userSubs !== null && userPermMess !== null) {
@@ -578,9 +608,10 @@ const UserChat: FC = () => {
                         await fetch('http://localhost:4000/users-controller/typing', {
                             method: "POST",
                             headers: {
+                                'Authorization': `Bearer ${email}`,
                                 'Content-Type': 'application/json',
                             },
-                            body: JSON.stringify({ email, trueParamEmail })
+                            body: JSON.stringify({ trueParamEmail })
                         })
                         }} 
                         value={inputMess}
@@ -604,9 +635,10 @@ const UserChat: FC = () => {
                             await fetch('http://localhost:4000/users-controller/start/voice', {
                                 method: "POST",
                                 headers: {
+                                    'Authorization': `Bearer ${email}`,
                                     'Content-Type': 'application/json',
                                 },
-                                body: JSON.stringify({ email, trueParamEmail })
+                                body: JSON.stringify({ trueParamEmail })
                             })
                         }}>🎤</div> : 
                         <div className="stop-record-btn" onClick={async() => {
@@ -616,9 +648,10 @@ const UserChat: FC = () => {
                             await fetch('http://localhost:4000/users-controller/stop/voice', {
                                 method: "POST",
                                 headers: {
+                                    'Authorization': `Bearer ${email}`,
                                     'Content-Type': 'application/json',
                                 },
-                                body: JSON.stringify({ email, trueParamEmail })
+                                body: JSON.stringify({ trueParamEmail })
                             })
                         }}>⏹️</div>
                     }
