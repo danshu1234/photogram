@@ -216,7 +216,6 @@ const Chats: FC = () => {
                                                 method: "PATCH",
                                                 headers: {
                                                     'Authorization': `Bearer ${email}`,
-                                                    'Content-Type': 'application/json',
                                                 },
                                                 body: formData,
                                             })

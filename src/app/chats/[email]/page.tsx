@@ -18,7 +18,6 @@ interface SendPhoto{
     file: File;
     base64: string;
 }
-
 const UserChat: FC = () => {
     
     const { startRecording, stopRecording, mediaBlobUrl } = useReactMediaRecorder({audio: true});
@@ -114,7 +113,6 @@ const UserChat: FC = () => {
                                 method: "PATCH",
                                 headers: {
                                     'Authorization': `Bearer ${email}`,
-                                    'Content-Type': 'application/json',
                                 },
                                 body: formData,
                             })
@@ -135,7 +133,6 @@ const UserChat: FC = () => {
                                 method: "PATCH",
                                 headers: {
                                     'Authorization': `Bearer ${email}`,
-                                    'Content-Type': 'application/json',
                                 },
                                 body: formData,
                             })
@@ -271,7 +268,6 @@ const UserChat: FC = () => {
                                     method: "PATCH",
                                     headers: {
                                         'Authorization': `Bearer ${email}`,
-                                        'Content-Type': 'application/json',
                                     },
                                     body: formData,
                                 })
@@ -283,9 +279,7 @@ const UserChat: FC = () => {
                                 await fetch('http://localhost:4000/users-controller/edit/mess', {
                                     method: "PATCH",
                                     headers: {
-                                        'Authorization': `Bearer ${email}`,
-                                        'Content-Type': 'application/json',
-                                    },
+                                        'Authorization': `Bearer ${email}`,                                    },
                                     body: JSON.stringify({ trueParamEmail, editMess, inputMess, per })
                                 })
                                 const newMess = messages.map(el => {
@@ -320,7 +314,6 @@ const UserChat: FC = () => {
                                 method: "PATCH",
                                 headers: {
                                     'Authorization': `Bearer ${email}`,
-                                    'Content-Type': 'application/json',
                                 },
                                 body: formData,
                             })
@@ -337,7 +330,6 @@ const UserChat: FC = () => {
     }
 
     const getUserPermAndSubs = async () => {
-        const email = trueEmail
         const getPermData = await fetch('http://localhost:4000/users-controller/get/perm/data', {
             method: "POST",
             headers: {
@@ -403,8 +395,8 @@ const UserChat: FC = () => {
             getBanArr()
             getMyBanArr()
             getUserPermAndSubs()
+            zeroMess(email, trueParamEmail)
         }
-        zeroMess(email, trueParamEmail)
     }, [trueParamEmail, trueEmail, email])
 
     useEffect(() => {
@@ -440,7 +432,6 @@ const UserChat: FC = () => {
                             method: "PATCH",
                             headers: {
                                 'Authorization': `Bearer ${email}`,
-                                'Content-Type': 'application/json',
                             },
                             body: formData,
                         })
@@ -460,7 +451,6 @@ const UserChat: FC = () => {
                             method: "PATCH",
                             headers: {
                                 'Authorization': `Bearer ${email}`,
-                                'Content-Type': 'application/json',
                             },
                             body: formData,
                         })
@@ -604,7 +594,6 @@ const UserChat: FC = () => {
                         className="message-input"
                         onChange={async(event: ChangeEvent<HTMLInputElement>) => {
                         setInputMess(event.target.value)
-                        const email = trueEmail
                         await fetch('http://localhost:4000/users-controller/typing', {
                             method: "POST",
                             headers: {
@@ -631,7 +620,6 @@ const UserChat: FC = () => {
                         <div className="record-btn" onClick={async() => {
                             startRecording()
                             setStartStop(true)
-                            const email = trueEmail
                             await fetch('http://localhost:4000/users-controller/start/voice', {
                                 method: "POST",
                                 headers: {
@@ -644,7 +632,6 @@ const UserChat: FC = () => {
                         <div className="stop-record-btn" onClick={async() => {
                             setStartStop(false)
                             stopRecording()
-                            const email = trueEmail
                             await fetch('http://localhost:4000/users-controller/stop/voice', {
                                 method: "POST",
                                 headers: {
