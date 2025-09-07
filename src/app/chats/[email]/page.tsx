@@ -279,7 +279,9 @@ const UserChat: FC = () => {
                                 await fetch('http://localhost:4000/users-controller/edit/mess', {
                                     method: "PATCH",
                                     headers: {
-                                        'Authorization': `Bearer ${email}`,                                    },
+                                        'Authorization': `Bearer ${email}`,  
+                                        'Content-Type': 'application/json',
+                                    },
                                     body: JSON.stringify({ trueParamEmail, editMess, inputMess, per })
                                 })
                                 const newMess = messages.map(el => {
