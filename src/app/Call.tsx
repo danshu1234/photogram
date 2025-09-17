@@ -44,6 +44,7 @@ const Call: FC = () => {
         peerInstance.on('connection', (connection) => {
             connection.on('data', (data: any) => {
                 if (data.type === 'call_perm') {
+                    console.log('Запрос на звонок')
                     setIncomeCall({name: data.message.name, peerId: data.message.peerId})
                 }
             })

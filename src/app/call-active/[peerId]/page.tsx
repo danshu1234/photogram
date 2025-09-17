@@ -27,6 +27,19 @@ const ActiveCall: FC = () => {
 
         peer.current = peerInstance
 
+        peerInstance.on('open', async(id) => {
+            const email = localStorage.getItem('photogram-enter')
+            const peerId = id
+            await fetch('http://localhost:4000/users-controller/add/peer', {
+                method: "PATCH",
+                headers: {
+                    'Authorization': `Bearer ${email}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ peerId })
+            })
+        })
+
         const initCall = async () => {
             const resultPeerId = params.peerId as string
             const localStream = await navigator.mediaDevices.getUserMedia({ audio: true })
