@@ -661,6 +661,7 @@ const UserChat: FC = () => {
         <div className="chat-container">
             <div className="chat-header">
                 <h3 className="chat-user-name" onClick={() => window.location.href=`/${trueParamEmail}`}>{trueParamEmail}</h3>
+                <button onClick={() => window.open(`/call/${trueParamEmail}`, '_blank')}>Позвонить</button>
                 <div className="online-status">
                     <span className={`status-dot ${onlineStatus === 'Online' ? 'online' : 'offline'}`}></span>
                     <span>{onlineStatus}</span>

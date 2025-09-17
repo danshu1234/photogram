@@ -10,6 +10,7 @@ interface UserInterface {
     open: boolean,
     usersBan: string[],
     socket: string,
+    peerId: string,
     notifs: Notif[],
     subscribes: string[],
     reports: string[],

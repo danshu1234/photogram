@@ -17,6 +17,7 @@ import { io } from "socket.io-client";
 import registerServiceWorker from "../RegisterServiceWorker";
 import getUserChats from "../getChats";
 import exitAcc from "../exitAcc";
+import Call from "../Call";
 
 export default function Home() {
 
@@ -334,6 +335,7 @@ export default function Home() {
       
       {notifsList}
       <main className={styles.main}>
+        <Call/>
         {subsListBtn}
         <Search/>
         <NameSearch allUsers={allUsers}/>
