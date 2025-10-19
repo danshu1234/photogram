@@ -28,32 +28,27 @@ export default function Home() {
   }
 
   const {} = useCheckReg()
-  const { email, setEmail, trueEmail } = useGetEmail()
+  const { trueEmail } = useGetEmail()
 
   const getMyNotifs = async () => {
-    const getEmailFromStorage = localStorage.getItem('photogram-enter')
-    if (getEmailFromStorage) {
-      const getNotifs = await fetch(`http://localhost:4000/users-controller/get/notifs`, {
-        method: "GET",
-        headers: {
-          'Authorization': `Bearer ${email}`,
-          'Content-Type': 'application/json',
-        },
-      })
-      if (getNotifs.ok) {
-        const resultNotifs = await getNotifs.json()
-        setNotifs(resultNotifs)
-      } else {
-        exitAcc()
-      }
+    const getNotifs = await fetch(`http://localhost:4000/users-controller/get/notifs`, {
+      method: "GET",
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
+    })
+    if (getNotifs.ok) {
+      const resultNotifs = await getNotifs.json()
+      setNotifs(resultNotifs)
+    } else {
+      exitAcc()
     }
   }
 
   useEffect(() => {
-    if (email !== '') {
-      getMyNotifs()
-    }
-  }, [email])
+    getMyNotifs()
+  }, [])
 
   const [socketId, setSocketId] = useState <string> ('')
   
@@ -192,15 +187,13 @@ export default function Home() {
   }, [allPhotos])
 
   useEffect(() => {
-    if (email !== '') {
-      const getAllUsers = async () => {
-        const allUsers = await fetch('http://localhost:4000/users-controller/get/all/users')
-        const resultUsers = await allUsers.json()
-        setAllUsers(resultUsers)
-      }
-      getAllUsers()
+    const getAllUsers = async () => {
+      const allUsers = await fetch('http://localhost:4000/users-controller/get/all/users')
+      const resultUsers = await allUsers.json()
+      setAllUsers(resultUsers)
     }
-  }, [email])
+    getAllUsers()
+  }, [])
 
   useEffect(() => {
     if (date === 'Все') {
@@ -231,13 +224,9 @@ export default function Home() {
   socket.on('replyMessage', async(message) => {
       if (message.type === 'message') {
         const user = message.user
-        setEmail(prev => {
-            let email = prev
-            if (document.visibilityState !== 'visible') {
-              getUserChats(email, user)
-            }
-            return prev
-        })
+          if (document.visibilityState !== 'visible') {
+            getUserChats(user)
+          }
         setMessCount(prev => prev + 1)
       } else if (message.type === 'onlineStatus') {
         const userEmail = message.user
@@ -265,11 +254,11 @@ export default function Home() {
       const addSocket = async () => {
           await fetch('http://localhost:4000/users-controller/add/socket', {
           method: "PATCH",
-              headers: {
-                'Authorization': `Bearer ${email}`,
-                'Content-Type': 'application/json',
-              },
-          body: JSON.stringify({ email, socketId })
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ socketId }),
+          credentials: 'include',
       })
       }
       addSocket()
@@ -284,7 +273,7 @@ export default function Home() {
   }
 
   if (isNotifs) {
-    notifsList = <NotifsList notifs={notifs} setIsNotifs={setIsNotifs} email={email} setNotifs={setNotifs}/>
+    notifsList = <NotifsList notifs={notifs} setIsNotifs={setIsNotifs} setNotifs={setNotifs}/>
   }
 
   if (photos === null) {
@@ -298,8 +287,8 @@ export default function Home() {
       <RingLoader/>
     </div>
     } else {
-      if (photos.length !== 0 && email !== '' && trueEmail !== '') {
-      photosList = <List photos={photos} setPhotos={setPhotos} email={email} setSavePhotos={setSavePhotos} setSharePost={setSharePost} trueEmail={trueEmail}/>
+      if (photos.length !== 0 && trueEmail !== '') {
+      photosList = <List photos={photos} setPhotos={setPhotos} setSavePhotos={setSavePhotos} setSharePost={setSharePost} trueEmail={trueEmail}/>
     } else {
       photosList = <h2 className={styles.noPhotos}>Фото не найдены</h2>
     }

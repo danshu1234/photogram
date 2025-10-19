@@ -11,7 +11,7 @@ const MySubsList: FC = () => {
 
     const {} = useNotif()
     const {} = useCheckReg()
-    const { trueEmail, email } = useGetEmail()
+    const { trueEmail } = useGetEmail()
 
     const [subsList, setSubsList] = useState<string[]>([])
     let list;
@@ -37,7 +37,10 @@ const MySubsList: FC = () => {
     useEffect(() => {
         if (trueEmail !== '') {
             const getSubsList = async () => {
-                const getAllSubs = await fetch(`http://localhost:4000/users-controller/all/subs/and/country/${email}`)
+                const getAllSubs = await fetch('http://localhost:4000/users-controller/all/subs/and/country', {
+                    method: "GET",
+                    credentials: 'include',
+                })
                 const resultSubs = await getAllSubs.json()
                 const result = resultSubs.subscribes.slice(1, resultSubs.length)
                 setSubsList(result)

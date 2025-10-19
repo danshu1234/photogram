@@ -56,11 +56,12 @@ const EnterReg: FC <Props> = (props) => {
                         headers: {
                             'Content-Type': 'application/json',
                         },
-                        body: JSON.stringify({ login, password })
+                        body: JSON.stringify({ login, password }),
+                        credentials: 'include',
                     })
-                    const resultEnter = await enter.text()
-                    if (resultEnter !== 'ERR') {
-                        localStorage.setItem('photogram-enter', resultEnter)
+                    if (enter.ok) {
+                        const resultEnter = await enter.json()
+                        localStorage.setItem('photogram-enter-refresh', resultEnter.refreshToken)
                         window.location.href='/home'
                     } else {
                         alert('Неверный логин или пароль')
@@ -82,16 +83,16 @@ const EnterReg: FC <Props> = (props) => {
                         headers: {
                             'Content-Type': 'application/json',
                         },
-                        body: JSON.stringify({ firstPass, secondPass, name, login, code })
+                        body: JSON.stringify({ firstPass, secondPass, name, login, code }),
+                        credentials: 'include',
                     })
                     if (reg.ok) {
-                        const resultReg = await reg.text()
-                        if (resultReg !== 'ERR') {
-                            localStorage.setItem('photogram-enter', resultReg)
-                            window.location.href = '/home'
-                        } else {
-                            alert('Неверный код')
-                        }
+                        const resultReg = await reg.json()
+                        localStorage.setItem('photogram-enter-refresh', resultReg.refreshToken)
+                        window.location.href = '/home' 
+                    } else {
+                        const resultReg = await reg.json()
+                        alert(resultReg.message)
                     }
                 } else {
                     console.log('Введите код')

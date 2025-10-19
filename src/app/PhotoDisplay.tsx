@@ -9,7 +9,6 @@ interface PropsPhotoDisplay {
     countLikes: number,
     likeUrl: string,
     id: string,
-    email: string,
     photos: Photo[],
     setPhotos: Function,
     userEmail: string,
@@ -29,23 +28,22 @@ const PhotoDisplay: FC<PropsPhotoDisplay> = (props) => {
 
     const likeUnlikePhoto = async () => {
         const { id, trueEmail, userEmail } = props;
-        const email = props.email
         if (!props.likeUrl.includes('сердце')) {
             await fetch('http://localhost:4000/photos/like/this/photo', {
                 method: "PATCH",
                 headers: {
-                    'Authorization': `Bearer ${email}`,
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ id, userEmail })
+                body: JSON.stringify({ id }),
+                credentials: 'include',
             });
             await fetch('http://localhost:4000/users-controller/new/notif', {
                 method: "PATCH",
                 headers: {
-                    'Authorization': `Bearer ${email}`,
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ userEmail, photoId: id, type: 'photo' })
+                body: JSON.stringify({ userEmail, photoId: id, type: 'photo' }),
+                credentials: 'include',
             });
             props.setPhotos(props.photos.map(el =>
                 el.id === id ? { ...el, likes: [...el.likes, trueEmail] } : el
@@ -54,10 +52,10 @@ const PhotoDisplay: FC<PropsPhotoDisplay> = (props) => {
             await fetch('http://localhost:4000/photos/unlike/photo', {
                 method: "PATCH",
                 headers: {
-                    'Authorization': `Bearer ${email}`,
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ id })
+                body: JSON.stringify({ id }),
+                credentials: 'include',
             });
             const findPhoto = props.photos.find(el => el.id === id);
             const filteredLikes = findPhoto?.likes.filter(el => el !== trueEmail) || [];
@@ -72,13 +70,13 @@ const PhotoDisplay: FC<PropsPhotoDisplay> = (props) => {
         deleteBtn = (
             <button className={styles.actionBtn} onClick={async () => {
                 const photoId = props.id
-                const email = props.email
                 await fetch('http://localhost:4000/photos/delete/photo', {
                     method: "DELETE",
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ photoId, email })
+                    body: JSON.stringify({ photoId }),
+                    credentials: 'include',
                 });
                 props.setPhotos(props.photos.filter(el => el.id !== props.id));
             }}>Удалить</button>
@@ -90,13 +88,7 @@ const PhotoDisplay: FC<PropsPhotoDisplay> = (props) => {
             <p className={styles.date}>{props.date}</p>
             <div className={styles.navWrapper}><img src={props.url} className={styles.photoImage} onClick={() => window.location.href=`bigphoto/${props.id}`}/></div>
             <div className={styles.likeSection}>
-                <img src={props.likeUrl} className={styles.likeButton} onClick={() => {
-                    if (window.location.pathname === '/' || localStorage.getItem('photogram-enter')) {
-                        likeUnlikePhoto();
-                    } else {
-                        window.location.href = '/enter';
-                    }
-                }} />
+                <img src={props.likeUrl} className={styles.likeButton} onClick={likeUnlikePhoto} />
                 <span className={styles.likesCount}>{props.countLikes} likes</span>
                 <img src='/images/gas-kvas-com-p-znak-soobshcheniya-na-prozrachnom-fone-34.png'
                     className={styles.zoomIcon}

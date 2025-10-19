@@ -9,7 +9,6 @@ import { FC, useState, useEffect, useRef } from "react"
 const CallPage: FC = () => {
 
     const { trueParamEmail } = useGetTrueParamEmail()
-    const { email, setEmail } = useGetEmail()
 
     const params = useParams()
 
@@ -72,10 +71,10 @@ const CallPage: FC = () => {
             const dataForCall = await fetch('http://localhost:4000/users-controller/data/call', {
                 method: "POST",
                 headers: {
-                    'Authorization': `Bearer ${email}`,
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ trueParamEmail })
+                body: JSON.stringify({ trueParamEmail }),
+                credentials: 'include',
             }) 
             const resultDataForCall = await dataForCall.json()
             if (call.peer === resultDataForCall.friendPeer) {
@@ -93,32 +92,30 @@ const CallPage: FC = () => {
     }, [])
 
     useEffect(() => {
-        if (email !== '' && peerId !== '') {
-            const addPeer = async () => {
-                const peerId = ''
-                await fetch('http://localhost:4000/users-controller/add/peer', {
-                    method: "PATCH",
-                    headers: {
-                        'Authorization': `Bearer ${email}`,
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ peerId })
-                })
-            }
-            addPeer()
+        const addPeer = async () => {
+            const peerId = ''
+            await fetch('http://localhost:4000/users-controller/add/peer', {
+                method: "PATCH",
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ peerId }),
+                credentials: 'include',
+            })
         }
-    }, [email, peerId])
+        addPeer()
+    }, [peerId])
 
     useEffect(() => {
-        if (email !== '' && trueParamEmail !== '' && peerId !== '') {
+        if (trueParamEmail !== '' && peerId !== '') {
             const getDataForCall = async () => {
                 const dataForCall = await fetch('http://localhost:4000/users-controller/data/call', {
                     method: "POST",
                     headers: {
-                        'Authorization': `Bearer ${email}`,
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ trueParamEmail })
+                    body: JSON.stringify({ trueParamEmail }),
+                    credentials: 'include',
                 })
                 const resultDataForCall = await dataForCall.json()
                 setFriendPeer(resultDataForCall.friendPeer)
@@ -140,7 +137,7 @@ const CallPage: FC = () => {
                 }
             getDataForCall()
         }
-    }, [email, trueParamEmail, peerId])
+    }, [trueParamEmail, peerId])
 
     return (
         <div>

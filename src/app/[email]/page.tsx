@@ -19,7 +19,7 @@ export default function UserPage() {
     const {} = useNotif();
     const {} = useCheckReg();
     
-    const { email, trueEmail } = useGetEmail();
+    const { trueEmail } = useGetEmail();
     const [myEmail, setMyEmail] = useState<string | null>(null);
     const [mySubs, setMySubs] = useState<string[] | null>(null);
     const { trueParamEmail } = useGetTrueParamEmail();
@@ -33,11 +33,11 @@ export default function UserPage() {
 
     if (trueParamEmail !== trueEmail) {
         if (user?.permMess === 'Все') {
-        chatBtn = <ChatBtn trueParamEmail={trueParamEmail} />;
-     } else if (user?.permMess === 'Только друзья') {
-        if (mySubs?.includes(trueParamEmail) && user.subscribes.includes(email)) {
             chatBtn = <ChatBtn trueParamEmail={trueParamEmail} />;
-        }
+        } else if (user?.permMess === 'Только друзья') {
+            if (mySubs?.includes(trueParamEmail) && user.subscribes.includes(trueEmail)) {
+                chatBtn = <ChatBtn trueParamEmail={trueParamEmail} />;
+            }
         }
     }
 
@@ -51,10 +51,10 @@ export default function UserPage() {
                     await fetch('http://localhost:4000/users-controller/new/notif', {
                         method: "PATCH",
                         headers: {
-                            'Authorization': `Bearer ${email}`,
                             'Content-Type': 'application/json',
                         },
-                        body: JSON.stringify({ userEmail, type })
+                        body: JSON.stringify({ userEmail, type }),
+                        credentials: 'include',
                     });
                     setPhotos('send')
                 }}>Отправить запрос</button>
@@ -66,7 +66,7 @@ export default function UserPage() {
         if (photos?.length === 0) {
             photoShow = <h3 className={styles.infoText}>Пользователь еще не публиковал фото</h3>;
         } else {
-            photoShow = <List photos={photos} setPhotos={setPhotos} email={email} trueEmail={trueEmail} />;
+            photoShow = <List photos={photos} setPhotos={setPhotos} trueEmail={trueEmail} />;
         }
     }
 
@@ -94,24 +94,34 @@ export default function UserPage() {
                             await fetch('http://localhost:4000/users-controller/unsub', {
                                 method: "PATCH",
                                 headers: {
-                                    'Authorization': `Bearer ${email}`,
                                     'Content-Type': 'application/json',
                                 },
-                                body: JSON.stringify({ targetEmail })
+                                body: JSON.stringify({ targetEmail }),
+                                credentials: 'include',
                             });
                             setUser({...user, subscribes: user.subscribes.filter(el => el !== myEmail)})
                         }}>Отписаться</button>
                         :
                         <button className={styles.primaryBtn} onClick={async () => {
                             const targetEmail = trueParamEmail;
+                            const userEmail = targetEmail
+                            const type = 'sub'
                             await fetch('http://localhost:4000/users-controller/sub', {
                                 method: "PATCH",
                                 headers: {
-                                    'Authorization': `Bearer ${email}`,
                                     'Content-Type': 'application/json',
                                 },
-                                body: JSON.stringify({ targetEmail })
+                                body: JSON.stringify({ targetEmail }),
+                                credentials: 'include',
                             });
+                            await fetch('http://localhost:4000/users-controller/new/notif', {
+                                method: "PATCH",
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                },
+                                body: JSON.stringify({ userEmail, type }),
+                                credentials: 'include',
+                            })
                             setUser({...user, subscribes: [...user.subscribes, myEmail]})
                         }}>Подписаться</button>
                     }
@@ -124,10 +134,10 @@ export default function UserPage() {
                             await fetch('http://localhost:4000/users-controller/new/report', {
                                 method: "PATCH",
                                 headers: {
-                                    'Authorization': `Bearer ${email}`,
                                     'Content-Type': 'application/json',
                                 },
-                                body: JSON.stringify({ targetEmail })
+                                body: JSON.stringify({ targetEmail }),
+                                credentials: 'include',
                             });
                             window.location.reload();
                         }}>Пожаловаться</button>
@@ -147,10 +157,10 @@ export default function UserPage() {
         const getPhotos = await fetch(`http://localhost:4000/photos/get/user/photos`, {
             method: "POST",
             headers: {
-                'Authorization': `Bearer ${email}`,
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ trueParamEmail })
+            body: JSON.stringify({ trueParamEmail }),
+            credentials: 'include',
         });
         if (getPhotos.ok) {
             const resultPhotos = await getPhotos.json();
@@ -184,30 +194,27 @@ export default function UserPage() {
     }, [trueParamEmail]);
 
     useEffect(() => {
-        if (email !== '') {
-            const getMySubs = async () => {
-                const mySubs = await fetch('http://localhost:4000/users-controller/all/subs/and/country', {
-                    method: "GET",
-                    headers: {
-                        'Authorization': `Bearer ${email}`,
-                        'Content-Type': 'application/json',
-                    },
-                });
-                const resultSubs = await mySubs.json();
-                setMySubs(resultSubs.subscribes);
-            };
-
-            const getMyEmail = async () => {
-                const resultMyEmail = await getUserEmail();
-                if (resultMyEmail) setMyEmail(resultMyEmail);
-            };
-            getMySubs();
-            getMyEmail();
-        }
-    }, [email]);
+        const getMySubs = async () => {
+            const mySubs = await fetch('http://localhost:4000/users-controller/all/subs/and/country', {
+                method: "GET",
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                credentials: 'include',
+            });
+            const resultSubs = await mySubs.json();
+            setMySubs(resultSubs.subscribes);
+        };
+        const getMyEmail = async () => {
+            const resultMyEmail = await getUserEmail();
+            if (resultMyEmail) setMyEmail(resultMyEmail);
+        };
+        getMySubs();
+        getMyEmail();
+    }, []);
 
     useEffect(() => {
-        if (user && trueEmail && email && trueParamEmail) {
+        if (user && trueEmail && trueParamEmail) {
             getUserPhotos();
 
             if (user.visits && !user.visits.includes(trueEmail)) {
@@ -215,11 +222,12 @@ export default function UserPage() {
                 fetch('http://localhost:4000/users-controller/update/visits', {
                     method: "PATCH",
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, targetEmail })
+                    body: JSON.stringify({ targetEmail }),
+                    credentials: 'include',
                 });
             }
         }
-    }, [user, trueEmail, email, trueParamEmail]);
+    }, [user, trueEmail, trueParamEmail]);
 
     return (
         <div className={styles.pageWrapper}>

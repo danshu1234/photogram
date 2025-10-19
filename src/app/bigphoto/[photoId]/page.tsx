@@ -12,7 +12,7 @@ import styles from '../BigPhoto.module.css'
 
 const BigPhoto = () => {
     const {} = useNotif()
-    const { email, trueEmail } = useGetEmail()
+    const { trueEmail } = useGetEmail()
     const {} = useCheckReg()
     const params = useParams();
     const [url, setUrl] = useState<string>('');
@@ -32,7 +32,8 @@ const BigPhoto = () => {
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ photoId, perm, email })
+            body: JSON.stringify({ photoId, perm }),
+            credentials: 'include',
         })
         const resultChangePerm = await changeCommentsPerm.text()
         if (resultChangePerm === 'OK') {
@@ -87,7 +88,8 @@ const BigPhoto = () => {
                                 headers: {
                                     'Content-Type': 'application/json',
                                 },
-                                body: JSON.stringify({ email, photoId, comment })
+                                body: JSON.stringify({ photoId, comment }),
+                                credentials: 'include',
                             })
                             const resultDelete = await deleteComment.text()
                             if (resultDelete === 'OK') {
@@ -133,7 +135,8 @@ const BigPhoto = () => {
                                 headers: {
                                     'Content-Type': 'application/json',
                                 },
-                                body: JSON.stringify({ targetId, email, commentInput })
+                                body: JSON.stringify({ targetId, commentInput }),
+                                credentials: 'include',
                             })
                             const resultAdd = await addComment.text()
                             if (resultAdd === 'OK') {

@@ -2,11 +2,8 @@
 
 import { FC, useState, useRef, useEffect } from "react"
 import Peer, { type Peer as PeerType } from 'peerjs'
-import useGetEmail from "./useGetEmail"
 
 const Call: FC = () => {
-
-    const { email } = useGetEmail()
 
     const [peerId, setPeerId] = useState <string> ('')
     const peer = useRef <Peer | null> (null)
@@ -53,20 +50,20 @@ const Call: FC = () => {
     }, [])
 
     useEffect(() => {
-        if (email !== '' && peerId !== '') {
+        if (peerId !== '') {
             const addPeer = async () => {
                 await fetch('http://localhost:4000/users-controller/add/peer', {
                     method: "PATCH",
                     headers: {
-                        'Authorization': `Bearer ${email}`,
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ peerId })
+                    body: JSON.stringify({ peerId }),
+                    credentials: 'include',
                 })
             }
             addPeer()
         }
-    }, [email, peerId])
+    }, [peerId])
 
     return (
         <div>

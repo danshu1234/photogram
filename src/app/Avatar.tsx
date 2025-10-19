@@ -4,7 +4,6 @@ import FileChanger from "./FileChanger"
 import styles from './Avatar.module.css'
 
 interface AvaProps {
-    email: string,
     type: string,
 }
 
@@ -17,15 +16,15 @@ const Avatar: FC<AvaProps> = (props) => {
             const avatar = await fetch('http://localhost:4000/users-controller/get/avatar', {
                 method: "GET",
                 headers: {
-                    'Authorization': `Bearer ${props.email}`,
                     'Content-Type': 'application/json',
                 },
+                credentials: 'include',
             })
             const resultAvatar = await avatar.text()
             setAva(resultAvatar)
         }
         getAvatar()
-    }, [props.email])
+    }, [])
 
     return (
         <div className={styles.avatarContainer}>
@@ -38,7 +37,14 @@ const Avatar: FC<AvaProps> = (props) => {
             )}
             {props.type === 'edit' && (
                 <div className={styles.fileInputContainer}>
-                    <FileChanger setNewAva={setNewAva} newAva={newAva} email={props.email}/>
+                    <FileChanger setNewAva={setNewAva} newAva={newAva} setAva={setAva}/>
+                    {ava !== '' ? <button onClick={async() => {
+                        await fetch('http://localhost:4000/users-controller/delete/avatar', {
+                            method: "PATCH",
+                            credentials: 'include',
+                        })
+                        setAva('')
+                    }}>Удалить аватар</button> : null}
                 </div>
             )}
         </div>

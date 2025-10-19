@@ -33,10 +33,10 @@ const ActiveCall: FC = () => {
             await fetch('http://localhost:4000/users-controller/add/peer', {
                 method: "PATCH",
                 headers: {
-                    'Authorization': `Bearer ${email}`,
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ peerId })
+                body: JSON.stringify({ peerId }),
+                credentials: 'include',
             })
         })
 

@@ -6,8 +6,6 @@ import getUserChats from "./getChats";
 
 
 const useNotif = () => {
-
-    const { email, setEmail } = useGetEmail()
     
     const [socketId, setSocketId] = useState ('')
 
@@ -18,20 +16,20 @@ const useNotif = () => {
     }, []);
 
     useEffect(() => {
-        if (socketId !== '' && email !== '') {
+        if (socketId !== '') {
             const addSocket = async () => {
                 await fetch('http://localhost:4000/users-controller/add/socket', {
                 method: "PATCH",
                 headers: {
-                    'Authorization': `Bearer ${email}`,
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ socketId })
+                body: JSON.stringify({ socketId }),
+                credentials: 'include',
             })
             }
             addSocket()
         }
-    }, [socketId, email])
+    }, [socketId])
 
     useEffect(() => {
 
@@ -44,13 +42,9 @@ const useNotif = () => {
         socket.on('replyMessage', async(message) => {
             if (message.type === 'message' && document.visibilityState !== 'visible') {
                 const user = message.user
-                setEmail(prev => {
-                    let email = prev
-                    if (document.visibilityState !== 'visible') {
-                        getUserChats(email, user)
-                    }
-                    return prev
-                })
+                if (document.visibilityState !== 'visible') {
+                    getUserChats(user)
+                }
             } else if (message.type === 'onlineStatus') {
                 const userEmail = message.user
                 await fetch('http://localhost:4000/users-controller/give/online/status', {

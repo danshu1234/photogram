@@ -1,14 +1,11 @@
 import { ChangeEvent, FC, useState } from "react";
-import useGetEmail from "./useGetEmail";
 import './CreatePhoto.css'; 
 
 interface CreateProps {
     setIsModal: (value: boolean) => void;
-    email: string;
 }
 
 const CreatePhoto: FC<CreateProps> = (props) => {
-    const { email } = useGetEmail();
     const [photo, setPhoto] = useState <{file: File, base64: string} | null> (null)
 
     let photosShow;
@@ -31,7 +28,7 @@ const CreatePhoto: FC<CreateProps> = (props) => {
     };
 
     const createNewPhoto = async () => {
-        if (photo === null || !email) return;
+        if (photo === null) return;
 
         const date = new Date(); 
         const day = date.getDate()
@@ -39,20 +36,18 @@ const CreatePhoto: FC<CreateProps> = (props) => {
         const year = date.getFullYear();
         const result = `${day}.${month}.${year}`;
 
-        const resultEmail = props.email
-
         const formData = new FormData()
 
-        if (photo !== null && resultEmail) {
+        if (photo !== null) {
             formData.append('photo', photo.file)
             formData.append('id', Date.now().toString())
             formData.append('date', result)
-            formData.append('email', resultEmail)
         }
 
         const createPhoto = await fetch('http://localhost:4000/photos/create', {
             method: "POST",
             body: formData,
+            credentials: 'include',
         });
 
         if (createPhoto.ok) {

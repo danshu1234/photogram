@@ -12,13 +12,10 @@ interface Notif{
 interface NotifsListProps{
     notifs: Notif[],
     setIsNotifs: Function,
-    email: string,
     setNotifs: Function,
 }
 
 const NotifsList: FC <NotifsListProps> = (props) => {
-
-    const { email, trueEmail } = useGetEmail()
 
     let notifs;
 
@@ -27,10 +24,10 @@ const NotifsList: FC <NotifsListProps> = (props) => {
         await fetch('http://localhost:4000/users-controller/new/notif', {
             method: "PATCH",
             headers: {
-                'Authorization': `Bearer ${email}`,
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ userEmail, type })
+            body: JSON.stringify({ userEmail, type }),
+            credentials: 'include',
         })
     }
 
@@ -38,10 +35,10 @@ const NotifsList: FC <NotifsListProps> = (props) => {
         const deleteNotif = await fetch('http://localhost:4000/users-controller/delete/perm', {
             method: "PATCH",
             headers: {
-                'Authorization': `Bearer ${email}`,
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ user })
+            body: JSON.stringify({ user }),
+            credentials: 'include',
         })
         const resultNotifs = await deleteNotif.json()
         props.setNotifs(resultNotifs)
@@ -62,10 +59,10 @@ const NotifsList: FC <NotifsListProps> = (props) => {
                                     await fetch('http://localhost:4000/users-controller/new/perm/user', {
                                         method: "PATCH",
                                         headers: {
-                                            'Authorization': `Bearer ${email}`,
                                             'Content-Type': 'application/json',
                                         },
-                                        body: JSON.stringify({ newUserEmail })
+                                        body: JSON.stringify({ newUserEmail }),
+                                        credentials: 'include',
                                     })
                                 }
                                 addNewPermUser()
@@ -98,9 +95,9 @@ const NotifsList: FC <NotifsListProps> = (props) => {
                         const clearNotifs = await fetch('http://localhost:4000/users-controller/clear/notifs', {
                             method: "PATCH",
                             headers: {
-                                'Authorization': `Bearer ${email}`,
                                 'Content-Type': 'application/json',
                             },
+                            credentials: 'include',
                         })
                         if (clearNotifs.ok) {
                             const resultNotifs = await clearNotifs.json()

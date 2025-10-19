@@ -14,7 +14,7 @@ import exitAcc from '../exitAcc'
 export default function MyPage() {
   const {} = useNotif()
   const {} = useCheckReg();
-  const { email, trueEmail } = useGetEmail();
+  const { trueEmail } = useGetEmail();
 
   const [openAcc, setOpenAcc] = useState<boolean>(false) 
   const [subs, setSubs] = useState<string[]>([])
@@ -22,16 +22,15 @@ export default function MyPage() {
   const [myPhotos, setMyPhotos] = useState<Photo[] | null>(null)
 
   let photosList;
-  let showAva;
   let open;
 
   const closeAcc = async () => {
     const close = await fetch('http://localhost:4000/users-controller/close/acc', {
       method: "PATCH",
       headers: {
-        'Authorization': `Bearer ${email}`,
         'Content-Type': 'application/json',
       },
+      credentials: 'include',
     })
     if (close.ok) {
       const resultClose = await close.text()
@@ -47,9 +46,9 @@ export default function MyPage() {
     const opAcc = await fetch('http://localhost:4000/users-controller/open/acc', {
       method: "PATCH",
       headers: {
-        'Authorization': `Bearer ${email}`,
         'Content-Type': 'application/json',
       },
+      credentials: 'include',
     })
     if (opAcc.ok) {
       const resultOpen = await opAcc.text()
@@ -79,12 +78,9 @@ export default function MyPage() {
     />
   }
 
-  if (email !== '') {
-    showAva = <Avatar email={email} type='edit'/>
-  }
 
   if (myPhotos !== null && myPhotos.length !== 0 && trueEmail !== '') {
-    photosList = <List photos={myPhotos} setPhotos={setMyPhotos} email={email} trueEmail={trueEmail}/>
+    photosList = <List photos={myPhotos} setPhotos={setMyPhotos} trueEmail={trueEmail}/>
   } else if (myPhotos !== null && myPhotos.length === 0) {
     photosList = <h2 className={styles.noPhotos}>Вы еще не публиковали фото</h2>
   } else {
@@ -92,16 +88,16 @@ export default function MyPage() {
   }
 
   useEffect(() => {
-    if (email !== '' && trueEmail !== '') {
+    if (trueEmail !== '') {
       const trueParamEmail = trueEmail
       const getMyPhotos = async () => {
         const getPhotos = await fetch(`http://localhost:4000/photos/get/user/photos`, {
           method: "POST",
           headers: {
-            'Authorization': `Bearer ${email}`,
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ trueParamEmail })
+          body: JSON.stringify({ trueParamEmail }),
+          credentials: 'include',
         })
         if (getPhotos.ok) {
           const resultPhotos = await getPhotos.json()
@@ -118,55 +114,51 @@ export default function MyPage() {
       }
       getMyPhotos()
     }
-  }, [email, trueEmail]);
+  }, [trueEmail]);
 
   useEffect(() => {
-    if (email !== '') {
-      const getMySubs = async () => {
-        const getAllSubs = await fetch('http://localhost:4000/users-controller/all/subs/and/country', {
-          method: "GET",
-          headers: {
-            'Authorization': `Bearer ${email}`,
-            'Content-Type': 'application/json',
-          },
-        })
-        if (getAllSubs.ok) {
-          const resultSubs = await getAllSubs.json()
-          const result = resultSubs.subscribes.slice(1, resultSubs.length)
-          setSubs(result)
-        } else {
-          exitAcc()
-        }
+    const getMySubs = async () => {
+      const getAllSubs = await fetch('http://localhost:4000/users-controller/all/subs/and/country', {
+        method: "GET",
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+      })
+      if (getAllSubs.ok) {
+        const resultSubs = await getAllSubs.json()
+        const result = resultSubs.subscribes.slice(1, resultSubs.length)
+        setSubs(result)
+      } else {
+        exitAcc()
       }
-      getMySubs()
     }
-  }, [email])
+    getMySubs()
+  }, [])
   
   useEffect(() => {
-    if (email !== '') {
-      const checkOpenStatus = async () => {
-        const checkStatus = await fetch('http://localhost:4000/users-controller/check/open', {
-          method: "GET",
-          headers: {
-            'Authorization': `Bearer ${email}`,
-            'Content-Type': 'application/json',
-          },
-        })
-        if (checkStatus) {
-          const resultStatus = await checkStatus.json()
-          setOpenAcc(resultStatus)
-        } else {
-          exitAcc()
-        }
+    const checkOpenStatus = async () => {
+      const checkStatus = await fetch('http://localhost:4000/users-controller/check/open', {
+        method: "GET",
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+      })
+      if (checkStatus) {
+        const resultStatus = await checkStatus.json()
+        setOpenAcc(resultStatus)
+      } else {
+        exitAcc()
       }
-      checkOpenStatus()
     }
-  }, [email])
+    checkOpenStatus()
+  }, [])
 
   return (
     <div className={styles.container}>
       <header className={styles.header}>
-        {showAva}
+        <Avatar type="edit"/>
         <span className={styles.email}>{trueEmail}</span>
         <h1 className={styles.title}>Мои фото</h1>
         <h3 
@@ -186,7 +178,7 @@ export default function MyPage() {
         </button>
       </header>
       
-      {isModal && <CreatePhoto setIsModal={setIsModal} email={email}/>}
+      {isModal && <CreatePhoto setIsModal={setIsModal}/>}
       <div className={styles.photosContainer}>
         {photosList}
       </div>

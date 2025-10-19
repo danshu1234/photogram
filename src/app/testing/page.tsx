@@ -1,233 +1,107 @@
 'use client'
 
 import { ChangeEvent, FC, useEffect, useRef, useState } from "react"
-import Peer, { DataConnection, MediaConnection, PeerConnectOption } from 'peerjs';
 
 const Testing: FC = () => {
 
-    interface Message{
-        name: string;
-        message: string;
-    }
-
-    const [show, setShow] = useState <{showState: string, peerId: string}> ({showState: '', peerId: ''})
-    const [peerId, setPeerId] = useState <string> ('')
-    const peer = useRef <Peer | null> (null)
-    const remoteAudioRef = useRef <HTMLAudioElement | null> (null)
-    const [watchArr, setWatchArr] = useState <string[]> ([])
-    const [inputPeerId, setInputPeerId] = useState <string> ('')
-    const [messages, setMessages] = useState <Message[]> ([])
-    const [inputMess, setInputMess] = useState <string> ('')
-    const [name, setName] = useState <string> ('')
-    const [inputName, setInputName] = useState <string> ('')
+    const [login, setLogin] = useState <string> ('')
+    const [pass, setPass] = useState <string> ('')
+    const [authName, setAuthName] = useState <string | null> (null)
     let mainShow;
-    let messShow;
 
-    if ((show.showState === 'watch' && show.peerId !== '') || show.showState === 'stream') {
-        messShow = <div>
-            <h3>Чат</h3>
-            {messages.length !== 0 ? <ul style={{listStyle: 'none'}}>
-                {messages.map((item, index) => {
-                    return <li key={index}>{`${item.name}: ${item.message}`}</li>
-                })}
-            </ul> : null}
-            <input placeholder="Сообщение" value={inputMess} onChange={(event: ChangeEvent<HTMLInputElement>) => setInputMess(event.target.value)}/>
-            <button onClick={() => {
-                if (peerId !== show.peerId) {
-                    if (inputMess !== '') {
-                        const signalConnection = peer.current?.connect(show.peerId)
-                        if (signalConnection) {
-                            signalConnection.on('open', () => {
-                                signalConnection.send({
-                                    type: 'new_mess',
-                                    message: {name: name, message: inputMess},
-                                })
-                            })
-                            setInputMess('')
-                        }
-                    }
-                } else {
-                    for (let item of watchArr) {
-                        const signalConnection = peer.current?.connect(item)
-                        if (signalConnection) {
-                            signalConnection.on('open', () => {
-                                signalConnection.send({
-                                    type: 'new_message',
-                                    message: {name: name, message: inputMess},
-                                })
-                            })
-                        }
-                    }
-                    setMessages([...messages, {name: name, message: inputMess}])
-                    setInputMess('')
-                }
-            }}>Отправить</button>
-        </div>
-    }
-
-    if (show.showState === '') {
-        mainShow = <div>
-            <button onClick={() => {
-                setShow({showState: 'stream', peerId: peerId})
-            }}>Начать трансляцию</button>
-            <button onClick={() => setShow({showState: 'watch', peerId: ''})}>Подключиться к трансляции</button>
-            <button onClick={() => {
-                localStorage.removeItem('name')
-                window.location.reload()
-            }}>Поменять имя</button>
-        </div>
-    } else {
-        if (show.showState === 'stream' && show.peerId !== '') {
+    if (authName) {
+        if (authName !== 'auth') {
             mainShow = <div>
-                <h3>Ссылка для подключения: {show.peerId}</h3>
+                <h2>Привет, {authName}</h2>
                 <button onClick={async() => {
-                    await navigator.clipboard.writeText(show.peerId)
-                }}>Скопировать</button>
-                <p>Вас слушают {watchArr.length} человек</p>
+                    const accessToken = localStorage.getItem('accessToken')
+                    await fetch('http://localhost:4000/testing-users/exit/from/all', {
+                        method: "DELETE",
+                        headers: {
+                            'Authorization': `Bearer ${accessToken}`,
+                            'Content-Type': 'application/json',
+                        },
+                    })
+                    localStorage.removeItem('accessToken')
+                    localStorage.removeItem('refreshToken') 
+                    window.location.reload()
+                }}>Выйти на всех устройствах</button>
             </div>
-        } else if (show.showState === 'watch' && show.peerId === '') {
+        } else {
             mainShow = <div>
-                <input placeholder="Ссылка для подключения" onChange={(event: ChangeEvent<HTMLInputElement>) => setInputPeerId(event.target.value)}/>
-                <button onClick={() => {
-                    if (inputPeerId !== '') {
-                        setShow({showState: 'watch', peerId: inputPeerId})
+                <input placeholder="Login" onChange={((event: ChangeEvent<HTMLInputElement>) => setLogin(event.target.value))}/>
+                <input placeholder="Password" type="password" onChange={((event: ChangeEvent<HTMLInputElement>) => setPass(event.target.value))}/>
+                <button onClick={async() => {
+                    if (login !== '' && pass !== '') {
+                        const enter = await fetch('http://localhost:4000/testing-users/enter', {
+                            method: "POST",
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({ login, pass })
+                        })
+                        if (enter.ok) {
+                            const resultEnter = await enter.json()
+                            localStorage.setItem('accessToken', resultEnter.accessToken)
+                            localStorage.setItem('refreshToken', resultEnter.refreshToken)
+                            window.location.reload()
+                        } else {
+                            alert('Неверный логин или пароль')
+                        }
                     }
-                }}>Подключиться</button>
+                }}>Войти</button>
             </div>
-        } 
+        }
+    } else {
+        mainShow = <h2>Загрузка...</h2>
     }
 
     useEffect(() => {
-        const peerInstance = new Peer({
-            host: 'localhost',
-            port: 3001,
-            path: '/peerjs',
-            config: {
-              iceServers: [
-                { urls: 'stun:stun.l.google.com:19302' },
-                { urls: 'stun:stun1.l.google.com:19302' }
-              ]
-            }
-        });
-
-        peer.current = peerInstance
-
-        peerInstance.on('open', async(id) => {
-            setPeerId(id);
-        });
-
-
-        peerInstance.on('call', async(call) => {
-            console.log(call.peer)
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            call.answer(stream)
-            setWatchArr(prev => {
-                return [...prev, call.peer]
-            })
-        })
-        
-        peerInstance.on('connection', (connection) => {
-            connection.on('data', (data: any) => {
-                if (data.type === 'finish_connect') {
-                    setWatchArr(prev => {
-                        return prev.filter(el => el !== connection.peer)
+        const getUserName = async () => {
+            const accessToken = localStorage.getItem('accessToken')
+            const refreshToken = localStorage.getItem('refreshToken')
+            if (accessToken && refreshToken) {
+                const getName = await fetch('http://localhost:4000/testing-users/get/name', {
+                    method: "GET",
+                    headers: {
+                        'Authorization': `Bearer ${accessToken}`,
+                        'Content-Type': 'application/json',
+                    },
+                })
+                if (getName.ok) {
+                    const resultUserName = await getName.text()
+                    setAuthName(resultUserName)
+                } else {
+                    const getNewToken = await fetch('http://localhost:4000/testing-users/get/access/token', {
+                        method: "PATCH",
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ refreshToken })
                     })
-                } else if (data.type === 'new_mess') {
-                    setWatchArr(prev => {
-                        for (let item of prev) {
-                            const signalConnection = peer.current?.connect(item)
-                            if (signalConnection) {
-                                signalConnection.on('open', () => {
-                                    signalConnection.send({
-                                        type: 'new_message',
-                                        message: data.message,
-                                    })
-                                })
-                            }
-                        }
-                        return prev
-                    })
-                    setMessages(prev => [...prev, data.message])
-                } else if (data.type === 'new_message') {
-                    setMessages(prev => [...prev, data.message])
-                } else if (data.type === 'stream_end') {
-                    alert('Трансляция завершена')
-                    window.location.reload()
+                    if (getNewToken.ok) {
+                        const resultNewToken = await getNewToken.json()
+                        console.log(resultNewToken)
+                        localStorage.setItem('accessToken', resultNewToken.accessToken)
+                        localStorage.setItem('refreshToken', resultNewToken.refreshToken)
+                        getUserName()
+                    } else {
+                        console.log('Мы обнаружили подозрительную активность на вашем аккаунте, пожалуйста, войдите в аккаунт снова и нажмите кнопку Выйти на всех устройствах')
+                        localStorage.removeItem('accessToken')
+                        localStorage.removeItem('refreshToken') 
+                        window.location.reload()
+                    }
                 }
-            })
-        })
-    }, [])
-
-    useEffect(() => {
-        const name = localStorage.getItem('name')
-        if (name) {
-            setName(name)
-        }
-    }, [])
-
-    useEffect(() => {
-        if (show.showState === 'watch' && show.peerId !== '') {
-            const startWatch = async () => {
-                const localStream = await navigator.mediaDevices.getUserMedia({ audio: true })
-                const call = peer.current?.call(show.peerId, localStream)
-                if (call) {
-                    call.on('stream', (remoteAudio) => {
-                        console.log('Answer is here')
-                        if (remoteAudioRef.current) {
-                            remoteAudioRef.current.srcObject = remoteAudio
-                        }
-                    })
-                }
+            } else {
+                setAuthName('auth')
             }
-            startWatch()
         }
-    }, [show])
+        getUserName()
+    }, [])
 
     return (
-        <div>
-            {name !== '' ? <div>
-                {mainShow}
-                <audio style={{display: 'none'}} ref={remoteAudioRef} autoPlay={true} controls/>
-                {messShow}
-                {(show.showState === 'watch' && show.peerId !== '') ? <button onClick={() => {
-                    if (remoteAudioRef.current) {
-                        remoteAudioRef.current.srcObject = null
-                    }
-                    const signalConnection = peer.current?.connect(show.peerId)
-                    if (signalConnection) {
-                        signalConnection.on('open', () => {
-                            signalConnection.send({
-                                type: 'finish_connect',
-                                message: 'finish connect',
-                            })
-                        })
-                        setShow({showState: '', peerId: ''})
-                    }
-                }}>Отключиться</button> : null}
-                {show.showState === 'stream' ? <button onClick={() => {
-                    for (let item of watchArr) {
-                        const signalConnection = peer.current?.connect(item)
-                        if (signalConnection) {
-                            signalConnection.on('open', () => {
-                                signalConnection.send({
-                                    type: 'stream_end',
-                                    message: 'stream end',
-                                })
-                            })
-                        }
-                    }
-                    window.location.reload()
-                }}>Завершить трансляцию</button> : null}
-                </div> : <div>
-                    <h2>Как Вас зовут?</h2>
-                    <input placeholder="Имя" onChange={(event: ChangeEvent<HTMLInputElement>) => setInputName(event.target.value)}/>
-                    <button onClick={() => {
-                        if (inputName !== '') {
-                            setName(inputName)
-                            localStorage.setItem('name', inputName)
-                        }
-                    }}>Войти</button>
-                </div>}
+        <div style={{width: '100%', height: '100vh', backgroundColor: 'gray'}}>
+            {mainShow}
         </div>
     )
 }

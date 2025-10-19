@@ -6,27 +6,17 @@ import getUserEmail from "./getUserEmail"
 
 const useGetEmail = () => {
 
-    const [email, setEmail] = useState ('')
     const [trueEmail, setTrueEmail] = useState ('')
 
     useEffect(() => {
-        const myEmail = localStorage.getItem('photogram-enter')
-        if (myEmail) {
-            setEmail(myEmail)
+        const getTrueEmail = async () => {
+            const resultEmail = await getUserEmail()
+            setTrueEmail(resultEmail)
         }
+        getTrueEmail()
     }, [])
 
-    useEffect(() => {
-        if (email !== '') {
-            const getTrueEmail = async () => {
-                const resultEmail = await getUserEmail()
-                setTrueEmail(resultEmail)
-            }
-            getTrueEmail()
-        }
-    }, [email])
-
-    return { email, setEmail, trueEmail, setTrueEmail }
+    return { trueEmail, setTrueEmail }
 
 }
 

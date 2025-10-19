@@ -7,7 +7,6 @@ import styles from './List.module.css';
 interface PropsList {
     photos: Photo[],
     setPhotos: Function,
-    email: string,
     setSavePhotos?: Function,
     setSharePost?: Function,
     trueEmail: string,
@@ -30,7 +29,6 @@ const List: FC<PropsList> = (props) => {
                                     photos={props.photos}
                                     setPhotos={props.setPhotos}
                                     countLikes={item.likes.length}
-                                    email={props.email}
                                     id={item.id}
                                     descript={item.descript}
                                     date={item.date}

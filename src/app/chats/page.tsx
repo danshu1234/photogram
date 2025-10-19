@@ -14,7 +14,7 @@ const Chats: FC = () => {
     const socket = io('http://localhost:4000')
     const [socketId, setSocketId] = useState('')
     const {} = useCheckReg()
-    const { email, trueEmail, setEmail } = useGetEmail()
+    const { trueEmail } = useGetEmail()
     const [shareMess, setShareMess] = useState<Message | null>(null)
     const [basePerm, setBasePerm] = useState<string>('')
     const [changePerm, setChangePerm] = useState<string>('')
@@ -38,10 +38,10 @@ const Chats: FC = () => {
                 await fetch('http://localhost:4000/users-controller/new/perm/mess', {
                     method: "PATCH",
                     headers: {
-                        'Authorization': `Bearer ${email}`,
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ changePerm })
+                    body: JSON.stringify({ changePerm }),
+                    credentials: 'include',
                 })
                 setBasePerm(changePerm)
             }}
@@ -82,9 +82,9 @@ const Chats: FC = () => {
             const chats = await fetch('http://localhost:4000/users-controller/get/chats', {
                 method: "GET",
                 headers: {
-                    'Authorization': `Bearer ${email}`,
                     'Content-Type': 'application/json',
                 },
+                credentials: 'include',
             })
             const resultChats = await chats.json()
             resChats = resultChats
@@ -92,9 +92,9 @@ const Chats: FC = () => {
             const chats = await fetch('http://localhost:4000/users-controller/get/chats', {
                 method: "GET",
                 headers: {
-                    'Authorization': `Bearer ${email}`,
                     'Content-Type': 'application/json',
                 },
+                credentials: 'include',
             })
             const resultChats = await chats.json()
             resChats = resultChats
@@ -119,10 +119,10 @@ const Chats: FC = () => {
         const newChats = await fetch('http://localhost:4000/users-controller/pin/chat', {
             method: "PATCH",
             headers: {
-                'Authorization': `Bearer ${email}`,
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ user, pin })
+            body: JSON.stringify({ user, pin }),
+            credentials: 'include',
         })
         const resultChats = await newChats.json()
         const allUsers = await fetch('http://localhost:4000/users-controller/get/all/users')
@@ -141,10 +141,10 @@ const Chats: FC = () => {
         await fetch('http://localhost:4000/users-controller/change/notifs', {
             method: "PATCH",
             headers: {
-                'Authorization': `Bearer ${email}`,
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ notifs, user })
+            body: JSON.stringify({ notifs, user }),
+            credentials: 'include',
         })
         if (chats !== null) {
             const newChats = chats.map(el => {
@@ -214,10 +214,8 @@ const Chats: FC = () => {
                                             formData.append('type', shareMess.typeMess)
                                             await fetch('http://localhost:4000/users-controller/new/mess', {
                                                 method: "PATCH",
-                                                headers: {
-                                                    'Authorization': `Bearer ${email}`,
-                                                },
                                                 body: formData,
+                                                credentials: 'include',
                                             })
                                             localStorage.removeItem('shareMess')
                                             const newChats = chats.map(el => {
@@ -300,19 +298,12 @@ const Chats: FC = () => {
         })
 
         socket.on('replyMessage', async(message: any) => {
-            setEmail(prev => {
-                getChats(prev)
-                return prev
-            })
+            getChats()
             if (message.type === 'message') {
                 const user = message.user
-                setEmail(prev => {
-                    let email = prev
-                    if (document.visibilityState !== 'visible') {
-                        getUserChats(email, user)
-                    }
-                    return prev
-                })
+                if (document.visibilityState !== 'visible') {
+                    getUserChats(user)
+                }
             } else if (message.type === 'onlineStatus') {
                 const userEmail = message.user
                 await fetch('http://localhost:4000/users-controller/give/online/status', {
@@ -337,9 +328,9 @@ const Chats: FC = () => {
         const myPerm = await fetch(`http://localhost:4000/users-controller/get/perm/mess`, {
             method: "GET",
             headers: {
-                'Authorization': `Bearer ${email}`,
                 'Content-Type': 'application/json',
             },
+            credentials: 'include',
         })
         const resultPerm = await myPerm.text()
         setBasePerm(resultPerm)
@@ -352,10 +343,10 @@ const Chats: FC = () => {
                 await fetch('http://localhost:4000/users-controller/add/socket', {
                     method: "PATCH",
                     headers: {
-                        'Authorization': `Bearer ${email}`,
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ socketId })
+                    body: JSON.stringify({ socketId }),
+                    credentials: 'include',
                 })
             }
             addSocket()
