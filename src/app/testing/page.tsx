@@ -1,109 +1,75 @@
 'use client'
 
 import { ChangeEvent, FC, useEffect, useRef, useState } from "react"
-
+import Peer, { DataConnection, MediaConnection, PeerConnectOption } from 'peerjs';
+import JSZip from "jszip";
 const Testing: FC = () => {
 
-    const [login, setLogin] = useState <string> ('')
-    const [pass, setPass] = useState <string> ('')
-    const [authName, setAuthName] = useState <string | null> (null)
-    let mainShow;
-
-    if (authName) {
-        if (authName !== 'auth') {
-            mainShow = <div>
-                <h2>Привет, {authName}</h2>
-                <button onClick={async() => {
-                    const accessToken = localStorage.getItem('accessToken')
-                    await fetch('http://localhost:4000/testing-users/exit/from/all', {
-                        method: "DELETE",
-                        headers: {
-                            'Authorization': `Bearer ${accessToken}`,
-                            'Content-Type': 'application/json',
-                        },
-                    })
-                    localStorage.removeItem('accessToken')
-                    localStorage.removeItem('refreshToken') 
-                    window.location.reload()
-                }}>Выйти на всех устройствах</button>
-            </div>
-        } else {
-            mainShow = <div>
-                <input placeholder="Login" onChange={((event: ChangeEvent<HTMLInputElement>) => setLogin(event.target.value))}/>
-                <input placeholder="Password" type="password" onChange={((event: ChangeEvent<HTMLInputElement>) => setPass(event.target.value))}/>
-                <button onClick={async() => {
-                    if (login !== '' && pass !== '') {
-                        const enter = await fetch('http://localhost:4000/testing-users/enter', {
-                            method: "POST",
-                            headers: {
-                                'Content-Type': 'application/json',
-                            },
-                            body: JSON.stringify({ login, pass })
-                        })
-                        if (enter.ok) {
-                            const resultEnter = await enter.json()
-                            localStorage.setItem('accessToken', resultEnter.accessToken)
-                            localStorage.setItem('refreshToken', resultEnter.refreshToken)
-                            window.location.reload()
-                        } else {
-                            alert('Неверный логин или пароль')
-                        }
-                    }
-                }}>Войти</button>
-            </div>
-        }
-    } else {
-        mainShow = <h2>Загрузка...</h2>
-    }
+    const [file, setFile] = useState <File | null> (null)
+    const [resultFiles, setResultFiles] = useState <Blob[]> ([])
+    const [videos, setVideos] = useState <string[]> ([])
 
     useEffect(() => {
-        const getUserName = async () => {
-            const accessToken = localStorage.getItem('accessToken')
-            const refreshToken = localStorage.getItem('refreshToken')
-            if (accessToken && refreshToken) {
-                const getName = await fetch('http://localhost:4000/testing-users/get/name', {
-                    method: "GET",
-                    headers: {
-                        'Authorization': `Bearer ${accessToken}`,
-                        'Content-Type': 'application/json',
-                    },
-                })
-                if (getName.ok) {
-                    const resultUserName = await getName.text()
-                    setAuthName(resultUserName)
-                } else {
-                    const getNewToken = await fetch('http://localhost:4000/testing-users/get/access/token', {
-                        method: "PATCH",
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({ refreshToken })
-                    })
-                    if (getNewToken.ok) {
-                        const resultNewToken = await getNewToken.json()
-                        console.log(resultNewToken)
-                        localStorage.setItem('accessToken', resultNewToken.accessToken)
-                        localStorage.setItem('refreshToken', resultNewToken.refreshToken)
-                        getUserName()
-                    } else {
-                        console.log('Мы обнаружили подозрительную активность на вашем аккаунте, пожалуйста, войдите в аккаунт снова и нажмите кнопку Выйти на всех устройствах')
-                        localStorage.removeItem('accessToken')
-                        localStorage.removeItem('refreshToken') 
-                        window.location.reload()
-                    }
+        const getFile = async () => {
+            const savedFiles = await fetch('http://localhost:4000/testing-users/file')
+            const resultSavedFile = await savedFiles.blob()
+            const zip = new JSZip();
+            const loadedZip = await zip.loadAsync(resultSavedFile);
+            let finalFiles: Blob[] = []
+            let finalVideos: string[] = []
+            for (const [filename, file] of Object.entries(loadedZip.files)) {
+                if (!file.dir) {
+                    const blob = await file.async('blob');
+                    finalFiles = [...finalFiles, blob]
+                    const videoUrl = URL.createObjectURL(blob)
+                    finalVideos = [...finalVideos, videoUrl]
                 }
-            } else {
-                setAuthName('auth')
             }
+            setResultFiles(finalFiles)
+            setVideos(finalVideos)
         }
-        getUserName()
-    }, [])
+    getFile()
+}, [])
+
 
     return (
-        <div style={{width: '100%', height: '100vh', backgroundColor: 'gray'}}>
-            {mainShow}
+        <div>
+            <input type="file" onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                const resultFile = event.target.files?.[0]
+                if (resultFile) {
+                    setFile(resultFile)
+                }
+            }}/>
+            <button onClick={async() => {
+                if (file) {
+                    const formData = new FormData()
+                    formData.append('file', file)
+                    const saveFile = await fetch('http://localhost:4000/testing-users/save/file', {
+                        method: "POST",
+                        body: formData,
+                    })
+                    const resultSaveFile = await saveFile.blob()
+                    setResultFiles([...resultFiles, resultSaveFile])
+                    alert('Файл успешно сохранен')
+                }
+            }}>Сохранить</button>
+
+            {resultFiles.length !== 0 ? <ul>
+                {resultFiles.map((item, index) => <li key={index} onClick={() => {
+                    const url = URL.createObjectURL(item)
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = 'file';
+                    link.click();
+                    URL.revokeObjectURL(url);
+                }}>Файл</li>)}
+            </ul> : null}
+            {videos.length !== 0 ? <ul>
+                {videos.map((item, index) => <li key={index}><video src={item} style={{width: 200, height: 200}} controls={true}/></li>)}
+            </ul> : null}
         </div>
     )
 }
 
 export default Testing
+

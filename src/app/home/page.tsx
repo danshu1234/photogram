@@ -18,6 +18,7 @@ import registerServiceWorker from "../RegisterServiceWorker";
 import getUserChats from "../getChats";
 import exitAcc from "../exitAcc";
 import Call from "../Call";
+import useOnlineStatus from "../useOnlineStatus"
 
 export default function Home() {
 
@@ -29,6 +30,8 @@ export default function Home() {
 
   const {} = useCheckReg()
   const { trueEmail } = useGetEmail()
+
+  const {} = useOnlineStatus()  
 
   const getMyNotifs = async () => {
     const getNotifs = await fetch(`http://localhost:4000/users-controller/get/notifs`, {

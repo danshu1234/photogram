@@ -6,12 +6,14 @@ import { PacmanLoader } from "react-spinners";
 import useCheckReg from "../CheckReg";
 import styles from "./MySubsList.module.css";
 import useNotif from "../useNotif";
+import useOnlineStatus from "../useOnlineStatus";
 
 const MySubsList: FC = () => {
 
     const {} = useNotif()
     const {} = useCheckReg()
     const { trueEmail } = useGetEmail()
+    const {} = useOnlineStatus()
 
     const [subsList, setSubsList] = useState<string[]>([])
     let list;

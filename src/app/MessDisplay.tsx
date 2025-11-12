@@ -6,6 +6,7 @@ import ImgList from "./ImgList"
 import ShareBtn from "./ShareBtn"
 import { Element } from 'react-scroll'
 import "./MessDisplay.css"
+import backUpMess from "./backupMess"
 
 interface MessDisplayProps{
     messages: Message[] | null;
@@ -17,6 +18,7 @@ interface MessDisplayProps{
     setInputMess: Function;
     setSucCopy: Function;
     setPinMess: Function;
+    setVideoMessId: Function;
     pinMess: string[];
 }
 
@@ -78,6 +80,37 @@ const MessDisplay: FC <MessDisplayProps> = (props) => {
                     showMess = <img src={item.text} className="gif-message"/>
                 } else if (item.typeMess === 'post') {
                     showMess = <p className="post-message" onClick={() => window.location.href=`/showpost/${item.text}`}>Пересланный пост</p>
+                } else if (item.typeMess === 'video') {
+                    showMess = <p onClick={() => props.setVideoMessId(item.id)}>Видеозапись</p>
+                } else if (item.typeMess === 'file') {
+                    showMess = <p onClick={async() => {
+                        const messId = item.id
+                        const file = await fetch('http://localhost:4000/users-controller/get/file', {
+                            method: "GET",
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({ trueParamEmail, messId }),
+                            credentials: 'include',
+                        })
+                        const resultFile = await file.blob()
+                        const url = URL.createObjectURL(resultFile);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = 'filename'; 
+                        a.click();
+                        URL.revokeObjectURL(url);
+                    }}>Файл</p>
+                }
+
+                let readStaus;
+                
+                if (item.user !== trueParamEmail) {
+                    if (item.read === true) {
+                        readStaus = <img src='https://img.icons8.com/?size=100&id=0H26EziLCAhq&format=png&color=000000' width={30} height={30}/>
+                    } else {
+                        readStaus = <img src='https://img.icons8.com/?size=100&id=82769&format=png&color=000000' width={30} height={30}/>
+                    }
                 }
 
                 const messageClass = item.user === email ? "message my-message" : "message their-message"
@@ -131,15 +164,23 @@ const MessDisplay: FC <MessDisplayProps> = (props) => {
                                     {item.user === email && (
                                         <button className="control-btn delete-btn" onClick={async() => {
                                             const messId = item.id
+                                            const readStatus = item.read
                                             const deleteMess = await fetch('http://localhost:4000/users-controller/delete/mess', {
                                                 method: "PATCH",
                                                 headers: {
                                                     'Content-Type': 'application/json',
                                                 },
-                                                body: JSON.stringify({ email, trueParamEmail, index, messId })
+                                                body: JSON.stringify({ trueParamEmail, index, messId, readStatus }),
+                                                credentials: 'include',
                                             })
-                                            const resultMess = await deleteMess.json()
-                                            props.setMessages(resultMess)
+                                            const resultDelete = await deleteMess.text()
+                                            if (resultDelete !== 'OK') {
+                                                const resultBackupMess = backUpMess(props.messages, messId)
+                                                props.setMessages(resultBackupMess)
+                                            } else {
+                                                const resultMessages = props.messages?.filter(el => el.id !== messId)
+                                                props.setMessages(resultMessages)
+                                            }
                                         }}>
                                             🗑️
                                         </button>
@@ -183,6 +224,7 @@ const MessDisplay: FC <MessDisplayProps> = (props) => {
                                 </div>
                             )}
                         </div>
+                        {readStaus}
                     </Element>
                 )
             })}

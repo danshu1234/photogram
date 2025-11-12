@@ -15,6 +15,7 @@ interface SendBtnProps{
     sendMess: Function;
     editMess: string;
     inputMess: string;
+    type: string;
     imageBase64: SendPhoto[];
 }
 
@@ -25,7 +26,7 @@ const SendBtn: FC <SendBtnProps> = (props) => {
     return (
         <button 
             className={`send-btn ${isActive ? 'active' : 'inactive'}`}
-            onClick={async() => props.sendMess()}
+            onClick={async() => props.sendMess(props.type)}
             disabled={!isActive && props.editMess === ''}
         >
             {props.editMess ? '✏️' : '➤'}

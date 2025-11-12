@@ -13,11 +13,14 @@ import useCheckReg from "../CheckReg";
 import useNotif from "../useNotif";
 import styles from './UserPage.module.css';
 import exitAcc from "../exitAcc";
+import Call from "../Call";
+import useOnlineStatus from "../useOnlineStatus";
 
 export default function UserPage() {
     
     const {} = useNotif();
     const {} = useCheckReg();
+    const {} = useOnlineStatus()
     
     const { trueEmail } = useGetEmail();
     const [myEmail, setMyEmail] = useState<string | null>(null);
@@ -25,19 +28,18 @@ export default function UserPage() {
     const { trueParamEmail } = useGetTrueParamEmail();
     const [user, setUser] = useState<null | UserInterface>(null);
     const [photos, setPhotos] = useState<null | string | Photo[]>(null);
+    const [succesCopy, setSuccesCopy] = useState <boolean> (false)
 
     let mainShow;
     let avatar;
     let photoShow;
     let chatBtn;
 
-    if (trueParamEmail !== trueEmail) {
-        if (user?.permMess === 'Все') {
+    if (user?.permMess === 'Все') {
+        chatBtn = <ChatBtn trueParamEmail={trueParamEmail} />;
+    } else if (user?.permMess === 'Только друзья') {
+        if (mySubs?.includes(trueParamEmail) && user.subscribes.includes(trueEmail)) {
             chatBtn = <ChatBtn trueParamEmail={trueParamEmail} />;
-        } else if (user?.permMess === 'Только друзья') {
-            if (mySubs?.includes(trueParamEmail) && user.subscribes.includes(trueEmail)) {
-                chatBtn = <ChatBtn trueParamEmail={trueParamEmail} />;
-            }
         }
     }
 
@@ -80,6 +82,11 @@ export default function UserPage() {
                 <div className={styles.headerSection}>
                     {avatar}
                     <div className={styles.userInfo}>
+                        {succesCopy === true ? <p>Ссылка успешно скопирована!</p> : null}
+                        <p style={{cursor: 'pointer'}} onClick={async() => {
+                            await navigator.clipboard.writeText(`http://localhost:3000/${user.email}`)
+                            setSuccesCopy(true)
+                        }}>Скопировать ссылку на профиль</p>
                         <h3 className={styles.userEmail}>{user.email}</h3>
                         <h2 className={styles.userName}>{user.name}</h2>
                         <p className={styles.subCount}>Подписчики: {user.subscribes.length - 1}</p>
@@ -194,6 +201,14 @@ export default function UserPage() {
     }, [trueParamEmail]);
 
     useEffect(() => {
+        if (succesCopy === true) {
+            setTimeout(() => {
+                setSuccesCopy(false)
+            }, 1500);
+        }
+    }, [succesCopy])
+
+    useEffect(() => {
         const getMySubs = async () => {
             const mySubs = await fetch('http://localhost:4000/users-controller/all/subs/and/country', {
                 method: "GET",
@@ -231,6 +246,7 @@ export default function UserPage() {
 
     return (
         <div className={styles.pageWrapper}>
+            <Call/>
             {mainShow}
         </div>
     );

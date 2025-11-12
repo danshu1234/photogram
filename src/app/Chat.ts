@@ -11,6 +11,7 @@ export interface Message{
     controls: boolean;
     per: string;
     pin: boolean;
+    read: boolean;
 }
 
 interface Chat{

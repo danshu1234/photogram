@@ -71,6 +71,7 @@ const EnterReg: FC <Props> = (props) => {
                 }
             }}>Войти</button>}
             {props.status === 'reg' ? <p>Уже есть аккаунт? <span style={{color: 'blue'}} onClick={() => window.location.href='/enter'}>Войти</span></p> : <div><p>Нет аккаунта?<span style={{color: 'blue'}} onClick={() => window.location.href='/reg'}> Зарегистрироваться</span></p><p style={{color: 'blue'}} onClick={() => window.location.href='/emailenter'}>Войти по Email</p></div>}
+            <p onClick={() => window.location.href = 'http://localhost:4000/users-controller/google'}>Войти через Google</p>
         </div>
     } else {
         mainShow = <div>

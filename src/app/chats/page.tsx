@@ -9,16 +9,23 @@ import UserInterface from "../UserInterface"
 import useCheckReg from "../CheckReg";
 import getUserChats from "../getChats";
 import styles from './Chats.module.css';
+import Call from "../Call";
+import useOnlineStatus from "../useOnlineStatus";
 
 const Chats: FC = () => {
     const socket = io('http://localhost:4000')
     const [socketId, setSocketId] = useState('')
+
     const {} = useCheckReg()
+    const {} = useOnlineStatus()
+
     const { trueEmail } = useGetEmail()
     const [shareMess, setShareMess] = useState<Message | null>(null)
     const [basePerm, setBasePerm] = useState<string>('')
     const [changePerm, setChangePerm] = useState<string>('')
     const [chats, setChats] = useState<Chat[] | null>(null)  
+    const [deleteWarn, setDeleteWarn] = useState <{friendEmail: string, friendDel: boolean} | null> (null)
+    const [typing, setTyping] = useState <string> ('')
 
     let showChats;
     let showChangePerm;
@@ -73,7 +80,7 @@ const Chats: FC = () => {
         const unpinnedChats = finalChats.filter((el: Chat) => el.pin === false)
         unpinnedChats.sort((a: Chat, b: Chat) => b.messCount - a.messCount)
         myResultChats = [...myResultChats, ...unpinnedChats]
-        setChats(myResultChats)
+        return myResultChats
     }
 
     const getChats = async (prevEmail?: string) => {
@@ -109,7 +116,8 @@ const Chats: FC = () => {
                     avatar: findUser.avatar,
                 }
             })
-            sortChats(finalChats)
+            const newChats = sortChats(finalChats)
+            setChats(newChats)
         } else {
             setChats(resChats)
         }
@@ -134,7 +142,8 @@ const Chats: FC = () => {
                 avatar: findUser.avatar,
             }
         })
-        sortChats(finalChats)
+        const resultNewChats = sortChats(finalChats)
+        setChats(resultNewChats)
     }
 
     const changeNotifs = async (notifs: boolean, user: string) => {
@@ -171,24 +180,32 @@ const Chats: FC = () => {
                         let lastMess;
                         const lastMessage = item.messages[item.messages.length - 1];
 
-                        if (lastMessage.typeMess === 'text') {
-                            if (lastMessage.text === '') {
-                                lastMess = <span>Фото</span>
-                            } else {
-                                if (lastMessage.text.length < 50) {
-                                    lastMess = <span>{lastMessage.text}</span>
+                        if (typing !== item.user) {
+                            if (lastMessage.typeMess === 'text') {
+                                if (lastMessage.text === '') {
+                                    lastMess = <span>Фото</span>
                                 } else {
-                                    lastMess = <span>{lastMessage.text.slice(0, 50)}...</span>
+                                    if (lastMessage.text.length < 50) {
+                                        lastMess = <span>{lastMessage.text}</span>
+                                    } else {
+                                        lastMess = <span>{lastMessage.text.slice(0, 50)}...</span>
+                                    }
                                 }
+                            } else if (lastMessage.typeMess === 'voice') {
+                                lastMess = <span>Голосовое сообщение</span>
+                            } else if (lastMessage.typeMess === 'gif') {
+                                lastMess = <span>GIF</span>
+                            } else if (lastMessage.typeMess === 'post') {
+                                lastMess = <span>Пост</span>
+                            } else if (lastMessage.typeMess === 'video') {
+                                lastMess = <span>Видео</span>
+                            } else {
+                                lastMess = <span>Файл</span>
                             }
-                        } else if (lastMessage.typeMess === 'voice') {
-                            lastMess = <span>Голосовое сообщение</span>
-                        } else if (lastMessage.typeMess === 'gif') {
-                            lastMess = <span>GIF</span>
                         } else {
-                            lastMess = <span>Пост</span>
+                            lastMess = <span>Печатает...</span>
                         }
-
+                        
                         return <li key={index} className={`${styles.chatItem} ${item.pin ? styles.pinned : ''}`}>
                             <div>
                                 {item.avatar === '' ? 
@@ -212,28 +229,33 @@ const Chats: FC = () => {
                                             formData.append('trueParamEmail', item.user)
                                             formData.append('per', shareMess.per)
                                             formData.append('type', shareMess.typeMess)
-                                            await fetch('http://localhost:4000/users-controller/new/mess', {
+                                            const sendMess = await fetch('http://localhost:4000/users-controller/new/mess', {
                                                 method: "PATCH",
                                                 body: formData,
                                                 credentials: 'include',
                                             })
-                                            localStorage.removeItem('shareMess')
-                                            const newChats = chats.map(el => {
-                                                if (el.user === item.user) {
-                                                    return {
-                                                        ...el,
-                                                        messages: [...el.messages, {user: shareMess.user, text: shareMess.text, photos: [], date: shareMess.date, id: shareMess.id, ans: '', edit: false, typeMess: shareMess.typeMess, pin: false, controls: false, per: ''}]
+                                            const resultSendMess = await sendMess.text()
+                                            if (resultSendMess === 'OK') {
+                                                localStorage.removeItem('shareMess')
+                                                const newChats = chats.map(el => {
+                                                    if (el.user === item.user) {
+                                                        return {
+                                                            ...el,
+                                                            messages: [...el.messages, {user: shareMess.user, text: shareMess.text, photos: [], date: shareMess.date, id: shareMess.id, ans: '', edit: false, typeMess: shareMess.typeMess, pin: false, controls: false, per: '', read: false}]
+                                                        }
+                                                    } else {
+                                                        return el
                                                     }
-                                                } else {
-                                                    return el
-                                                }
-                                            })
-                                            setChats(newChats)
-                                            setShareMess(null)
+                                                })
+                                                setChats(newChats)
+                                                setShareMess(null)
+                                            } else {
+                                                alert('Превышен допустимый объем файлов')
+                                            }
                                         }
                                     }}
                                 >
-                                    {item.user}
+                                    {item.user === trueEmail ? 'Избранное' : item.user}
                                 </h3>
                                 <div className={styles.lastMessage}>
                                     {lastMessage.user === trueEmail && <span className={styles.youLabel}>Вы:</span>}
@@ -274,6 +296,7 @@ const Chats: FC = () => {
                                         alt="Уведомления выключены"
                                     />
                                 }
+                                <button onClick={async() => setDeleteWarn({friendEmail: item.user, friendDel: false})}>Удалить чат</button>
                             </div>
                         </li>
                     })}
@@ -298,9 +321,33 @@ const Chats: FC = () => {
         })
 
         socket.on('replyMessage', async(message: any) => {
-            getChats()
             if (message.type === 'message') {
+                console.log('New message')
                 const user = message.user
+                setChats((prevChats: any) => {
+                    const newChats = prevChats.map((el: any) => {
+                        if (el.user === user) {
+                            const newMess = [...el.messages, {user: message.user, text: message.text, id: message.id, photos: message.photos, date: message.date, typeMess: message.typeMess, ans: message.ans, controls: false, per: '', pin: false, read: false}]
+                            return {
+                                ...el,
+                                messages: newMess,
+                                messCount: el.messCount + 1
+                            }
+                        } else {
+                            return el
+                        }
+                    })
+                    console.log('New chats: ')
+                    console.log(newChats)
+                    if (newChats) {
+                        const resultChats = sortChats(newChats)
+                        console.log('Result chats: ')
+                        console.log(resultChats)
+                        return resultChats
+                    } else {
+                        return prevChats
+                    }
+                })
                 if (document.visibilityState !== 'visible') {
                     getUserChats(user)
                 }
@@ -313,9 +360,44 @@ const Chats: FC = () => {
                     },
                     body: JSON.stringify({ userEmail })
                 })
-            }
-        })
-    }, [])
+            } else if (message.type === 'delete') {
+                console.log('Delete a message')
+                setChats((prevChats: any) => {
+                        const newChats = prevChats?.map((el: any) => {
+                            if (el.user === message.user) {
+                                const newMess = el.messages.filter((element: any) => element.id !== message.id)
+                                console.log('Prev mess: ')
+                                console.log(prevChats.messages)
+                                console.log('New mess: ')
+                                console.log(newMess)
+                                if (message.readStatus === true) {
+                                    return {
+                                        ...el,
+                                        messages: newMess,
+                                    }
+                                } else {
+                                    return {
+                                        ...el,
+                                        messages: newMess,
+                                        messCount: el.messCount - 1
+                                    }
+                                }
+                            } else {
+                                return el
+                            }
+                        })
+                        if (prevChats && newChats) {
+                            const resultChats = sortChats(newChats)
+                            return resultChats
+                        } else {
+                            return prevChats
+                        }
+                    })
+                } else if (message.type === 'typing') {
+                    setTyping(message.user)
+                }
+            })
+        }, [])
 
     useEffect(() => {
         const getStorage = localStorage.getItem('shareMess')
@@ -323,6 +405,14 @@ const Chats: FC = () => {
             setShareMess(JSON.parse(getStorage))
         }
     }, [])
+
+    useEffect(() => {
+        if (typing !== '') {
+            setTimeout(() => {
+                setTyping('')
+            }, 1000);
+        }
+    }, [typing])
 
     const getPerm = async () => {
         const myPerm = await fetch(`http://localhost:4000/users-controller/get/perm/mess`, {
@@ -353,14 +443,43 @@ const Chats: FC = () => {
             getPerm()
         }
     }, [socketId, trueEmail])
+
+    useEffect(() => {
+        console.log(deleteWarn)
+    }, [deleteWarn])
     
     return (
         <div className={styles.container}>
+            <Call/>
             <div className={styles.header}>
                 {shareMessage}
                 {showChangePerm}
             </div>
+            <h3 onClick={() => window.location.href='/bot'}>AI-Chat</h3>
             {showChats}
+            {deleteWarn ? <div>
+                <p>Вы уверены, что хотите удалить чат?</p>
+                <p>Также удалить для {deleteWarn.friendEmail}</p>
+                <input type="checkbox" onChange={() => setDeleteWarn({friendEmail: deleteWarn.friendEmail, friendDel: !deleteWarn.friendDel})}/>
+                <button onClick={async() => {
+                    const friendEmail = deleteWarn.friendEmail
+                    const friendDel = deleteWarn.friendDel
+                    const deleteChat = await fetch('http://localhost:4000/users-controller/delete/chat', {
+                        method: "PATCH",
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ friendEmail, friendDel }),
+                        credentials: 'include',
+                    })
+                    const resultDeleteChat = await deleteChat.text()
+                    if (resultDeleteChat === 'OK' && chats) {
+                        const resultChats = chats.filter(el => el.user !== friendEmail)
+                        setChats(resultChats)
+                        setDeleteWarn(null)
+                    }
+                }}>Удалить</button>
+            </div> : null}
         </div>
     )
 }

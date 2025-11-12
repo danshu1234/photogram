@@ -9,12 +9,17 @@ import Photo from '@/app/PhotoInterface';
 import useCheckReg from '@/app/CheckReg';
 import useNotif from '@/app/useNotif';
 import styles from '../BigPhoto.module.css'
+import Call from '@/app/Call';
+import useOnlineStatus from '@/app/useOnlineStatus';
 
 const BigPhoto = () => {
     const {} = useNotif()
     const { trueEmail } = useGetEmail()
     const {} = useCheckReg()
+    const {} = useOnlineStatus()
+
     const params = useParams();
+
     const [url, setUrl] = useState<string>('');
     const [photoInfo, setPhotoInfo] = useState<Photo | null>(null)
     const [rotateDeg, setRotateDeg] = useState<number>(0)
@@ -185,6 +190,7 @@ const BigPhoto = () => {
 
     return (
         <div className={styles.container}>
+            <Call/>
             {url ? (
                 <>
                     <div className={styles.photoContainer}>

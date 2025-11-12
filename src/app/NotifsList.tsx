@@ -1,6 +1,5 @@
 import { FC, memo } from "react";
 import styles from './NotifsList.module.css';
-import useGetEmail from "./useGetEmail";
 import exitAcc from "./exitAcc";
 
 interface Notif{
@@ -80,6 +79,8 @@ const NotifsList: FC <NotifsListProps> = (props) => {
                     return <li key={index}><p><span style={{cursor: 'pointer', color: 'blue'}} onClick={() => window.location.href=`/${item.user}`}>{item.user}</span> принял(а) ваш запрос на просмотр фото</p></li>
                 } else if (item.type === 'err') {
                     return <li key={index}><p><span style={{cursor: 'pointer', color: 'blue'}} onClick={() => window.location.href=`/${item.user}`}>{item.user}</span> отклонил(а) ваш запрос на просмотр фото</p></li>
+                } else if (item.type === 'sub') {
+                    return <li key={index}><p><span style={{cursor: 'pointer', color: 'blue'}} onClick={() => window.location.href=`/${item.user}`}>{item.user}</span> подписался(ась) на вас</p></li>
                 }
             })}
         </ul>

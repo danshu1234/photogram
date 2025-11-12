@@ -10,11 +10,14 @@ import Photo from "../PhotoInterface";
 import List from "../List";
 import useNotif from "../useNotif"
 import exitAcc from '../exitAcc'
+import Call from "../Call";
+import useOnlineStatus from "../useOnlineStatus";
 
 export default function MyPage() {
   const {} = useNotif()
   const {} = useCheckReg();
   const { trueEmail } = useGetEmail();
+  const {} = useOnlineStatus()
 
   const [openAcc, setOpenAcc] = useState<boolean>(false) 
   const [subs, setSubs] = useState<string[]>([])
@@ -157,6 +160,7 @@ export default function MyPage() {
 
   return (
     <div className={styles.container}>
+      <Call/>
       <header className={styles.header}>
         <Avatar type="edit"/>
         <span className={styles.email}>{trueEmail}</span>
@@ -185,8 +189,12 @@ export default function MyPage() {
       <div className={styles.exitPanel}>
         <span 
           className={styles.exitButton} 
-          onClick={() => {
-            localStorage.removeItem('photogram-enter')
+          onClick={async() => {
+            await fetch('http://localhost:4000/users-controller/exit/acc', {
+              method: "GET",
+              credentials: 'include',
+            })
+            localStorage.removeItem('photogram-enter-refresh')
             window.location.reload()
           }}
         >

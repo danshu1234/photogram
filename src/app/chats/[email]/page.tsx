@@ -13,6 +13,12 @@ import gifs from "@/app/gifs"
 import useCheckReg from "@/app/CheckReg"
 import getUserChats from "@/app/getChats"
 import "./UserChat.css"
+import Call from "@/app/Call"
+import { useRouter } from 'next/navigation'
+import useOnlineStatus from "@/app/useOnlineStatus"
+import Video from "@/app/Video"
+import { ClipLoader } from "react-spinners"
+import backUpMess from '@/app/backupMess'
 
 interface SendPhoto{
     file: File;
@@ -20,18 +26,24 @@ interface SendPhoto{
 }
 const UserChat: FC = () => {
     
-    const { startRecording, stopRecording, mediaBlobUrl } = useReactMediaRecorder({audio: true});
-    
+    const { startRecording, stopRecording, mediaBlobUrl } = useReactMediaRecorder({audio: true})
 
+    const router = useRouter()
+    
     const socket = io('http://localhost:4000')
 
     const {} = useCheckReg()
+    const {} = useOnlineStatus()
 
     const [socketId, setSocketId] = useState ('')
 
-    const { trueEmail } = useGetEmail()
+    const { trueEmail, setTrueEmail } = useGetEmail()
     const { trueParamEmail, setTrueParamEmail } = useGetTrueParamEmail()
 
+    const [overStatus, setOverStatus] = useState <boolean> (false)
+    const [processSendMess, setProcessSendMess] = useState <boolean> (false)
+    const [videoMessId, setVideoMessId] = useState <string | null> (null)
+    const [file, setFile] = useState <{file: File, type: string} | null> (null)
     const [onlineStatus, setOnlineStatus] = useState <string> ('Offline')
     const [pinMess, setPinMess] = useState <string[]> ([])
     const [sucCopy, setSucCopy] = useState <boolean> (false)
@@ -55,31 +67,33 @@ const UserChat: FC = () => {
     let banBtn;
     let showGifs;
 
-    if (Array.isArray(myBanArr)) {
-        if (myBanArr.includes(trueParamEmail)) {
-            banBtn = <button className="unban-btn" onClick={async() => {
-                await fetch('http://localhost:4000/users-controller/unban/user', {
-                    method: "PATCH",
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ trueParamEmail }),
-                    credentials: 'include',
-                })
-                window.location.reload()
-            }}>Разблокировать</button>
-        } else {
-            banBtn = <button className="ban-btn" onClick={async() => {
-                await fetch('http://localhost:4000/users-controller/ban/user', {
-                    method: "PATCH",
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ trueParamEmail }),
-                    credentials: 'include',
-                })
-                window.location.reload()
-            }}>Заблокировать</button>
+    if (trueEmail !== trueParamEmail) {
+        if (Array.isArray(myBanArr)) {
+            if (myBanArr.includes(trueParamEmail)) {
+                banBtn = <button className="unban-btn" onClick={async() => {
+                    await fetch('http://localhost:4000/users-controller/unban/user', {
+                        method: "PATCH",
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ trueParamEmail }),
+                        credentials: 'include',
+                    })
+                    window.location.reload()
+                }}>Разблокировать</button>
+            } else {
+                banBtn = <button className="ban-btn" onClick={async() => {
+                    await fetch('http://localhost:4000/users-controller/ban/user', {
+                        method: "PATCH",
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ trueParamEmail }),
+                        credentials: 'include',
+                    })
+                    window.location.reload()
+                }}>Заблокировать</button>
+            }
         }
     }
 
@@ -100,6 +114,8 @@ const UserChat: FC = () => {
                     const { formattedDate, messId } = getMessIdAndDate()
                     if (messages) { 
                         if (messages.length !== 0) {
+                            setMessages([...messages, {user: trueEmail, text: item, photos: [], date: formattedDate, id: messId, ans: answMess, edit: false, typeMess: 'gif', per: '', controls: false, pin: false, read: false}])
+                            setInputMess('')
                             const formData = new FormData()
                             formData.append('user', trueEmail)
                             formData.append('text', item)
@@ -109,15 +125,20 @@ const UserChat: FC = () => {
                             formData.append('trueParamEmail', trueParamEmail)
                             formData.append('per', '')
                             formData.append('type', 'gif')
-                            await fetch('http://localhost:4000/users-controller/new/mess', {
+                            const sendMess = await fetch('http://localhost:4000/users-controller/new/mess', {
                                 method: "PATCH",
                                 body: formData,
                                 credentials: 'include',
                             })
-                            setMessages([...messages, {user: trueEmail, text: item, photos: [], date: formattedDate, id: messId, ans: answMess, edit: false, typeMess: 'gif', per: '', controls: false, pin: false}])
-                            setGifsArr([])
-                            setAnswMess('')
+                            const resultSendMess = await sendMess.text()
+                            if (resultSendMess !== 'OK') {
+                                const resultBackupMess = backUpMess(messages, messId)
+                                setMessages(resultBackupMess)
+                                alert('Произошла ошибка при отправке сообщения')
+                            }
                         } else {
+                            setMessages([{user: trueEmail, text: item, photos: [], date: formattedDate, id: messId, ans: answMess, edit: false, typeMess: 'gif', per: '', controls: false, pin: false, read: false}])
+                            setGifsArr([])
                             const formData = new FormData()
                             formData.append('user', trueEmail)
                             formData.append('text', item)
@@ -127,13 +148,17 @@ const UserChat: FC = () => {
                             formData.append('trueParamEmail', trueParamEmail)
                             formData.append('per', '')
                             formData.append('type', 'gif')
-                            await fetch('http://localhost:4000/users-controller/new/chat', {
+                            const firstMess = await fetch('http://localhost:4000/users-controller/new/chat', {
                                 method: "PATCH",
                                 body: formData,
                                 credentials: 'include',
                             })
-                            setMessages([{user: trueEmail, text: item, photos: [], date: formattedDate, id: messId, ans: answMess, edit: false, typeMess: 'gif', per: '', controls: false, pin: false}])
-                            setGifsArr([])
+                            const resultFirstMess = await firstMess.text()
+                            if (resultFirstMess !== 'OK') {
+                                const resultBackupMess = backUpMess(messages, messId)
+                                setMessages(resultBackupMess)
+                                alert('Произошла ошибка при отправке сообщения')
+                            }
                         }
                     }
                 }}/></div>)}
@@ -165,7 +190,7 @@ const UserChat: FC = () => {
         if (messages.length === 0) {
             showMess = <div className="empty-chat"><h2>Этот чат пока пуст</h2></div>
         } else if (messages.length !== 0) {
-            showMess = <MessDisplay messages={messages} email={trueEmail} trueParamEmail={trueParamEmail} setMessages={setMessages} setAnswMess={setAnswMess} setEditMess={setEditMess} setInputMess={setInputMess} setSucCopy={setSucCopy} pinMess={pinMess} setPinMess={setPinMess}/>
+            showMess = <MessDisplay messages={messages} email={trueEmail} trueParamEmail={trueParamEmail} setMessages={setMessages} setAnswMess={setAnswMess} setEditMess={setEditMess} setInputMess={setInputMess} setSucCopy={setSucCopy} pinMess={pinMess} setPinMess={setPinMess} setVideoMessId={setVideoMessId}/>
         }
     } else {
         showMess = <div className="loading-chat"><h2>Загрузка...</h2></div>
@@ -207,6 +232,15 @@ const UserChat: FC = () => {
             credentials: 'include',
         })
         const resultMess = await getMess.json()
+        const getMessCount = await fetch('http://localhost:4000/users-controller/get/friend/mess/count', {
+            method: "POST",
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ trueParamEmail }),
+            credentials: 'include'
+        })
+        const resultFriendMessCount = await getMessCount.json()
         const pinnedMess = resultMess.filter((el: any) => el.pin === true)
         if (pinnedMess.length !== 0) {
             setPinMess(pinnedMess.map((el: any) => el.id))
@@ -217,7 +251,30 @@ const UserChat: FC = () => {
                 controls: false,
             }
         })
-        setMessages(myMess)
+        if (myMess.length !== resultFriendMessCount) {
+            const readMess = myMess.slice(0, myMess.length - resultFriendMessCount).map((el: any) => {
+                return {
+                    ...el, 
+                    read: true,
+                }
+            })
+            const unreadMess = myMess.slice(readMess.length, myMess.length).map((el: any) => {
+                return {
+                    ...el, 
+                    read: false,
+                }
+            })
+            const resultMyMess = [...readMess, ...unreadMess]
+            setMessages(resultMyMess)
+        } else {
+            const resultMyMess = myMess.map((el: any) => {
+                return {
+                    ...el, 
+                    read: false,
+                }
+            })
+            setMessages(resultMyMess)
+        }
     }
 
     const getBanArr = async () => {
@@ -238,19 +295,100 @@ const UserChat: FC = () => {
         setMyBanArr(resultBanArr)
     }
 
-    const sendMess = async () => {
+    const sendMess = async (type: string) => {
         const isText = inputMess !== ''
                 const isPhotos = imageBase64.length !== 0
-                if ((isText && isPhotos) || (isText && !isPhotos) || (!isText && isPhotos)) {
+                if ((isText && isPhotos) || (isText && !isPhotos) || (!isText && isPhotos) || (!isPhotos && file)) {
                     try {
-                    if (messages?.length !== 0) {
-                        if (messages) {
-                            if (editMess === '') {
-                                const { formattedDate, messId } = getMessIdAndDate() 
-                                const newMessages = [...messages, {user: trueEmail, text: inputMess, photos: imageBase64.map(el => el.base64), date: formattedDate, id: messId, ans: answMess, edit: false, typeMess: 'text', per: '', controls: false, pin: false}]
+                        if (messages?.length !== 0) {
+                            if (messages) {
+                                if (editMess === '') {
+                                    const { formattedDate, messId } = getMessIdAndDate() 
+                                    const newMessages = [...messages, {user: trueEmail, text: inputMess, photos: imageBase64.map(el => el.base64), date: formattedDate, id: messId, ans: answMess, edit: false, typeMess: 'text', per: '', controls: false, pin: false, read: false}]
+                                    if (type === 'text') {
+                                        setMessages(newMessages)
+                                    } else {
+                                        setMessages([...messages, {user: trueEmail, text: inputMess, photos: [], date: formattedDate, id: messId, ans: answMess, edit: false, typeMess: 'video', per: '', controls: false, pin: false, read: false}])
+                                    }
+                                    setAnswMess('')
+                                    setImageBase64([])
+                                    setFile(null)
+                                    setInputMess('')
+                                    const formData = new FormData()
+                                    if (imageBase64.length !== 0) {
+                                        for (let item of imageBase64) {
+                                            formData.append('photo', item.file)
+                                        }
+                                    } else if (imageBase64.length === 0 && file) {
+                                        formData.append('photo', file.file)
+                                    }
+                                    formData.append('user', trueEmail)
+                                    formData.append('text', inputMess)
+                                    formData.append('date', formattedDate)
+                                    formData.append('id', messId)
+                                    formData.append('ans', answMess)
+                                    formData.append('trueParamEmail', trueParamEmail)
+                                    formData.append('per', '')
+                                    formData.append('type', type)
+                                    const sendMess = await fetch('http://localhost:4000/users-controller/new/mess', {
+                                        method: "PATCH",
+                                        body: formData,
+                                        credentials: 'include',
+                                    })
+                                    const resultSendMess = await sendMess.text()
+                                    console.log(`Result of the sending: ${resultSendMess}`)
+                                    if (resultSendMess !== 'OK') {
+                                        const resultBackupMess = backUpMess(messages, messId)
+                                        setMessages(resultBackupMess)
+                                        if (type === 'video') {
+                                            alert('Превышен допустимый объем файлов')
+                                        } else {
+                                            alert('Произошла ошибка при отправке сообщения')
+                                        }
+                                    }
+                                } else {
+                                    const per = ''
+                                    await fetch('http://localhost:4000/users-controller/edit/mess', {
+                                        method: "PATCH",
+                                        headers: {
+                                            'Content-Type': 'application/json',
+                                        },
+                                        body: JSON.stringify({ trueParamEmail, editMess, inputMess, per }),
+                                        credentials: 'include',
+                                    })
+                                    const newMess = messages.map(el => {
+                                        if (el.id === editMess) {
+                                            return {
+                                                ...el,
+                                                text: inputMess,
+                                                edit: true,
+                                            }
+                                        } else {
+                                            return el
+                                        }
+                                    })
+                                    setMessages(newMess)
+                                    setEditMess('')
+                                    setImageBase64([])
+                                    setProcessSendMess(false)
+                                }                        
+                            }
+                        } else {
+                            if (messages) {
+                                const { formattedDate, messId } = getMessIdAndDate()
                                 const formData = new FormData()
-                                for (let item of imageBase64) {
-                                    formData.append('photo', item.file)
+                                if (imageBase64.length !== 0) {
+                                    for (let item of imageBase64) {
+                                        formData.append('photo', item.file)
+                                    }
+                                } else if (imageBase64.length === 0 && file) {
+                                    formData.append('photo', file.file)
+                                }
+                                if (type === 'text') {
+                                    setMessages([{user: trueEmail, text: inputMess, photos: imageBase64.map(el => el.base64), date: formattedDate, id: messId, ans: '', edit: false, typeMess: 'text', per: '', controls: false, pin: false, read: false}])
+                                    setInputMess('')
+                                } else {
+                                    setMessages([...messages, {user: trueEmail, text: inputMess, photos: [], date: formattedDate, id: messId, ans: answMess, edit: false, typeMess: 'video', per: '', controls: false, pin: false, read: false}])
                                 }
                                 formData.append('user', trueEmail)
                                 formData.append('text', inputMess)
@@ -259,62 +397,25 @@ const UserChat: FC = () => {
                                 formData.append('ans', answMess)
                                 formData.append('trueParamEmail', trueParamEmail)
                                 formData.append('per', '')
-                                formData.append('type', 'text')
-                                await fetch('http://localhost:4000/users-controller/new/mess', {
+                                formData.append('type', type)
+                                const firstMess = await fetch('http://localhost:4000/users-controller/new/chat', {
                                     method: "PATCH",
                                     body: formData,
                                     credentials: 'include',
                                 })
-                                setMessages(newMessages)
-                                setAnswMess('')
-                                setImageBase64([])
-                            } else {
-                                const per = ''
-                                await fetch('http://localhost:4000/users-controller/edit/mess', {
-                                    method: "PATCH",
-                                    headers: {
-                                        'Content-Type': 'application/json',
-                                    },
-                                    body: JSON.stringify({ trueParamEmail, editMess, inputMess, per }),
-                                    credentials: 'include',
-                                })
-                                const newMess = messages.map(el => {
-                                    if (el.id === editMess) {
-                                        return {
-                                            ...el,
-                                            text: inputMess,
-                                            edit: true,
-                                        }
+                                const resultFirstMess = await firstMess.text()
+                                if (resultFirstMess !== 'OK') {
+                                    const resultBackupMess = backUpMess(messages, messId)
+                                    setMessages(resultBackupMess)
+                                    if (type === 'video') {
+                                        alert('Превышен допустимый объем файлов')
                                     } else {
-                                        return el
+                                        alert('Произошла ошибка при отправке сообщения')
                                     }
-                                })
-                                setMessages(newMess)
-                                setEditMess('')
-                                setImageBase64([])
-                            }                        
+                                }
+                            }
                         }
-                    } else {
-                        if (messages) {
-                            const { formattedDate, messId } = getMessIdAndDate()
-                            const formData = new FormData()
-                            formData.append('user', trueEmail)
-                            formData.append('text', inputMess)
-                            formData.append('date', formattedDate)
-                            formData.append('id', messId)
-                            formData.append('ans', answMess)
-                            formData.append('trueParamEmail', trueParamEmail)
-                            formData.append('per', '')
-                            formData.append('type', 'text')
-                            await fetch('http://localhost:4000/users-controller/new/chat', {
-                                method: "PATCH",
-                                body: formData,
-                                credentials: 'include',
-                            })
-                            setMessages([{user: trueEmail, text: inputMess, photos: imageBase64.map(el => el.base64), date: formattedDate, id: messId, ans: '', edit: false, typeMess: 'text', per: '', controls: false, pin: false}])
-                        }
-                    }
-                    setInputMess('')
+                        setInputMess('')
                     } catch (e) {
                         alert('Превышен допустимый объем файлов')
                         setImageBase64([])
@@ -338,8 +439,19 @@ const UserChat: FC = () => {
         setUserPermMess(resultPermData.friendPermMess)
     }
 
+    const openChat = async () => {
+        await fetch('http://localhost:4000/users-controller/open/chat', {
+            method: "POST",
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ trueParamEmail }),
+            credentials: 'include',
+        })
+    }
+
     useEffect(() => {
-        if (typing !== '' && typing !== 'Записывает голосовое сообщение') {
+        if (typing !== '' && typing !== 'Записывает голосовое...') {
             setTimeout(() => {
                 setTyping('')
             }, 1000);
@@ -347,24 +459,9 @@ const UserChat: FC = () => {
     }, [typing])
 
     useEffect(() => {
-        if (trueEmail !== '' && trueParamEmail !== '') {
-            const getOnlineStatus = async () => {
-                await fetch('http://localhost:4000/users-controller/get/online/status', {
-                    method: "POST",
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ trueEmail, trueParamEmail })
-                })
-            }
-            getOnlineStatus()
-        }
-    }, [trueEmail, trueParamEmail])
-
-    useEffect(() => {
         const handleGlobalKeyPress = (event: any) => {
           if (event.key === 'Enter') {
-            sendMess()
+            sendMess('text')
           }
         };   
 
@@ -390,6 +487,7 @@ const UserChat: FC = () => {
             getMyBanArr()
             getUserPermAndSubs()
             zeroMess(trueParamEmail)
+            openChat()
         }
     }, [trueParamEmail, trueEmail])
 
@@ -422,14 +520,23 @@ const UserChat: FC = () => {
                         formData.append('trueParamEmail', trueParamEmail)
                         formData.append('per', '')
                         formData.append('type', 'voice')
-                        await fetch('http://localhost:4000/users-controller/new/mess', {
+                        setMessages([...messages, {user: trueEmail, text: base64String, photos: [], date: formattedDate, id: messId, ans: answMess, edit: false, typeMess: 'voice', controls: false, per: '', pin: false, read: false}])
+                        setAnswMess('')
+                        setInputMess('')
+                        const sendMess = await fetch('http://localhost:4000/users-controller/new/mess', {
                             method: "PATCH",
                             body: formData,
                             credentials: 'include',
                         })
-                        setMessages([...messages, {user: trueEmail, text: base64String, photos: [], date: formattedDate, id: messId, ans: answMess, edit: false, typeMess: 'voice', controls: false, per: '', pin: false}])
-                        setAnswMess('')
+                        const resultSendMess = await sendMess.text()
+                        if (resultSendMess !== 'OK') {
+                            const resultBackupMess = backUpMess(messages, messId)
+                            setMessages(resultBackupMess)
+                            alert('Произошла ошибка при отправке сообщения')
+                        }
                     } else {
+                        setMessages([{user: trueEmail, text: base64String, photos: [], date: formattedDate, id: messId, ans: '', edit: false, typeMess: 'voice', controls: false, per: '', pin: false, read: false}])
+                        setInputMess('')
                         const formData = new FormData()
                         formData.append('user', trueEmail)
                         formData.append('text', base64String)
@@ -439,14 +546,17 @@ const UserChat: FC = () => {
                         formData.append('trueParamEmail', trueParamEmail)
                         formData.append('per', '')
                         formData.append('type', 'voice')
-                        await fetch('http://localhost:4000/users-controller/new/chat', {
+                        const firstMess = await fetch('http://localhost:4000/users-controller/new/chat', {
                             method: "PATCH",
                             body: formData,
                             credentials: 'include',
                         })
-                        setMessages([...messages, {user: trueEmail, text: base64String, photos: [], date: formattedDate, id: messId, ans: answMess, edit: false, typeMess: 'voice', controls: false, per: '', pin: false}])
-                        setAnswMess('')
-                        setMessages([{user: trueEmail, text: base64String, photos: [], date: formattedDate, id: messId, ans: '', edit: false, typeMess: 'voice', controls: false, per: '', pin: false}])
+                        const resultFirstMess = await firstMess.text()
+                        if (resultFirstMess !== 'OK') {
+                            const resultBackupMess = backUpMess(messages, messId)
+                            setMessages(resultBackupMess)
+                            alert('Произошла ошибка при отправке сообщения')
+                        }
                     }                  
                 }
                 }
@@ -462,17 +572,28 @@ const UserChat: FC = () => {
             }
         })
 
-        socket.on('replyMessage', async(message: {type: string, user: string, text: string, photos: string[], date: string, id: string, ans: string, socketId?: string, mess: Message[], typeMess: 'text', per: string}) => {
+        socket.on('replyMessage', async(message: {type: string, user: string, text: string, photos: string[], date: string, id: string, ans: string, socketId?: string, mess: Message[], typeMess: string, per: string}) => {
             if (message.type === 'message') {
                 setTrueParamEmail(prev => {
                 if (prev === message.user) {
                     setMessages(prev => {
                         if (prev) {
-                            return [...prev, {...message, controls: false, pin: false}]
+                            return [...prev, {user: message.user, text: message.text, id: message.id, photos: message.photos, date: message.date, typeMess: message.typeMess, ans: message.ans, controls: false, per: message.per, pin: false, read: false}]
                         } else {
                             return prev
                         }
                     });
+                    const readMess = async () => {
+                        const targetEmail = message.user
+                        await fetch('http://localhost:4000/users-controller/read/mess', {
+                            method: "POST",
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({ targetEmail })
+                        })
+                    }
+                    readMess()
                 }
                 return prev
             })
@@ -488,10 +609,13 @@ const UserChat: FC = () => {
             await fetch(`http://localhost:4000/users-controller/zero/mess/count/${userSocket}`)
             } else if (message.type === 'typing') {
                 setTrueParamEmail(prev => {
-                    if (message.user === prev) {
-                        console.log('typing')
-                    setTyping('Печатает...')
-                }
+                    setTrueEmail(prevTrueEmail => {
+                        if (message.user === prev && prevTrueEmail !== message.user) {
+                            console.log('typing')
+                            setTyping('Печатает...')
+                        }
+                        return prevTrueEmail
+                    })
                 return prev
                 })
             } else if (message.type === 'delete') {
@@ -519,10 +643,14 @@ const UserChat: FC = () => {
                 }
             } else if (message.type === 'startVoice') {
                 setTrueParamEmail(prev => {
-                    if (prev === message.user) {
-                        setTyping('Записывает голосовое сообщение')
-                    }
-                    return prev
+                    setTrueEmail(prevTrueEmail => {
+                        if (message.user === prev && prevTrueEmail !== message.user) {
+                            console.log('typing')
+                            setTyping('Записывает голосовое...')
+                        }
+                        return prevTrueEmail
+                    })
+                return prev
                 })
             } else if (message.type === 'stopVoice') {
                 setTrueParamEmail(prev => {
@@ -531,20 +659,66 @@ const UserChat: FC = () => {
                     }
                     return prev
                 })
-            } else if (message.type === 'giveOnlineStatus') {
-                setOnlineStatus('Online')
-            } else if (message.type === 'onlineStatus') {
-                const userEmail = message.user
-                await fetch('http://localhost:4000/users-controller/give/online/status', {
-                    method: "POST",
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ userEmail })
+            } else if (message.type === 'readMess') {
+                setMessages(prev => {
+                    if (prev) {
+                        const resultMess = prev.map(el => {
+                            return {...el, read: true}
+                        })
+                        return resultMess
+                    } else {
+                        return prev
+                    }
+                })
+            } else if (message.type === 'openChat') {
+                setTrueParamEmail(prevTrueParamEmail => {
+                    if (prevTrueParamEmail === message.user) {
+                        setMessages(prevMessages => {
+                            if (prevMessages) {
+                                const resultMess = prevMessages.map(el => {
+                                    return {...el, read: true}
+                                })
+                                return resultMess
+                            } else {
+                                return prevMessages
+                            }
+                        })
+                        return prevTrueParamEmail
+                    } else {
+                        return prevTrueParamEmail
+                    }
                 })
             }
         });
     }, [])
+    
+    useEffect(() => {
+        if (trueParamEmail !== '') {
+                const getStatusOnline = async () => {
+                const getUserStatusOnline = await fetch(`http://localhost:4000/users-controller/get/status/online/${trueParamEmail}`)
+                const resultUserOnlineStatus = await getUserStatusOnline.text()
+                if (resultUserOnlineStatus === 'Online') {
+                    setOnlineStatus(resultUserOnlineStatus)
+                } else {
+                    setOnlineStatus(`Был(а) в сети ${resultUserOnlineStatus}`)
+                }
+            }
+            getStatusOnline()
+        }
+    }, [trueParamEmail])
+
+    useEffect(() => {
+        if (trueParamEmail !== '') {
+            const checkUser = async () => {
+                const checkThisUser = await fetch(`http://localhost:4000/users-controller/check/user/${trueParamEmail}`)
+                const resultCheckThisUser = await checkThisUser.text()
+                if (resultCheckThisUser === 'undefined') {
+                    router.back()
+                }
+            }
+            checkUser()
+        }
+    }, [trueParamEmail])
     
     useEffect(() => {
         if (socketId !== '') {
@@ -562,93 +736,138 @@ const UserChat: FC = () => {
         }
     }, [socketId])
 
-
-    if (trueEmail !== '' && Array.isArray(usersBan) && mySubs !== null && userSubs !== null && userPermMess !== null) {
-        if (usersBan.includes(trueEmail) === false) {
-            if (userPermMess === 'Все' || (userPermMess === 'Только друзья' && mySubs.includes(trueParamEmail) && userSubs.includes(trueEmail))) {
-                showMessInter = <div className="message-input-container">
-                <div className="reply-indicator">
-                    <p>{answMess}</p>
-                    {answMess !== '' ? <div className="reply-close" onClick={() => setAnswMess('')}>×</div> : null}                        
-                </div>
-                <div className="input-group">
-                    <input 
-                        placeholder="Сообщение" 
-                        className="message-input"
-                        onChange={async(event: ChangeEvent<HTMLInputElement>) => {
-                        setInputMess(event.target.value)
-                        await fetch('http://localhost:4000/users-controller/typing', {
-                            method: "POST",
-                            headers: {
-                                'Content-Type': 'application/json',
-                            },
-                            body: JSON.stringify({ trueParamEmail }),
-                            credentials: 'include',
-                        })
-                        }} 
-                        value={inputMess}
-                    />
-                    <label className="file-upload-btn">
-                        📎
-                        <input type="file" onChange={handleFileChange} className="file-input"/>
-                    </label>
-                    <div className="gif-btn" onClick={() => {
-                        if (gifsArr.length === 0) {
-                            getAllGifs()
-                        } else {
-                            setGifsArr([])
+    if (file === null) {
+        if (trueEmail !== '' && Array.isArray(usersBan) && mySubs !== null && userSubs !== null && userPermMess !== null) {
+            if (usersBan.includes(trueEmail) === false) {
+                if (userPermMess === 'Все' || (userPermMess === 'Только друзья' && mySubs.includes(trueParamEmail) && userSubs.includes(trueEmail))) {
+                    showMessInter = <div className="message-input-container">
+                    <div className="reply-indicator">
+                        <p>{answMess}</p>
+                        {answMess !== '' ? <div className="reply-close" onClick={() => setAnswMess('')}>×</div> : null}                        
+                    </div>
+                    {overStatus === false ? <input 
+                            placeholder="Сообщение" 
+                            className="message-input"
+                            onChange={async(event: ChangeEvent<HTMLInputElement>) => {
+                            setInputMess(event.target.value)
+                            await fetch('http://localhost:4000/users-controller/typing', {
+                                method: "POST",
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                },
+                                body: JSON.stringify({ trueParamEmail }),
+                                credentials: 'include',
+                            })
+                            }} 
+                            value={inputMess}
+                            onDragOver={((e) => {
+                                e.preventDefault()
+                                setOverStatus(true)
+                            })}
+                        /> : <div style={{width: 300, height: 100, border: '2px solid black'}} onDragOver={((e) => e.preventDefault())} onDragLeave={((e) => {
+                            e.preventDefault()
+                            setOverStatus(false)
+                        })} onDrop={((e) => {
+                            e.preventDefault()
+                            const files = e.dataTransfer.files
+                            if (files.length > 0) {
+                                const resultFile = files[0]
+                                if (resultFile) {
+                                    if (resultFile.type === 'image/png' || resultFile.type === 'image/jpeg') {
+                                        const reader = new FileReader();
+                                        reader.onload = async (event) => {
+                                            const resultPhoto = event.target?.result as string
+                                            setImageBase64([...imageBase64, {file: resultFile, base64: resultPhoto}])
+                                        };
+                                        reader.readAsDataURL(resultFile);
+                                    } else if (resultFile.type === 'video/mp4') {
+                                        setFile({file: resultFile, type: 'video'})
+                                    } else {
+                                        setFile({file: resultFile, type: 'file'})
+                                    }
+                                }
+                            }
+                        })}>
+                                <p>Копировать файл</p>
+                            </div>}
+                    <div className="input-group">
+                        <label className="file-upload-btn">
+                            📎
+                        <input type="file" accept="image/*" onChange={handleFileChange} className="file-input"/>
+                        </label>
+                        <div className="gif-btn" onClick={() => {
+                            if (gifsArr.length === 0) {
+                                getAllGifs()
+                            } else {
+                                setGifsArr([])
+                            }
+                        }}>🎬</div>
+                        {startStop === false ? 
+                            <div className="record-btn" onClick={async() => {
+                                startRecording()
+                                setStartStop(true)
+                                await fetch('http://localhost:4000/users-controller/start/voice', {
+                                    method: "POST",
+                                    headers: {
+                                        'Content-Type': 'application/json',
+                                    },
+                                    body: JSON.stringify({ trueParamEmail }),
+                                    credentials: 'include',
+                                })
+                            }}>🎤</div> : 
+                            <div className="stop-record-btn" onClick={async() => {
+                                setStartStop(false)
+                                stopRecording()
+                                await fetch('http://localhost:4000/users-controller/stop/voice', {
+                                    method: "POST",
+                                    headers: {
+                                        'Content-Type': 'application/json',
+                                    },
+                                    body: JSON.stringify({ trueParamEmail }),
+                                    credentials: 'include',
+                                })
+                            }}>⏹️</div>
                         }
-                    }}>🎬</div>
-                    {startStop === false ? 
-                        <div className="record-btn" onClick={async() => {
-                            startRecording()
-                            setStartStop(true)
-                            await fetch('http://localhost:4000/users-controller/start/voice', {
-                                method: "POST",
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                },
-                                body: JSON.stringify({ trueParamEmail }),
-                                credentials: 'include',
-                            })
-                        }}>🎤</div> : 
-                        <div className="stop-record-btn" onClick={async() => {
-                            setStartStop(false)
-                            stopRecording()
-                            await fetch('http://localhost:4000/users-controller/stop/voice', {
-                                method: "POST",
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                },
-                                body: JSON.stringify({ trueParamEmail }),
-                                credentials: 'include',
-                            })
-                        }}>⏹️</div>
-                    }
-                    <SendBtn sendMess={sendMess} editMess={editMess} inputMess={inputMess} imageBase64={imageBase64}/>
+                    <input type="file" onChange={async(e: ChangeEvent<HTMLInputElement>) => {
+                        const resultFile = e.target.files?.[0];
+                            if (resultFile) {
+                                const reader = new FileReader();
+                                reader.onload = async (event) => {
+                                    setFile({file: resultFile, type: 'video'})
+                                };
+                                reader.readAsDataURL(resultFile);
+                            }
+                        }}/>
+                        {processSendMess === false ? <SendBtn sendMess={sendMess} editMess={editMess} inputMess={inputMess} type={'text'} imageBase64={imageBase64}/> : <ClipLoader/>}
+                    </div>
                 </div>
-            </div>
+                } else {
+                    showMessInter = <div className="restricted-message">
+                    <p>Пользователь ограничил отправку сообщений</p>
+                </div>
+                }
             } else {
                 showMessInter = <div className="restricted-message">
-                <p>Пользователь ограничил отправку сообщений</p>
-            </div>
+                    <p>Пользователь ограничил отправку сообщений</p>
+                </div>
             }
-        } else {
-            showMessInter = <div className="restricted-message">
-                <p>Пользователь ограничил отправку сообщений</p>
-            </div>
         }
+    } else {
+        showMessInter = <div className="restricted-message">
+            <p>Видеофайл    </p>
+        </div>
     }
 
     return (
         <div className="chat-container">
+            <Call/>
             <div className="chat-header">
-                <h3 className="chat-user-name" onClick={() => window.location.href=`/${trueParamEmail}`}>{trueParamEmail}</h3>
-                <button onClick={() => window.open(`/call/${trueParamEmail}`, '_blank')}>Позвонить</button>
-                <div className="online-status">
+                {trueParamEmail === trueEmail ? <h3 className="chat-user-name">Избранное</h3> : <h3 className="chat-user-name" onClick={() => window.location.href=`/${trueParamEmail}`}>{trueParamEmail}</h3>}
+                {trueEmail !== trueParamEmail ? <button onClick={() => window.open(`/call/${trueParamEmail}`, '_blank')}>Позвонить</button> : null}
+                {trueEmail !== trueParamEmail ? <div className="online-status">
                     <span className={`status-dot ${onlineStatus === 'Online' ? 'online' : 'offline'}`}></span>
                     <span>{onlineStatus}</span>
-                </div>
+                </div> : null}
                 {bonuceAction === true ? <div className="chat-actions">
                     {banBtn}
                     {messages?.length !== 0 ? <button className="files-btn" onClick={() => window.location.href=`/files/${trueParamEmail}`}>Файлы чата</button> : null}
@@ -662,12 +881,19 @@ const UserChat: FC = () => {
 
             {sucCopy === true ? <div className="copy-notification"><p>Текст успешно скопирован!</p></div> : null}
             
+            {videoMessId ? <Video videoMessId={videoMessId} setVideoMessId={setVideoMessId} trueParamEmail={trueParamEmail}/> : null}
+
             <div className="messages-container">
                 {showMess}
             </div>
 
             {photos}
             {showGifs}
+            {file ? <div>
+                <p onClick={() => setFile(null)}>X</p>
+                <h3>{file.type === 'video' ? 'Видеофайл' : 'Файл'}</h3>
+                {processSendMess === false ? <SendBtn sendMess={sendMess} editMess={editMess} inputMess={inputMess} type={file.type} imageBase64={[{file: file.file, base64: ''}]}/> : <ClipLoader/>}
+            </div> : null}
             {showMessInter}
         </div>
     )
