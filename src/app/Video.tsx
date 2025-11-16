@@ -2,6 +2,7 @@
 
 import { FC, useEffect, useState, memo } from "react"
 import { ClipLoader } from "react-spinners";
+import Download from "./Download";
 
 interface VideoProps{
     videoMessId: string;
@@ -37,7 +38,10 @@ const Video: FC <VideoProps> = (props) => {
             <p onClick={() => props.setVideoMessId(null)}>X</p>
             {resultVideo === null ? <div>
                 <ClipLoader/>
-            </div> : <video src={resultVideo} controls={true} width={300} height={300}/>}
+            </div> : <div>
+                <video src={resultVideo} controls={true} width={300} height={300}/>
+                <Download downloadFile={resultVideo}/>
+            </div>}
         </div>
     )
 }

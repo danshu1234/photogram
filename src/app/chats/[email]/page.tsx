@@ -721,6 +721,10 @@ const UserChat: FC = () => {
     }, [trueParamEmail])
     
     useEffect(() => {
+        console.log(messages)
+    }, [messages])
+    
+    useEffect(() => {
         if (socketId !== '') {
         const addSocket = async () => {
             await fetch('http://localhost:4000/users-controller/add/socket', {

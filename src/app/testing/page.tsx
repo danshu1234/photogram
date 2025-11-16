@@ -6,31 +6,8 @@ import JSZip from "jszip";
 const Testing: FC = () => {
 
     const [file, setFile] = useState <File | null> (null)
-    const [resultFiles, setResultFiles] = useState <Blob[]> ([])
-    const [videos, setVideos] = useState <string[]> ([])
-
-    useEffect(() => {
-        const getFile = async () => {
-            const savedFiles = await fetch('http://localhost:4000/testing-users/file')
-            const resultSavedFile = await savedFiles.blob()
-            const zip = new JSZip();
-            const loadedZip = await zip.loadAsync(resultSavedFile);
-            let finalFiles: Blob[] = []
-            let finalVideos: string[] = []
-            for (const [filename, file] of Object.entries(loadedZip.files)) {
-                if (!file.dir) {
-                    const blob = await file.async('blob');
-                    finalFiles = [...finalFiles, blob]
-                    const videoUrl = URL.createObjectURL(blob)
-                    finalVideos = [...finalVideos, videoUrl]
-                }
-            }
-            setResultFiles(finalFiles)
-            setVideos(finalVideos)
-        }
-    getFile()
-}, [])
-
+    const [video, setVideo] = useState <string> ('')
+    const [inputSrc, setInputSrc] = useState <string> ('')
 
     return (
         <div>
@@ -44,29 +21,22 @@ const Testing: FC = () => {
                 if (file) {
                     const formData = new FormData()
                     formData.append('file', file)
-                    const saveFile = await fetch('http://localhost:4000/testing-users/save/file', {
+                    await fetch('http://localhost:4000/testing-users/save/big/file', {
                         method: "POST",
                         body: formData,
                     })
-                    const resultSaveFile = await saveFile.blob()
-                    setResultFiles([...resultFiles, resultSaveFile])
-                    alert('Файл успешно сохранен')
                 }
-            }}>Сохранить</button>
-
-            {resultFiles.length !== 0 ? <ul>
-                {resultFiles.map((item, index) => <li key={index} onClick={() => {
-                    const url = URL.createObjectURL(item)
-                    const link = document.createElement('a');
-                    link.href = url;
-                    link.download = 'file';
-                    link.click();
-                    URL.revokeObjectURL(url);
-                }}>Файл</li>)}
-            </ul> : null}
-            {videos.length !== 0 ? <ul>
-                {videos.map((item, index) => <li key={index}><video src={item} style={{width: 200, height: 200}} controls={true}/></li>)}
-            </ul> : null}
+            }}>Save</button><br/>
+            <input placeholder="id" onChange={((event: ChangeEvent<HTMLInputElement>) => setInputSrc(event.target.value))}/>
+            <button onClick={async() => {
+                if (inputSrc !== '') {
+                    const file = await fetch(`http://localhost:4000/testing-users/get/big/file/${inputSrc}`)
+                    const resultFile = await file.blob()
+                    const resultVideo = URL.createObjectURL(resultFile)
+                    setVideo(resultVideo)
+                }
+            }}>Search</button>
+            {video !== '' ? <video src={video} controls={true} width={200} height={200}/> : null}
         </div>
     )
 }

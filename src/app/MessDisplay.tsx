@@ -7,6 +7,7 @@ import ShareBtn from "./ShareBtn"
 import { Element } from 'react-scroll'
 import "./MessDisplay.css"
 import backUpMess from "./backupMess"
+import Download from "./Download"
 
 interface MessDisplayProps{
     messages: Message[] | null;
@@ -33,6 +34,7 @@ const MessDisplay: FC <MessDisplayProps> = (props) => {
             <div className="image-modal-content" onClick={(e) => e.stopPropagation()}>
                 <button className="image-modal-close" onClick={() => setImgArr([])}>×</button>
                 <ImgList imgArr={imgArr} startIndex={startIndex} setStartIndex={setStartIndex}/>
+                <Download downloadFile={imgArr[startIndex]}/>
             </div>
         </div>
     }
@@ -211,7 +213,7 @@ const MessDisplay: FC <MessDisplayProps> = (props) => {
                                         </button>
                                     )}
 
-                                    {item.photos.length === 0 ? <ShareBtn text={item.text} photos={item.photos} date={item.date} id={item.id} typeMess={item.typeMess} per={item.per} email={props.email} user={item.user}/> : null}
+                                    {item.per === '' ? <ShareBtn text={item.text} photos={item.photos} date={item.date} id={item.id} typeMess={item.typeMess} per={item.per} email={props.email} user={item.user}/> : null}
                           
                                     {item.typeMess === 'text' && item.text !== '' && (
                                         <button className="control-btn copy-btn" onClick={async() => {
