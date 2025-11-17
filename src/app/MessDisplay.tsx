@@ -213,7 +213,7 @@ const MessDisplay: FC <MessDisplayProps> = (props) => {
                                         </button>
                                     )}
 
-                                    {item.per === '' ? <ShareBtn text={item.text} photos={item.photos} date={item.date} id={item.id} typeMess={item.typeMess} per={item.per} email={props.email} user={item.user}/> : null}
+                                    {item.per === '' ? <ShareBtn text={item.text} photos={item.photos} date={item.date} id={item.id} typeMess={item.typeMess} per={item.per} email={props.email} user={item.user} trueParamEmail={trueParamEmail}/> : null}
                           
                                     {item.typeMess === 'text' && item.text !== '' && (
                                         <button className="control-btn copy-btn" onClick={async() => {

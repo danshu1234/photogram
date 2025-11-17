@@ -12,6 +12,11 @@ import styles from './Chats.module.css';
 import Call from "../Call";
 import useOnlineStatus from "../useOnlineStatus";
 
+interface MessageWithBonuce extends Message{
+    origUser: string;
+    origId: string;
+}
+
 const Chats: FC = () => {
     const socket = io('http://localhost:4000')
     const [socketId, setSocketId] = useState('')
@@ -20,7 +25,7 @@ const Chats: FC = () => {
     const {} = useOnlineStatus()
 
     const { trueEmail } = useGetEmail()
-    const [shareMess, setShareMess] = useState<Message | null>(null)
+    const [shareMess, setShareMess] = useState<MessageWithBonuce | null>(null)
     const [basePerm, setBasePerm] = useState<string>('')
     const [changePerm, setChangePerm] = useState<string>('')
     const [chats, setChats] = useState<Chat[] | null>(null)  
@@ -229,6 +234,20 @@ const Chats: FC = () => {
                                             formData.append('trueParamEmail', item.user)
                                             formData.append('per', shareMess.per)
                                             formData.append('type', shareMess.typeMess)
+                                            formData.append('origUser', shareMess.origUser)
+                                            formData.append('origId', shareMess.origId)
+                                            const newChats = chats.map(el => {
+                                                if (el.user === item.user) {
+                                                    return {
+                                                        ...el,
+                                                        messages: [...el.messages, {user: shareMess.user, text: shareMess.text, photos: [], date: shareMess.date, id: shareMess.id, ans: '', edit: false, typeMess: shareMess.typeMess, pin: false, controls: false, per: '', read: false}]
+                                                    }
+                                                } else {
+                                                    return el
+                                                }
+                                                })
+                                            setChats(newChats)
+                                            setShareMess(null)
                                             const sendMess = await fetch('http://localhost:4000/users-controller/new/mess', {
                                                 method: "PATCH",
                                                 body: formData,
@@ -237,18 +256,6 @@ const Chats: FC = () => {
                                             const resultSendMess = await sendMess.text()
                                             if (resultSendMess === 'OK') {
                                                 localStorage.removeItem('shareMess')
-                                                const newChats = chats.map(el => {
-                                                    if (el.user === item.user) {
-                                                        return {
-                                                            ...el,
-                                                            messages: [...el.messages, {user: shareMess.user, text: shareMess.text, photos: [], date: shareMess.date, id: shareMess.id, ans: '', edit: false, typeMess: shareMess.typeMess, pin: false, controls: false, per: '', read: false}]
-                                                        }
-                                                    } else {
-                                                        return el
-                                                    }
-                                                })
-                                                setChats(newChats)
-                                                setShareMess(null)
                                             } else {
                                                 alert('Превышен допустимый объем файлов')
                                             }
