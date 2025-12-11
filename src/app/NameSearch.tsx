@@ -5,6 +5,7 @@ import styles from './NameSearch.module.css'
 
 interface NameSearchProps{
     allUsers: any[],
+    type: string,
 }
 
 const NameSearch: FC<NameSearchProps> = (props) => {
@@ -20,7 +21,13 @@ const NameSearch: FC<NameSearchProps> = (props) => {
             showUsers = <ul className={styles.nameSearchList}>
                 {usersList.map((item, index) => (
                   <li key={index}>
-                    <p onClick={() => window.location.href=`${item.email}`}>{item.email}</p>
+                    <p onClick={() => {
+                        if (props.type === 'users') {
+                            window.location.href=`${item.email}`
+                        } else {
+                            window.location.href=`chats/${item.user}`
+                        }
+                    }}>{props.type === 'users' ? item.email : item.user}</p>
                   </li>
                 ))}
             </ul>
@@ -31,10 +38,16 @@ const NameSearch: FC<NameSearchProps> = (props) => {
         if (nameInput === '') {
             setUsersList(null)
         } else {
-            const filteredUsers = props.allUsers.filter(el => el.name.includes(nameInput))
-            setUsersList(filteredUsers)
+            if (props.type === 'users') {
+                const filteredUsers = props.allUsers.filter(el => el.name.includes(nameInput))
+                setUsersList(filteredUsers)
+            } else {
+                const filteredUsers = props.allUsers.filter(el => el.user.includes(nameInput))
+                setUsersList(filteredUsers)
+            }
         }
     }, [nameInput])
+
 
     return (
         <div className={styles.nameSearchContainer}>

@@ -12,6 +12,7 @@ export interface Message{
     per: string;
     pin: boolean;
     read: boolean;
+    sending: boolean;
 }
 
 interface Chat{

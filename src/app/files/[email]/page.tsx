@@ -8,6 +8,8 @@ import Call from "@/app/Call"
 import useOnlineStatus from "@/app/useOnlineStatus"
 import { Message } from "@/app/Chat"
 import { ClipLoader } from "react-spinners"
+import { fileTypeFromBlob } from 'file-type';
+import JSZip from "jszip"
 
 interface PhotoInfo{
     url: string;
@@ -37,6 +39,7 @@ const Files: FC = () => {
     const [bigPhoto, setBigPhoto] = useState <PhotoInfo | null> (null)
     const [resultPhotos, setResultPhotos] = useState <PhotoInfo[] | null> (null) 
     const [resultVideos, setResultVideos] = useState <VideoMessage[] | null> (null)
+    const [resultFiles, setResultFiles] = useState <Message[]> ([])
     let showFiles;
 
     const changeVideo = (videoSrc: string, messId: string, date: string): VideoMessage[] => {
@@ -67,6 +70,25 @@ const Files: FC = () => {
         }
     }
 
+    const downloadFile = async (messId: string) => {
+        const file = await fetch('http://localhost:4000/users-controller/get/file', {
+            method: "POST",
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ messId, trueParamEmail }),
+            credentials: 'include',
+        })
+        const resultFile = await file.blob()
+        const fileType = await fileTypeFromBlob(resultFile)
+        const url = URL.createObjectURL(resultFile);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `file.${fileType?.ext}`; 
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+
     if (typeFile === 'photo') {
         if (resultPhotos !== null) {
             if (resultPhotos.length !== 0) {
@@ -91,20 +113,29 @@ const Files: FC = () => {
                                     if (item.videoSrc === '') {
                                         return <div key={index}>
                                             <img src='/images/Play_groen.png' width={200} height={200} style={{cursor: 'pointer'}} onClick={async() => {
-                                                const messId = item.id
+                                                const videoMessId: string = item.text
                                                 const videoLoad = changeVideo('loading', item.id, item.date)
                                                 setResultVideos(videoLoad)
-                                                const video = await fetch('http://localhost:4000/users-controller/video/mess', {
+                                                const video = await fetch('http://localhost:4000/users-controller/video', {
                                                     method: "POST",
                                                     headers: {
                                                         'Content-Type': 'application/json',
                                                     },
-                                                    body: JSON.stringify({ trueParamEmail, messId }),
+                                                    body: JSON.stringify({ videoMessId, trueParamEmail }),
                                                     credentials: 'include',
                                                 })
-                                                const resultVideo = await video.text()
-                                                const newVideos = changeVideo(resultVideo, item.id, item.date)
-                                                setResultVideos(newVideos)
+                                                const resultVideo = await video.blob()
+                                                const zip = new JSZip();
+                                                const loadedZip = await zip.loadAsync(resultVideo);
+                                                
+                                                for (const [filename, file] of Object.entries(loadedZip.files)) {
+                                                    if (!file.dir) {
+                                                        const blob = await file.async('blob');
+                                                        const videoUrl = URL.createObjectURL(blob)
+                                                        const newVideos = changeVideo(videoUrl, item.id, item.date)
+                                                        setResultVideos(newVideos)
+                                                    }
+                                                }
                                             }}/>
                                         </div>
                                     } else if (item.videoSrc !== '' && item.videoSrc !== 'loading') {
@@ -119,6 +150,37 @@ const Files: FC = () => {
                 </ul>
             } else {
                 showFiles = <h2>В этом чате пока нет видео</h2>
+            }
+        } else {
+            showFiles = <h3>Загрузка...</h3>
+        }
+    } else {
+        if (resultFiles !== null) {
+            if (resultFiles.length !== 0) {
+                showFiles = <ul>
+                    {resultFiles.map((item, index) => {
+                        const findDotIndex = item.text.split('').indexOf('.')
+                        const resultExstension = item.text.slice(findDotIndex, item.text.length)
+                        if (resultExstension === '.docx') {
+                            return <li key={index} onClick={() => downloadFile(item.id)}>
+                                <img src='/images/7271005.png' width={100} height={100}/>
+                                <p>{item.text}</p>
+                            </li>
+                        } else if (resultExstension === '.pdf') {
+                            return <li key={index} onClick={() => downloadFile(item.id)}>
+                                <img src='/images/0xpj6n9hwyvcgr2cbtz4smr9l128iht4.png' width={100} height={100}/>
+                                <p>{item.text}</p>
+                            </li>
+                        } else if (resultExstension === '.xlsx') {
+                            return <li key={index} onClick={() => downloadFile(item.id)}>
+                                <img src='/images/9496502.png' width={100} height={100}/>
+                                <p>{item.text}</p>
+                            </li>
+                        }
+                    })}
+                </ul>
+            } else {
+                showFiles = <h2>В этом чате пока нет файлов</h2>
             }
         } else {
             showFiles = <h3>Загрузка...</h3>
@@ -162,8 +224,10 @@ const Files: FC = () => {
                 }
             }
         }
+        const files = resultMess.filter(((el: Message) => el.typeMess === 'file'))
         setResultPhotos(resultPhotos)
         setResultVideos(resultVideoMessages.reverse())
+        setResultFiles(files)
     }
 
     useEffect(() => {
@@ -171,11 +235,13 @@ const Files: FC = () => {
             getFiles()
         }
     }, [trueEmail, trueParamEmail])
+    
 
     return (
         <div>
             <p onClick={() => setTypeFile('photo')}>Фото</p>
             <p onClick={() => setTypeFile('video')}>Видео</p>
+            <p onClick={() => setTypeFile('files')}>Файлы</p>
             {showFiles}
             {bigPhoto !== null ? <div>
                 <Call/>

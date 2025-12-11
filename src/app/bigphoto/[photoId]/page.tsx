@@ -11,6 +11,8 @@ import useNotif from '@/app/useNotif';
 import styles from '../BigPhoto.module.css'
 import Call from '@/app/Call';
 import useOnlineStatus from '@/app/useOnlineStatus';
+import getGifs from '@/app/chats/[email]/getGifs';
+import { v4 as uuidv4 } from 'uuid';
 
 const BigPhoto = () => {
     const {} = useNotif()
@@ -20,6 +22,9 @@ const BigPhoto = () => {
 
     const params = useParams();
 
+    const [sendStatus, setSendStatus] = useState <boolean> (false)
+    const [showGifs, setShowGifs] = useState <boolean> (false)
+    const [gifs, setGifs] = useState <string[]> ([])
     const [url, setUrl] = useState<string>('');
     const [photoInfo, setPhotoInfo] = useState<Photo | null>(null)
     const [rotateDeg, setRotateDeg] = useState<number>(0)
@@ -29,6 +34,7 @@ const BigPhoto = () => {
     let permCommentsBtn;
     let showComments;
     let commentsShow;
+    let gifsInter;
 
     const permComments = async (perm: boolean) => {
         const photoId = photoInfo?.id
@@ -46,6 +52,50 @@ const BigPhoto = () => {
                 setPhotoInfo({...photoInfo, commentsPerm: perm})
             }
         }
+    }
+
+    const newComment = async (type: string, gifUrl?: string) => {
+        let comment: string = ''
+        if (gifUrl) {
+            comment = gifUrl
+        } else {
+            comment = commentInput
+        }
+        setSendStatus(true)
+        const getUserName = await fetch(`http://localhost:4000/users-controller/get/user/name/${trueEmail}`)
+        const resultName = await getUserName.text()
+        const targetId = params.photoId
+        const commentId: string = uuidv4()
+        const addComment = await fetch('http://localhost:4000/photos/new/comment', {
+            method: "PATCH",
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ targetId, comment, type, commentId }),
+            credentials: 'include',
+        })
+        const resultAdd = await addComment.text()
+        if (resultAdd === 'OK') {
+            if (photoInfo) {
+                const newComment = {user: trueEmail, userName: resultName, comment: comment, type: type, id: commentId}
+                setPhotoInfo({...photoInfo, comments: [...photoInfo.comments, newComment]})
+                setComments([...comments, newComment])
+                if (type === 'text') {
+                    setCommentInput('')
+                } else {
+                    setShowGifs(false)
+                }
+                setSendStatus(false)
+            }
+        }
+    }
+
+    if (showGifs) {
+        gifsInter = <ul>
+            {gifs.map((item, index) => <li key={index}><img src={item} width={50} height={50} onClick={() => {
+                newComment('gif', item)
+            }}/></li>)}
+        </ul>
     }
 
     if (photoInfo?.email === trueEmail) {
@@ -66,7 +116,7 @@ const BigPhoto = () => {
                         <p className={styles.userLink} onClick={() => window.location.href=`/${item.user}`}>
                             {item.user} ({item.userName})
                         </p>
-                        <p className={styles.commentText}>{item.comment}</p>
+                        {item.type === 'text' ? <p className={styles.commentText}>{item.comment}</p> : <img src={item.comment} width={50} height={50}/>}
                         <div>
                         <button 
                             className={styles.translateButton}
@@ -87,20 +137,20 @@ const BigPhoto = () => {
                         </button>
                         {trueEmail === item.user ? <button className={styles.deleteButton} onClick={async() => {
                             const photoId = photoInfo?.id
-                            const comment = item.comment
+                            const commentId = item.id
                             const deleteComment = await fetch('http://localhost:4000/photos/delete/comment', {
                                 method: "PATCH",
                                 headers: {
                                     'Content-Type': 'application/json',
                                 },
-                                body: JSON.stringify({ photoId, comment }),
+                                body: JSON.stringify({ photoId, commentId }),
                                 credentials: 'include',
                             })
                             const resultDelete = await deleteComment.text()
                             if (resultDelete === 'OK') {
                                 if (photoInfo) {
                                     const resultComments = photoInfo.comments.map(el => {
-                                        if (el.user === trueEmail && el.comment === item.comment) {
+                                        if (el.id === commentId) {
                                             return false
                                         } else {
                                             return el
@@ -128,35 +178,18 @@ const BigPhoto = () => {
                     value={commentInput} 
                     onChange={(event: ChangeEvent<HTMLInputElement>) => setCommentInput(event.target.value)}
                 />
-                <button 
+                <button onClick={() => setShowGifs(!showGifs)}>GIF</button>
+                {gifsInter}
+                {sendStatus === false ? <button 
                     className={styles.sendButton}
                     onClick={async() => {
                         if (commentInput !== '') {
-                            const getUserName = await fetch(`http://localhost:4000/users-controller/get/user/name/${trueEmail}`)
-                            const resultName = await getUserName.text()
-                            const targetId = params.photoId
-                            const addComment = await fetch('http://localhost:4000/photos/new/comment', {
-                                method: "PATCH",
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                },
-                                body: JSON.stringify({ targetId, commentInput }),
-                                credentials: 'include',
-                            })
-                            const resultAdd = await addComment.text()
-                            if (resultAdd === 'OK') {
-                                if (photoInfo) {
-                                    const newComment = {user: trueEmail, userName: resultName, comment: commentInput}
-                                    setPhotoInfo({...photoInfo, comments: [...photoInfo.comments, newComment]})
-                                    setComments([...comments, newComment])
-                                    setCommentInput('')
-                                }
-                            }
+                            newComment('text')
                         }
                     }}
                 >
                     Отправить
-                </button>
+                </button> : <p>Отправка...</p>}
                 {commentsShow}
             </div>
         } else {
@@ -186,6 +219,15 @@ const BigPhoto = () => {
             setComments(resultComments)
         }
         getComments()
+    }, [])
+
+    useEffect(() => {
+        const getFifsForComment = async () => {
+            const resultGifs = await getGifs()
+            const finalGifs = resultGifs.slice(0, 5)
+            setGifs(finalGifs)
+        }
+        getFifsForComment()
     }, [])
 
     return (

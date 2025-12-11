@@ -3,40 +3,45 @@
 import { ChangeEvent, FC, useEffect, useRef, useState } from "react"
 import Peer, { DataConnection, MediaConnection, PeerConnectOption } from 'peerjs';
 import JSZip from "jszip";
+import { Element, Link } from "react-scroll";
+
+
 const Testing: FC = () => {
 
-    const [file, setFile] = useState <File | null> (null)
-    const [video, setVideo] = useState <string> ('')
-    const [inputSrc, setInputSrc] = useState <string> ('')
+    const giphyKey: string = 'UXKa5L7bKIjiqGWzEhkkGjG3W3CMrK1B'
+
+    const [randomGif, setRandomGif] = useState <string> ('')
+    const [userInput, setUserInput] = useState <string> ('')
+    const [keywordsFifs, setKeywordsGifs] = useState <string[]> ([])
+
+    useEffect(() => {
+        if (userInput === '') {
+            setKeywordsGifs([])
+        }
+    }, [userInput])
 
     return (
         <div>
-            <input type="file" onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                const resultFile = event.target.files?.[0]
-                if (resultFile) {
-                    setFile(resultFile)
-                }
-            }}/>
             <button onClick={async() => {
-                if (file) {
-                    const formData = new FormData()
-                    formData.append('file', file)
-                    await fetch('http://localhost:4000/testing-users/save/big/file', {
-                        method: "POST",
-                        body: formData,
-                    })
-                }
-            }}>Save</button><br/>
-            <input placeholder="id" onChange={((event: ChangeEvent<HTMLInputElement>) => setInputSrc(event.target.value))}/>
+                const gifs = await fetch(`https://api.giphy.com/v1/gifs/trending?api_key=${giphyKey}&limit=10&rating=g`)
+                const resultGifs = await gifs.json()
+                const resultGif = resultGifs.data[0].images.original.url
+                setRandomGif(resultGif)
+            }}>Get GIF</button>
+            {randomGif !== '' ? <img src={randomGif} width={200} height={200}/> : null}<br/>
+            <input placeholder="GIF" onChange={((e: ChangeEvent<HTMLInputElement>) => setUserInput(e.target.value))}/>
             <button onClick={async() => {
-                if (inputSrc !== '') {
-                    const file = await fetch(`http://localhost:4000/testing-users/get/big/file/${inputSrc}`)
-                    const resultFile = await file.blob()
-                    const resultVideo = URL.createObjectURL(resultFile)
-                    setVideo(resultVideo)
+                if (userInput !== '') {
+                    console.log(userInput)
+                    const gifs = await fetch(`https://api.giphy.com/v1/gifs/search?api_key=${giphyKey}&q=${encodeURIComponent(userInput)}&limit=${20}&offset=${0}&rating=g`)
+                    const resultGifs = await gifs.json()
+                    const finalGifs = resultGifs.data.map((el: any) => el.images.original.url)
+                    setKeywordsGifs(finalGifs)
                 }
             }}>Search</button>
-            {video !== '' ? <video src={video} controls={true} width={200} height={200}/> : null}
+            {keywordsFifs.length !== 0 ? <ul>
+                {keywordsFifs.map((item, index) => <li key={index}><img src={item} width={100} height={100}/></li>)}
+            </ul> : null}
         </div>
     )
 }

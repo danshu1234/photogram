@@ -3,6 +3,7 @@
 import { FC, useEffect, useState, memo } from "react"
 import { ClipLoader } from "react-spinners";
 import Download from "./Download";
+import JSZip from "jszip";
 
 interface VideoProps{
     videoMessId: string;
@@ -27,8 +28,17 @@ const Video: FC <VideoProps> = (props) => {
                 body: JSON.stringify({ videoMessId, trueParamEmail }),
                 credentials: 'include',
             })
-            const resultVideoSrc = await video.text()
-            setResultVideo(resultVideoSrc)
+            const resultVideo = await video.blob()
+            const zip = new JSZip();
+            const loadedZip = await zip.loadAsync(resultVideo);
+            
+            for (const [filename, file] of Object.entries(loadedZip.files)) {
+                if (!file.dir) {
+                    const blob = await file.async('blob');
+                    const videoUrl = URL.createObjectURL(blob)
+                    setResultVideo(videoUrl)
+                }
+            }
         }
         getVideo()
     }, [])

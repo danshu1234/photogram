@@ -330,7 +330,7 @@ export default function Home() {
         <Call/>
         {subsListBtn}
         <Search/>
-        <NameSearch allUsers={allUsers}/>
+        <NameSearch allUsers={allUsers} type="users"/>
         <div className={styles.dateSelect}>
           <h3>Сортировать по дате</h3>
           {datesList}

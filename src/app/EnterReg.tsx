@@ -17,6 +17,10 @@ const EnterReg: FC <Props> = (props) => {
     const [code, setCode] = useState <string> ('')
     let mainShow;
 
+    useEffect(() => {
+        localStorage.clear()
+    }, [])
+
     if (show === '') {
         mainShow = <div>
             {props.status === 'reg' ? <input placeholder="Name" onChange={(event: ChangeEvent<HTMLInputElement>) => setName(event.target.value)}/> : null}

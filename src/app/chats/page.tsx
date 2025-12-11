@@ -11,6 +11,7 @@ import getUserChats from "../getChats";
 import styles from './Chats.module.css';
 import Call from "../Call";
 import useOnlineStatus from "../useOnlineStatus";
+import NameSearch from "../NameSearch";
 
 interface MessageWithBonuce extends Message{
     origUser: string;
@@ -31,6 +32,7 @@ const Chats: FC = () => {
     const [chats, setChats] = useState<Chat[] | null>(null)  
     const [deleteWarn, setDeleteWarn] = useState <{friendEmail: string, friendDel: boolean} | null> (null)
     const [typing, setTyping] = useState <string> ('')
+    const [sendMess, setSendMess] = useState <string> ('')
 
     let showChats;
     let showChangePerm;
@@ -39,7 +41,11 @@ const Chats: FC = () => {
 
     if (shareMess) {
         shareMessage = <div className={styles.shareMessage}>
-            Переслать сообщение от {shareMess.per}
+            <p onClick={() => {
+                setShareMess(null)
+                localStorage.removeItem('shareMess')
+            }}>X</p>
+            <p>Переслать сообщение от {shareMess.per}</p>
         </div>
     }
 
@@ -185,30 +191,38 @@ const Chats: FC = () => {
                         let lastMess;
                         const lastMessage = item.messages[item.messages.length - 1];
 
-                        if (typing !== item.user) {
-                            if (lastMessage.typeMess === 'text') {
-                                if (lastMessage.text === '') {
-                                    lastMess = <span>Фото</span>
-                                } else {
-                                    if (lastMessage.text.length < 50) {
-                                        lastMess = <span>{lastMessage.text}</span>
+                        if (!localStorage.getItem(item.user)) {
+                            if (sendMess !== item.user) {
+                                if (typing !== item.user) {
+                                    if (lastMessage.typeMess === 'text') {
+                                        if (lastMessage.text === '') {
+                                            lastMess = <span>Фото</span>
+                                        } else {
+                                            if (lastMessage.text.length < 50) {
+                                                lastMess = <span>{lastMessage.text}</span>
+                                            } else {
+                                                lastMess = <span>{lastMessage.text.slice(0, 50)}...</span>
+                                            }
+                                        }
+                                    } else if (lastMessage.typeMess === 'voice') {
+                                        lastMess = <span>Голосовое сообщение</span>
+                                    } else if (lastMessage.typeMess === 'gif') {
+                                        lastMess = <span>GIF</span>
+                                    } else if (lastMessage.typeMess === 'post') {
+                                        lastMess = <span>Пост</span>
+                                    } else if (lastMessage.typeMess === 'video') {
+                                        lastMess = <span>Видео</span>
                                     } else {
-                                        lastMess = <span>{lastMessage.text.slice(0, 50)}...</span>
+                                        lastMess = <span>Файл</span>
                                     }
+                                } else {
+                                    lastMess = <span>Печатает...</span>
                                 }
-                            } else if (lastMessage.typeMess === 'voice') {
-                                lastMess = <span>Голосовое сообщение</span>
-                            } else if (lastMessage.typeMess === 'gif') {
-                                lastMess = <span>GIF</span>
-                            } else if (lastMessage.typeMess === 'post') {
-                                lastMess = <span>Пост</span>
-                            } else if (lastMessage.typeMess === 'video') {
-                                lastMess = <span>Видео</span>
                             } else {
-                                lastMess = <span>Файл</span>
+                                lastMess = <span>Отправка сообщения...</span>
                             }
                         } else {
-                            lastMess = <span>Печатает...</span>
+                            lastMess = <span>[Черновик]</span>
                         }
                         
                         return <li key={index} className={`${styles.chatItem} ${item.pin ? styles.pinned : ''}`}>
@@ -240,12 +254,13 @@ const Chats: FC = () => {
                                                 if (el.user === item.user) {
                                                     return {
                                                         ...el,
-                                                        messages: [...el.messages, {user: shareMess.user, text: shareMess.text, photos: [], date: shareMess.date, id: shareMess.id, ans: '', edit: false, typeMess: shareMess.typeMess, pin: false, controls: false, per: '', read: false}]
+                                                        messages: [...el.messages, {user: shareMess.user, text: shareMess.text, photos: [], date: shareMess.date, id: shareMess.id, ans: '', edit: false, typeMess: shareMess.typeMess, pin: false, controls: false, per: '', read: false, sending: false}]
                                                     }
                                                 } else {
                                                     return el
                                                 }
                                                 })
+                                            setSendMess(item.user)
                                             setChats(newChats)
                                             setShareMess(null)
                                             const sendMess = await fetch('http://localhost:4000/users-controller/new/mess', {
@@ -256,6 +271,7 @@ const Chats: FC = () => {
                                             const resultSendMess = await sendMess.text()
                                             if (resultSendMess === 'OK') {
                                                 localStorage.removeItem('shareMess')
+                                                setSendMess('')
                                             } else {
                                                 alert('Превышен допустимый объем файлов')
                                             }
@@ -463,6 +479,7 @@ const Chats: FC = () => {
                 {showChangePerm}
             </div>
             <h3 onClick={() => window.location.href='/bot'}>AI-Chat</h3>
+            {chats ? <NameSearch allUsers={chats} type="chats"/> : null}
             {showChats}
             {deleteWarn ? <div>
                 <p>Вы уверены, что хотите удалить чат?</p>

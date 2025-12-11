@@ -8,19 +8,21 @@ import { Element } from 'react-scroll'
 import "./MessDisplay.css"
 import backUpMess from "./backupMess"
 import Download from "./Download"
+import PinMessInter from "./chats/PinMessInter"
+import { RingLoader } from "react-spinners"
 
 interface MessDisplayProps{
     messages: Message[] | null;
     email: string;
     trueParamEmail: string;
+    pinMess: PinMessInter | null;
+    setPinMess: Function;
     setMessages: Function;
     setAnswMess: Function;
     setEditMess: Function;
     setInputMess: Function;
     setSucCopy: Function;
-    setPinMess: Function;
     setVideoMessId: Function;
-    pinMess: string[];
 }
 
 const MessDisplay: FC <MessDisplayProps> = (props) => {
@@ -58,6 +60,31 @@ const MessDisplay: FC <MessDisplayProps> = (props) => {
         }
     }
 
+    const pinMess = async (messId: string, pin: boolean) => {
+        const trueParamEmail = props.trueParamEmail
+        const messPin = await fetch('http://localhost:4000/users-controller/pin/mess', {
+            method: "PATCH",
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ messId, pin, trueParamEmail }),
+            credentials: 'include',
+        })
+        const resultMessPin = await messPin.text()
+        if (resultMessPin === 'OK') {
+            if (props.messages) {
+                const newMess = props.messages.map(el => {
+                    if (el.id === messId) {
+                        return {...el, pin: pin}
+                    } else {
+                        return el
+                    }
+                })
+                props.setMessages(newMess)
+            }
+        }
+    }
+
 
     return (
         <div className="messages-display">
@@ -83,12 +110,17 @@ const MessDisplay: FC <MessDisplayProps> = (props) => {
                 } else if (item.typeMess === 'post') {
                     showMess = <p className="post-message" onClick={() => window.location.href=`/showpost/${item.text}`}>Пересланный пост</p>
                 } else if (item.typeMess === 'video') {
-                    showMess = <p onClick={() => props.setVideoMessId(item.id)}>Видеозапись</p>
+                    showMess = <p onClick={() => {
+                        if (item.sending === false) {
+                            console.log('Here')
+                            props.setVideoMessId(item.text)
+                        }
+                    }}>Видеозапись</p>
                 } else if (item.typeMess === 'file') {
                     showMess = <p onClick={async() => {
                         const messId = item.id
                         const file = await fetch('http://localhost:4000/users-controller/get/file', {
-                            method: "GET",
+                            method: "POST",
                             headers: {
                                 'Content-Type': 'application/json',
                             },
@@ -99,7 +131,7 @@ const MessDisplay: FC <MessDisplayProps> = (props) => {
                         const url = URL.createObjectURL(resultFile);
                         const a = document.createElement('a');
                         a.href = url;
-                        a.download = 'filename'; 
+                        a.download = item.text; 
                         a.click();
                         URL.revokeObjectURL(url);
                     }}>Файл</p>
@@ -167,12 +199,13 @@ const MessDisplay: FC <MessDisplayProps> = (props) => {
                                         <button className="control-btn delete-btn" onClick={async() => {
                                             const messId = item.id
                                             const readStatus = item.read
+                                            const typeMess = item.typeMess
                                             const deleteMess = await fetch('http://localhost:4000/users-controller/delete/mess', {
                                                 method: "PATCH",
                                                 headers: {
                                                     'Content-Type': 'application/json',
                                                 },
-                                                body: JSON.stringify({ trueParamEmail, index, messId, readStatus }),
+                                                body: JSON.stringify({ trueParamEmail, index, messId, readStatus, typeMess }),
                                                 credentials: 'include',
                                             })
                                             const resultDelete = await deleteMess.text()
@@ -223,10 +256,30 @@ const MessDisplay: FC <MessDisplayProps> = (props) => {
                                             📋
                                         </button>
                                     )}
+
+                                    {item.pin === false ? <button onClick={() => {
+                                        pinMess(item.id, true)
+                                        if (props.pinMess) {
+                                            props.setPinMess({pinMessages: [...props.pinMess.pinMessages, item], messIndex: props.pinMess.pinMessages.length, direction: props.pinMess.direction})
+                                        } else {
+                                            props.setPinMess({pinMessages: [item], messIndex: 0, direction: 'down'})
+                                        }
+                                    }}>Закрепить</button> : <button onClick={() => {
+                                        pinMess(item.id, false)
+                                        const newPinMess = props.pinMess?.pinMessages.filter(el => el.id !== item.id)
+                                        if (props.pinMess) {
+                                            if (newPinMess?.length !== 0) {
+                                                props.setPinMess({pinMessages: props.pinMess.pinMessages.filter(el => el.id !== item.id), messIndex: props.pinMess.messIndex - 1, direction: props.pinMess.direction})
+                                            } else {
+                                                props.setPinMess(null)
+                                            }
+                                        }
+                                    }}>Открепить</button>}
                                 </div>
                             )}
                         </div>
                         {readStaus}
+                        {item.sending ? <RingLoader/> : null}
                     </Element>
                 )
             })}
