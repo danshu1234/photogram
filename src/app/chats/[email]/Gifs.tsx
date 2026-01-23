@@ -62,8 +62,8 @@ const Gifs: FC <GifsProps> = (props) => {
                                 body: formData,
                                 credentials: 'include',
                             })
-                            const resultSendMess = await sendMess.text()
-                            if (resultSendMess !== 'OK') {
+                            const resultSendMess = await sendMess.json()
+                            if (resultSendMess.status !== 'OK') {
                                 const resultBackupMess = props.backUpMess(props.messages, messId)
                                 props.setMessages(resultBackupMess)
                                 alert('Произошла ошибка при отправке сообщения')

@@ -30,6 +30,8 @@
     "react-spinners": "^0.17.0",
     "sharp": "^0.34.3",
     "socket.io-client": "^4.8.1",
+    "tweetnacl": "^1.0.3",
+    "tweetnacl-util": "^0.15.1",
     "uuid": "^11.1.0"
   },
   "devDependencies": {

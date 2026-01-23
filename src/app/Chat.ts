@@ -1,8 +1,13 @@
 
+export interface PhotoMess{
+    base64: string;
+    id: string;
+}
+
 export interface Message{
     user: string;
     text: string;
-    photos: string[];
+    photos: PhotoMess[];
     date: string;
     id: string;
     ans: string;

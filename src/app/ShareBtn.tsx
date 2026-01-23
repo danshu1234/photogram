@@ -5,7 +5,6 @@ import getMessIdAndDate from "./getMessIdAndDate";
 
 interface ShareBtnProps{
     text: string;
-    photos: string[];
     date: string;
     id: string;
     typeMess: string;

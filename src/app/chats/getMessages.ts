@@ -58,6 +58,8 @@ const getMessages = async (trueParamEmail: string, setPinMess: Function, setMess
             }
         })
         const resultMyMess = [...readMess, ...unreadMess]
+        console.log(resultMyMess[resultMyMess.length - 1])
+        console.log(resultMyMess[3])
         setMessages(resultMyMess)
     } else {
         const resultMyMess = myMess.map((el: any) => {

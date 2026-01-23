@@ -3,7 +3,7 @@
 import { ChangeEvent, FC, useEffect, useState } from "react"
 import useGetTrueParamEmail from "@/app/useGetTrueParamEmail"
 import useGetEmail from "@/app/useGetEmail"
-import { Message } from "@/app/Chat"
+import { Message, PhotoMess } from "@/app/Chat"
 import { io } from "socket.io-client";
 import { useReactMediaRecorder } from "react-media-recorder"
 import getMessIdAndDate from "@/app/getMessIdAndDate"
@@ -27,6 +27,7 @@ import sendMess from "./sendMess"
 import PinMessInter from "../PinMessInter"
 import getMessages from "../getMessages"
 import getGifs from "./getGifs"
+import SearchMess from "./SearchMess"
 
 
 export interface SendPhoto{
@@ -50,6 +51,8 @@ const UserChat: FC = () => {
     const { trueEmail, setTrueEmail } = useGetEmail()
     const { trueParamEmail, setTrueParamEmail } = useGetTrueParamEmail()
 
+    const [messFind, setMessFind] = useState <{id: string, text: string, date: string}[] | null> (null)
+    const [messFindInput, setMessFindInput] = useState <string> ('')
     const [files, setFiles] = useState <File[]> ([])
     const [pinMess, setPinMess] = useState <PinMessInter | null> (null)
     const [overStatus, setOverStatus] = useState <boolean> (false)
@@ -312,6 +315,12 @@ const UserChat: FC = () => {
     }, [sucCopy])
 
     useEffect(() => {
+        if (messFindInput === '') {
+            setMessFind(null)
+        }
+    }, [messFindInput])
+
+    useEffect(() => {
         if (trueParamEmail !== '' && trueEmail !== '') {
             getMessages(trueParamEmail, setPinMess, setMessages)
             getBanArr()
@@ -353,13 +362,17 @@ const UserChat: FC = () => {
             }
         })
 
-        socket.on('replyMessage', async(message: {type: string, user: string, text: string, photos: string[], date: string, id: string, ans: string, socketId?: string, mess: Message[], typeMess: string, per: string}) => {
+        socket.on('replyMessage', async(message: {type: string, user: string, text: string, photos: PhotoMess[], date: string, id: string | string[], ans: string, socketId?: string, mess: Message[], typeMess: string, per: string}) => {
             if (message.type === 'message') {
                 setTrueParamEmail(prev => {
                 if (prev === message.user) {
                     setMessages(prev => {
                         if (prev) {
-                            return [...prev, {user: message.user, text: message.text, id: message.id, photos: message.photos, date: message.date, typeMess: message.typeMess, ans: message.ans, controls: false, per: message.per, pin: false, read: false, sending: false}]
+                            if (typeof message.id === 'string') {
+                                return [...prev, {user: message.user, text: message.text, id: message.id, photos: message.photos, date: message.date, typeMess: message.typeMess, ans: message.ans, controls: false, per: message.per, pin: false, read: false, sending: false}]
+                            } else {
+                                return prev
+                            }
                         } else {
                             return prev
                         }
@@ -402,7 +415,19 @@ const UserChat: FC = () => {
             } else if (message.type === 'delete') {
                 setMessages(prev => {
                     if (prev) {
-                        return prev.filter(el => el.id !== message.id)
+                        if (typeof message.id !== 'string') {
+                            const newMess = prev.map(el => {
+                                if (message.id.includes(el.id)) {
+                                    return false
+                                } else {
+                                    return el
+                                }
+                            })
+                            const resultNewMess = newMess.filter(el => el !== false)
+                            return resultNewMess
+                        } else {
+                            return prev
+                        }
                     } else {
                         return prev
                     }
@@ -704,6 +729,13 @@ const UserChat: FC = () => {
                 }
             }}>
                 <p>{pinMess.pinMessages[pinMess.messIndex].text} </p><span>#{pinMess.messIndex + 1}</span>
+            </div> : null}
+
+            {messages?.length !== 0 ? <SearchMess messages={messages} messFindInput={messFindInput} setMessFind={setMessFind} setMessFindInput={setMessFindInput}/> : null}
+            {messFind ? <div>
+                {messFind.length !== 0 ? <ul>
+                    {messFind.map((item, index) => <li key={index} onClick={() => scrollToMessage(item.id)}><div><p>{item.text}</p><p>{item.date}</p></div></li>)}
+                </ul> : <p>Ничего не найдено</p>}
             </div> : null}
             
             <div id="messages-container" className="messages-container">

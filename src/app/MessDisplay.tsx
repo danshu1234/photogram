@@ -10,6 +10,7 @@ import backUpMess from "./backupMess"
 import Download from "./Download"
 import PinMessInter from "./chats/PinMessInter"
 import { RingLoader } from "react-spinners"
+import JSZip from "jszip"
 
 interface MessDisplayProps{
     messages: Message[] | null;
@@ -180,13 +181,49 @@ const MessDisplay: FC <MessDisplayProps> = (props) => {
                                 <div className="message-photos">
                                     {item.photos.map((el, index) => (
                                         <div key={index} className="photo-thumbnail">
-                                            {el.includes('image') ? (
-                                                <img src={el} onClick={() => {
-                                                    setImgArr(item.photos)
+                                            {el.base64.includes('image') ? (
+                                                <img src={el.base64} onClick={async() => {
+                                                    const messId = item.id
+                                                    const bigPhotos = await fetch('http://localhost:4000/users-controller/big/photos', {
+                                                        method: "POST",
+                                                        headers: {
+                                                            'Content-Type': 'application/json', 
+                                                        },
+                                                        body: JSON.stringify({ messId, trueParamEmail }),
+                                                        credentials: 'include',
+                                                    })
+                                                    const zipBlob = await bigPhotos.blob()
+                                                    const zip = new JSZip();
+                                                    const zipContent = await zip.loadAsync(zipBlob)
+                                                    const photoPromises: Promise<{name: string, base64: string}>[] = []
+                                                    const blobToBase64 = (blob: Blob): Promise<string | ArrayBuffer | null> => {
+                                                        return new Promise((resolve, reject) => {
+                                                            const reader = new FileReader();
+                                                            reader.onloadend = () => resolve(reader.result);
+                                                            reader.onerror = reject;
+                                                            reader.readAsDataURL(blob);
+                                                        })
+                                                    }
+                                                    zipContent.forEach((relativePath, zipEntry) => {
+                                                    if (!zipEntry.dir) { 
+                                                            const promise = (async () => {
+                                                                const fileBlob = await zipEntry.async('blob');
+                                                                const base64 = await blobToBase64(fileBlob);
+                                                                return {
+                                                                    name: zipEntry.name,
+                                                                    base64: base64 as string
+                                                                }
+                                                            })()
+                                                            photoPromises.push(promise);
+                                                        }
+                                                    })
+                                                    const photos = await Promise.all(photoPromises)
+                                                    const resultPhotos = photos.map(el => el.base64)
+                                                    setImgArr(resultPhotos)
                                                     setStartIndex(index)
                                                 }}/>
                                             ) : (
-                                                <video src={el} controls/>
+                                                null
                                             )}
                                         </div>
                                     ))}
@@ -197,15 +234,17 @@ const MessDisplay: FC <MessDisplayProps> = (props) => {
                                 <div className="message-controls">
                                     {item.user === email && (
                                         <button className="control-btn delete-btn" onClick={async() => {
-                                            const messId = item.id
-                                            const readStatus = item.read
-                                            const typeMess = item.typeMess
+                                            const messId = [item.id]
+                                            let unreadCount: number = 0
+                                            if (item.read === true) {
+                                                unreadCount = 1
+                                            }
                                             const deleteMess = await fetch('http://localhost:4000/users-controller/delete/mess', {
                                                 method: "PATCH",
                                                 headers: {
                                                     'Content-Type': 'application/json',
                                                 },
-                                                body: JSON.stringify({ trueParamEmail, index, messId, readStatus, typeMess }),
+                                                body: JSON.stringify({ trueParamEmail, messId, unreadCount }),
                                                 credentials: 'include',
                                             })
                                             const resultDelete = await deleteMess.text()
@@ -213,7 +252,7 @@ const MessDisplay: FC <MessDisplayProps> = (props) => {
                                                 const resultBackupMess = backUpMess(props.messages, messId)
                                                 props.setMessages(resultBackupMess)
                                             } else {
-                                                const resultMessages = props.messages?.filter(el => el.id !== messId)
+                                                const resultMessages = props.messages?.filter(el => el.id !== messId[0])
                                                 props.setMessages(resultMessages)
                                             }
                                         }}>
@@ -246,7 +285,7 @@ const MessDisplay: FC <MessDisplayProps> = (props) => {
                                         </button>
                                     )}
 
-                                    {item.per === '' ? <ShareBtn text={item.text} photos={item.photos} date={item.date} id={item.id} typeMess={item.typeMess} per={item.per} email={props.email} user={item.user} trueParamEmail={trueParamEmail}/> : null}
+                                    {item.per === '' ? <ShareBtn text={item.text} date={item.date} id={item.id} typeMess={item.typeMess} per={item.per} email={props.email} user={item.user} trueParamEmail={trueParamEmail}/> : null}
                           
                                     {item.typeMess === 'text' && item.text !== '' && (
                                         <button className="control-btn copy-btn" onClick={async() => {

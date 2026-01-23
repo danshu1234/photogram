@@ -268,8 +268,8 @@ const Chats: FC = () => {
                                                 body: formData,
                                                 credentials: 'include',
                                             })
-                                            const resultSendMess = await sendMess.text()
-                                            if (resultSendMess === 'OK') {
+                                            const resultSendMess = await sendMess.json()
+                                            if (resultSendMess.status === 'OK') {
                                                 localStorage.removeItem('shareMess')
                                                 setSendMess('')
                                             } else {
@@ -348,27 +348,33 @@ const Chats: FC = () => {
                 console.log('New message')
                 const user = message.user
                 setChats((prevChats: any) => {
-                    const newChats = prevChats.map((el: any) => {
-                        if (el.user === user) {
-                            const newMess = [...el.messages, {user: message.user, text: message.text, id: message.id, photos: message.photos, date: message.date, typeMess: message.typeMess, ans: message.ans, controls: false, per: '', pin: false, read: false}]
-                            return {
-                                ...el,
-                                messages: newMess,
-                                messCount: el.messCount + 1
+                    const findThisChat = prevChats.find((el: Chat) => el.user === user)
+                    if (findThisChat !== undefined) {
+                        const newChats = prevChats.map((el: any) => {
+                            if (el.user === user) {
+                                const newMess = [...el.messages, {user: message.user, text: message.text, id: message.id, photos: message.photos, date: message.date, typeMess: message.typeMess, ans: message.ans, controls: false, per: '', pin: false, read: false}]
+                                return {
+                                    ...el,
+                                    messages: newMess,
+                                    messCount: el.messCount + 1
+                                }
+                            } else {
+                                return el
                             }
+                        })
+                        console.log('New chats: ')
+                        console.log(newChats)
+                        if (newChats) {
+                            const resultChats = sortChats(newChats)
+                            console.log('Result chats: ')
+                            console.log(resultChats)
+                            return resultChats
                         } else {
-                            return el
+                            return prevChats
                         }
-                    })
-                    console.log('New chats: ')
-                    console.log(newChats)
-                    if (newChats) {
-                        const resultChats = sortChats(newChats)
-                        console.log('Result chats: ')
-                        console.log(resultChats)
-                        return resultChats
                     } else {
-                        return prevChats
+                        const newChats: Chat[] = [{user: user, messages: [{user: message.user, text: message.text, id: message.id, photos: message.photos, date: message.date, typeMess: message.typeMess, ans: message.ans, controls: false, per: '', pin: false, read: false, sending: false}], messCount: 1, avatar: '', pin: false, notifs: true}, ...prevChats]
+                        return newChats
                     }
                 })
                 if (document.visibilityState !== 'visible') {
