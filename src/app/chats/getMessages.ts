@@ -1,6 +1,9 @@
+import { decodeBase64 } from "tweetnacl-util"
 import { Message } from "../Chat"
+import nacl from "tweetnacl"
+import decryptMess from "./decrpytMess"
 
-const getMessages = async (trueParamEmail: string, setPinMess: Function, setMessages: Function) => {
+const getMessages = async (trueParamEmail: string, setPinMess: Function, setMessages: Function, trueEmail: string) => {
     const getMess = await fetch('http://localhost:4000/users-controller/get/mess', {
         method: "POST",
         headers: {
@@ -10,7 +13,6 @@ const getMessages = async (trueParamEmail: string, setPinMess: Function, setMess
         credentials: 'include',
     })
     const resultMess = await getMess.json()
-    console.log(resultMess)
     const getMessCount = await fetch('http://localhost:4000/users-controller/get/friend/mess/count', {
         method: "POST",
         headers: {
@@ -20,7 +22,6 @@ const getMessages = async (trueParamEmail: string, setPinMess: Function, setMess
         credentials: 'include'
     })
     const resultFriendMessCount = await getMessCount.json()
-    console.log(resultFriendMessCount)
     const pinnedMess = resultMess.filter((el: any) => el.pin === true)
     if (pinnedMess.length !== 0) {
         const resultPinnesMess = pinnedMess.map((el: Message) => {
@@ -44,6 +45,7 @@ const getMessages = async (trueParamEmail: string, setPinMess: Function, setMess
             sending: false,
         }
     })
+    let resultMessages: any[] = []
     if (myMess.length !== resultFriendMessCount) {
         const readMess = myMess.slice(0, myMess.length - resultFriendMessCount).map((el: any) => {
             return {
@@ -58,9 +60,7 @@ const getMessages = async (trueParamEmail: string, setPinMess: Function, setMess
             }
         })
         const resultMyMess = [...readMess, ...unreadMess]
-        console.log(resultMyMess[resultMyMess.length - 1])
-        console.log(resultMyMess[3])
-        setMessages(resultMyMess)
+        resultMessages = resultMyMess
     } else {
         const resultMyMess = myMess.map((el: any) => {
             return {
@@ -68,8 +68,10 @@ const getMessages = async (trueParamEmail: string, setPinMess: Function, setMess
                 read: false,
             }
         })
-        setMessages(resultMyMess)
+        resultMessages = resultMyMess
     }
+    const resultMyMessages = decryptMess(resultMessages, trueEmail)
+    setMessages(resultMyMessages.filter((el: Message) => el.text !== undefined))
 }
 
 export default getMessages

@@ -43,18 +43,29 @@ const Gifs: FC <GifsProps> = (props) => {
             <div className="gifs-grid">
                 {props.gifsArr.map((item, index) => <div key={index} className="gif-item"><img src={item} onClick={async() => {
                     const { formattedDate, messId } = getMessIdAndDate()
+                    const trueParamEmail = props.trueParamEmail
+                    const messRealCount = await fetch('http://localhost:4000/users-controller/mess/length', {
+                        method: "POST",
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },  
+                        body: JSON.stringify({ trueParamEmail }),
+                        credentials: 'include',      
+                    })
+                    const resultMessRealCount = await messRealCount.json()
                     if (props.messages) { 
-                        if (props.messages.length !== 0) {
+                        if (resultMessRealCount !== 0) {
                             const newMess = [...props.messages, {user: props.trueEmail, text: item, photos: [], date: formattedDate, id: messId, ans: props.answMess, edit: false, typeMess: 'gif', per: '', controls: false, pin: false, read: false, sending: true}]
                             props.setMessages(newMess)
                             props.setInputMess('')
                             const formData = new FormData()
                             formData.append('user', props.trueEmail)
-                            formData.append('text', item)
+                            formData.append('text', JSON.stringify(item))
+                            formData.append('myText', JSON.stringify(item))
                             formData.append('date', formattedDate)
                             formData.append('id', messId)
                             formData.append('ans', props.answMess)
-                            formData.append('trueParamEmail',props. trueParamEmail)
+                            formData.append('trueParamEmail', props. trueParamEmail)
                             formData.append('per', '')
                             formData.append('type', 'gif')
                             const sendMess = await fetch('http://localhost:4000/users-controller/new/mess', {
@@ -76,7 +87,8 @@ const Gifs: FC <GifsProps> = (props) => {
                             props.setGifsArr([])
                             const formData = new FormData()
                             formData.append('user', props.trueEmail)
-                            formData.append('text', item)
+                            formData.append('text', JSON.stringify(item))
+                            formData.append('myText', JSON.stringify(item))
                             formData.append('date', formattedDate)
                             formData.append('id', messId)
                             formData.append('ans', props.answMess)

@@ -15,12 +15,14 @@ import styles from './UserPage.module.css';
 import exitAcc from "../exitAcc";
 import Call from "../Call";
 import useOnlineStatus from "../useOnlineStatus";
+import useCheckPrivateKey from "../useCheckPrivateKey";
 
 export default function UserPage() {
     
-    const {} = useNotif();
-    const {} = useCheckReg();
+    const {} = useNotif()
+    const {} = useCheckReg()
     const {} = useOnlineStatus()
+    const {} = useCheckPrivateKey()
     
     const { trueEmail } = useGetEmail();
     const [myEmail, setMyEmail] = useState<string | null>(null);

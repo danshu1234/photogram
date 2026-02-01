@@ -28,6 +28,8 @@ import PinMessInter from "../PinMessInter"
 import getMessages from "../getMessages"
 import getGifs from "./getGifs"
 import SearchMess from "./SearchMess"
+import decryptMess from "../decrpytMess"
+import useCheckPrivateKey from "@/app/useCheckPrivateKey"
 
 
 export interface SendPhoto{
@@ -45,6 +47,7 @@ const UserChat: FC = () => {
 
     const {} = useCheckReg()
     const {} = useOnlineStatus()
+    const { secretKey } = useCheckPrivateKey()
 
     const [socketId, setSocketId] = useState ('')
 
@@ -321,15 +324,15 @@ const UserChat: FC = () => {
     }, [messFindInput])
 
     useEffect(() => {
-        if (trueParamEmail !== '' && trueEmail !== '') {
-            getMessages(trueParamEmail, setPinMess, setMessages)
+        if (trueParamEmail !== '' && trueEmail !== '' && secretKey !== '') {
+            getMessages(trueParamEmail, setPinMess, setMessages, trueEmail)
             getBanArr()
             getMyBanArr()
             getUserPermAndSubs()
             zeroMess(trueParamEmail)
             openChat()
         }
-    }, [trueParamEmail, trueEmail])
+    }, [trueParamEmail, trueEmail, secretKey])
 
     useEffect(() => {
         if (mediaBlobUrl !== undefined) {
@@ -362,45 +365,51 @@ const UserChat: FC = () => {
             }
         })
 
-        socket.on('replyMessage', async(message: {type: string, user: string, text: string, photos: PhotoMess[], date: string, id: string | string[], ans: string, socketId?: string, mess: Message[], typeMess: string, per: string}) => {
+        socket.on('replyMessage', async(message: {type: string, user: string, text: any, photos: PhotoMess[], date: string, id: string | string[], ans: string, socketId?: string, mess: Message[], typeMess: string, per: string}) => {
             if (message.type === 'message') {
                 setTrueParamEmail(prev => {
-                if (prev === message.user) {
-                    setMessages(prev => {
-                        if (prev) {
-                            if (typeof message.id === 'string') {
-                                return [...prev, {user: message.user, text: message.text, id: message.id, photos: message.photos, date: message.date, typeMess: message.typeMess, ans: message.ans, controls: false, per: message.per, pin: false, read: false, sending: false}]
-                            } else {
-                                return prev
-                            }
-                        } else {
-                            return prev
-                        }
-                    });
-                    const readMess = async () => {
-                        const targetEmail = message.user
-                        await fetch('http://localhost:4000/users-controller/read/mess', {
-                            method: "POST",
-                            headers: {
-                                'Content-Type': 'application/json',
-                            },
-                            body: JSON.stringify({ targetEmail })
+                    if (prev === message.user) {
+                        setTrueEmail((prevTrueEmail: string) => {
+                            setMessages(prevMess => {
+                                if (prevMess) {
+                                    if (typeof message.id === 'string') {
+                                        const newMess = decryptMess([...prevMess, {user: message.user, text: message.text, id: message.id, photos: message.photos, date: message.date, typeMess: message.typeMess, ans: message.ans, controls: false, per: message.per, pin: false, read: false, sending: false}], prevTrueEmail)
+                                        console.log('New mess: ')
+                                        console.log(newMess)
+                                        return newMess
+                                    } else {
+                                        return prevMess
+                                    }
+                                } else {
+                                    return prevMess
+                                }
+                            })
+                            return prevTrueEmail
                         })
+                        const readMess = async () => {
+                            const targetEmail = message.user
+                            await fetch('http://localhost:4000/users-controller/read/mess', {
+                                method: "POST",
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                },
+                                body: JSON.stringify({ targetEmail })
+                            })
+                        }
+                        readMess()
                     }
-                    readMess()
+                    return prev
+                })
+                setTrueParamEmail(paramPrev => {
+                    zeroMess(paramPrev)
+                    return paramPrev
+                })
+                const user = message.user
+                if (document.visibilityState !== 'visible') {
+                    getUserChats(user)
                 }
-                return prev
-            })
-            setTrueParamEmail(paramPrev => {
-                zeroMess(paramPrev)
-                return paramPrev
-            })
-            const user = message.user
-            if (document.visibilityState !== 'visible') {
-                getUserChats(user)
-            }
-            const userSocket = message.socketId
-            await fetch(`http://localhost:4000/users-controller/zero/mess/count/${userSocket}`)
+                const userSocket = message.socketId
+                await fetch(`http://localhost:4000/users-controller/zero/mess/count/${userSocket}`)
             } else if (message.type === 'typing') {
                 setTrueParamEmail(prev => {
                     setTrueEmail(prevTrueEmail => {

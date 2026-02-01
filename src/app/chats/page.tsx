@@ -12,6 +12,8 @@ import styles from './Chats.module.css';
 import Call from "../Call";
 import useOnlineStatus from "../useOnlineStatus";
 import NameSearch from "../NameSearch";
+import decryptMess from "./decrpytMess";
+import useCheckPrivateKey from '../useCheckPrivateKey'
 
 interface MessageWithBonuce extends Message{
     origUser: string;
@@ -24,8 +26,9 @@ const Chats: FC = () => {
 
     const {} = useCheckReg()
     const {} = useOnlineStatus()
+    const {} = useCheckPrivateKey()
 
-    const { trueEmail } = useGetEmail()
+    const { trueEmail, setTrueEmail } = useGetEmail()
     const [shareMess, setShareMess] = useState<MessageWithBonuce | null>(null)
     const [basePerm, setBasePerm] = useState<string>('')
     const [changePerm, setChangePerm] = useState<string>('')
@@ -114,8 +117,25 @@ const Chats: FC = () => {
                 },
                 credentials: 'include',
             })
-            const resultChats = await chats.json()
-            resChats = resultChats
+            const resultChats = await chats.json()  
+            if (resultChats.length !== 0) {
+                const resultMyChats = resultChats.map((el: any) => {
+                    const resultMess = decryptMess(el.messages, trueEmail)
+                    const checkAllText = resultMess.every((element: any) => element.text === undefined)
+                    if (checkAllText === true) {
+                        return false
+                    } else {
+                        return {
+                            ...el,
+                            messages: resultMess,
+                        }
+                    }
+                })
+            resChats = resultMyChats.filter((el: any) => el !== false)
+            console.log(resChats)
+            } else {
+                resChats = resultChats
+            }
         }
         if (resChats.length !== 0) {
             const allUsers = await fetch('http://localhost:4000/users-controller/get/all/users')
@@ -346,36 +366,40 @@ const Chats: FC = () => {
         socket.on('replyMessage', async(message: any) => {
             if (message.type === 'message') {
                 console.log('New message')
+                console.log(message)
                 const user = message.user
-                setChats((prevChats: any) => {
-                    const findThisChat = prevChats.find((el: Chat) => el.user === user)
-                    if (findThisChat !== undefined) {
-                        const newChats = prevChats.map((el: any) => {
-                            if (el.user === user) {
-                                const newMess = [...el.messages, {user: message.user, text: message.text, id: message.id, photos: message.photos, date: message.date, typeMess: message.typeMess, ans: message.ans, controls: false, per: '', pin: false, read: false}]
-                                return {
-                                    ...el,
-                                    messages: newMess,
-                                    messCount: el.messCount + 1
+                setTrueEmail((prev: any) => {
+                    setChats((prevChats: any) => {
+                        const findThisChat = prevChats.find((el: Chat) => el.user === user)
+                        if (findThisChat !== undefined) {
+                            const newChats = prevChats.map((el: any) => {
+                                if (el.user === user) {
+                                    const newMess = decryptMess([...el.messages, {user: message.user, text: message.text, id: message.id, photos: message.photos, date: message.date, typeMess: message.typeMess, ans: message.ans, controls: false, per: '', pin: false, read: false}], prev)
+                                    return {
+                                        ...el,
+                                        messages: newMess,
+                                        messCount: el.messCount + 1
+                                    }
+                                } else {
+                                    return el
                                 }
+                            })
+                            console.log('New chats: ')
+                            console.log(newChats)
+                            if (newChats) {
+                                const resultChats = sortChats(newChats)
+                                console.log('Result chats: ')
+                                console.log(resultChats)
+                                return resultChats
                             } else {
-                                return el
+                                return prevChats
                             }
-                        })
-                        console.log('New chats: ')
-                        console.log(newChats)
-                        if (newChats) {
-                            const resultChats = sortChats(newChats)
-                            console.log('Result chats: ')
-                            console.log(resultChats)
-                            return resultChats
                         } else {
-                            return prevChats
+                            const newChats: Chat[] = [...prevChats, {user: user, messages: decryptMess([{user: message.user, text: message.text, id: message.id, photos: message.photos, date: message.date, typeMess: message.typeMess, ans: message.ans, controls: false, per: '', pin: false, read: false, sending: false}], prev), messCount: 1, avatar: '', pin: false, notifs: true}]
+                            return newChats
                         }
-                    } else {
-                        const newChats: Chat[] = [{user: user, messages: [{user: message.user, text: message.text, id: message.id, photos: message.photos, date: message.date, typeMess: message.typeMess, ans: message.ans, controls: false, per: '', pin: false, read: false, sending: false}], messCount: 1, avatar: '', pin: false, notifs: true}, ...prevChats]
-                        return newChats
-                    }
+                    })
+                    return prev
                 })
                 if (document.visibilityState !== 'visible') {
                     getUserChats(user)

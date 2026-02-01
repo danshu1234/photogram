@@ -3,14 +3,65 @@ import getMessIdAndDate from "@/app/getMessIdAndDate"
 import { SendPhoto } from "./page"
 import { v4 as uuidv4 } from 'uuid';
 import buildFormData from "./formDataBuild";
+import { decodeBase64, encodeBase64 } from "tweetnacl-util";
+import nacl from "tweetnacl";
+import encryptMess from "../encryptMess";
 
 const sendMess = async (type: string, inputMess: string, imageBase64: SendPhoto[], videoFile: {file: File, type: string} | null, messages: Message[] | null, editMess: string, trueEmail: string, setMessages: Function, answMess: string, setAnswMess: Function, setImageBase64: Function, setVideoFile: Function, setInputMess: Function, setOverStatus: Function, setFiles: Function, files: File[], succesSend: Function, trueParamEmail: string, backUpMess: Function, setEditMess: Function, setProcessSendMess: Function, fileName?: string, file?: File) => {
     const isText = inputMess !== ''
     const isPhotos = imageBase64.length !== 0
     if ((isText && isPhotos) || (isText && !isPhotos) || (!isText && isPhotos) || (!isPhotos && videoFile) || (!isPhotos && !videoFile && files.length !== 0) || fileName) {
         try {
+            let resultPrivateKey: string = ''
+            const privateKey = localStorage.getItem(`${trueEmail}PrivateKey`)
+            if (privateKey) {
+                resultPrivateKey = privateKey
+            }
+            const decodePrivateKey = decodeBase64(resultPrivateKey)
+            const encoder = new TextEncoder()
+            const messageBytes = encoder.encode(inputMess)
+            const publicKeys = await fetch(`http://localhost:4000/users-controller/public/keys/${trueParamEmail}`, {
+                method: "GET",
+                credentials: 'include',
+            })
+            const resultPublicKeys = await publicKeys.json()
+            const testKeyPair = nacl.box.keyPair()
+            let encPublicKey: string = ''
+            for (let myPublicKey of resultPublicKeys.myPublicKeys) {
+                console.log(myPublicKey)
+                const message = new TextEncoder().encode("test")
+                const testNonce = nacl.randomBytes(nacl.box.nonceLength) 
+                const encrypted = nacl.box(
+                    message,
+                    testNonce,
+                    testKeyPair.publicKey,
+                    decodePrivateKey,
+                )
+                const decodeMyPublicKey = decodeBase64(myPublicKey)
+                const decrypted = nacl.box.open(
+                    encrypted,
+                    testNonce,
+                    decodeMyPublicKey,
+                    testKeyPair.secretKey,
+                )
+                if (decrypted) {
+                    encPublicKey = myPublicKey
+                    break
+                }
+            }
+            const resultTextForUser = encryptMess(resultPublicKeys.userPublicKeys, messageBytes, decodePrivateKey, encPublicKey)
+            const resultTextForMe = encryptMess(resultPublicKeys.myPublicKeys, messageBytes, decodePrivateKey, encPublicKey)
             const videoId = uuidv4()
-            if (messages?.length !== 0) {
+            const messRealCount = await fetch('http://localhost:4000/users-controller/mess/length', {
+                method: "POST",
+                headers: {
+                    'Content-Type': 'application/json',
+                },  
+                body: JSON.stringify({ trueParamEmail }),
+                credentials: 'include',      
+            })
+            const resultMessRealCount = await messRealCount.json()
+            if (resultMessRealCount !== 0) {
                 if (messages) {
                     if (editMess === '') {
                         const { formattedDate, messId } = getMessIdAndDate() 
@@ -53,7 +104,7 @@ const sendMess = async (type: string, inputMess: string, imageBase64: SendPhoto[
                         setInputMess('')
                         setOverStatus(false)
                         setFiles([])
-                        const formData = buildFormData(imageBase64, videoFile, trueEmail, files, inputMess, formattedDate, type, messId, trueParamEmail, answMess, videoId, file, fileName)
+                        const formData = buildFormData(imageBase64, videoFile, trueEmail, files, resultTextForUser, formattedDate, type, messId, trueParamEmail, answMess, videoId, file, fileName, resultTextForMe)
                         const sendMess = await fetch('http://localhost:4000/users-controller/new/mess', {
                             method: "PATCH",
                             body: formData,
@@ -119,7 +170,7 @@ const sendMess = async (type: string, inputMess: string, imageBase64: SendPhoto[
                         newMess = resultNewMess
                         setMessages(resultNewMess)
                     }
-                    const formData = buildFormData(imageBase64, videoFile, trueEmail, files, inputMess, formattedDate, type, messId, trueParamEmail, answMess, videoId, file, fileName)
+                    const formData = buildFormData(imageBase64, videoFile, trueEmail, files, resultTextForUser, formattedDate, type, messId, trueParamEmail, answMess, videoId, file, fileName, resultTextForMe)
                     const firstMess = await fetch('http://localhost:4000/users-controller/new/chat', {
                         method: "PATCH",
                         body: formData,
@@ -143,6 +194,7 @@ const sendMess = async (type: string, inputMess: string, imageBase64: SendPhoto[
             setInputMess('')
             setFiles([])
         } catch (e) {
+            console.log(e)
             alert('Превышен допустимый объем файлов')
             setImageBase64([])
             setInputMess('')

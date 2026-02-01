@@ -21,6 +21,12 @@ const Testing: FC = () => {
         }
     }, [])
 
+    useEffect(() => {
+        const keyPair = nacl.box.keyPair()
+        console.log(Buffer.from(keyPair.secretKey).toString('base64'))
+        console.log(Buffer.from(keyPair.publicKey).toString('base64'))
+    }, [])
+
     return (
         <div>
             <input placeholder="Message" value={inputMess} onChange={((event: ChangeEvent<HTMLInputElement>) => setInputMess(event.target.value))}/>

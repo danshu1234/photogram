@@ -1,7 +1,9 @@
+import EncryptMess from "../../../../server-for-photogram/src/MessEncryptInterface"
 import { SendPhoto } from "./page"
 
-const buildFormData = (imageBase64: SendPhoto[], videoFile: {file: File, type: string} | null, trueEmail: string, files: File[], inputMess: string, formattedDate: string, type: string, messId: string, trueParamEmail: string, answMess: string, videoId: string, file?: File, fileName?: string,) => {
+const buildFormData = (imageBase64: SendPhoto[], videoFile: {file: File, type: string} | null, trueEmail: string, files: File[], inputMess: string | EncryptMess[], formattedDate: string, type: string, messId: string, trueParamEmail: string, answMess: string, videoId: string, file?: File, fileName?: string, resultTextForMe?: string | EncryptMess[]) => {
     const formData = new FormData()
+    console.log(inputMess)
     if (imageBase64.length !== 0) {
         for (let item of imageBase64) {
             formData.append('photo', item.file)
@@ -17,7 +19,8 @@ const buildFormData = (imageBase64: SendPhoto[], videoFile: {file: File, type: s
             if (fileName) {
                 formData.append('text', fileName)
             } else {
-                formData.append('text', inputMess)
+                formData.append('text', JSON.stringify(inputMess))
+                formData.append('myText', JSON.stringify(resultTextForMe))
             }
         } else if (files.length !== 0 && fileName) {
             formData.append('text', fileName)

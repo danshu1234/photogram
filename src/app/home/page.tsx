@@ -19,6 +19,7 @@ import getUserChats from "../getChats";
 import exitAcc from "../exitAcc";
 import Call from "../Call";
 import useOnlineStatus from "../useOnlineStatus"
+import useCheckPrivateKey from "../useCheckPrivateKey";
 
 export default function Home() {
 
@@ -32,6 +33,7 @@ export default function Home() {
   const { trueEmail } = useGetEmail()
 
   const {} = useOnlineStatus()  
+  const {} = useCheckPrivateKey()
 
   const getMyNotifs = async () => {
     const getNotifs = await fetch(`http://localhost:4000/users-controller/get/notifs`, {

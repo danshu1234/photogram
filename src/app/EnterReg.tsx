@@ -2,6 +2,8 @@
 
 import { ChangeEvent, FC, useEffect, useState } from "react";
 import styles from './EnterReg.module.css';
+import nacl from 'tweetnacl'
+import generateKeyPair from "./generateKeyPair";
 
 interface Props{
     status: string
@@ -18,7 +20,8 @@ const EnterReg: FC <Props> = (props) => {
     let mainShow;
 
     useEffect(() => {
-        localStorage.clear()
+        localStorage.removeItem('photogram-enter')
+        localStorage.removeItem('photogram-enter-refresh')
     }, [])
 
     if (show === '') {
@@ -83,17 +86,21 @@ const EnterReg: FC <Props> = (props) => {
             <input placeholder="Код" onChange={((event: ChangeEvent<HTMLInputElement>) => setCode(event.target.value))} value={code}/>
             <button onClick={async() => {
                 if (code !== '') {
+                    const keyPair = generateKeyPair()
+                    const privateKey = keyPair.privateKey
+                    const publicKey = keyPair.publicKey
                     const reg = await fetch('http://localhost:4000/users-controller/reg/user', {
                         method: "POST",
                         headers: {
                             'Content-Type': 'application/json',
                         },
-                        body: JSON.stringify({ firstPass, secondPass, name, login, code }),
+                        body: JSON.stringify({ firstPass, secondPass, name, login, code, publicKey }),
                         credentials: 'include',
                     })
                     if (reg.ok) {
                         const resultReg = await reg.json()
                         localStorage.setItem('photogram-enter-refresh', resultReg.refreshToken)
+                        localStorage.setItem(`${login}PrivateKey`, privateKey)
                         window.location.href = '/home' 
                     } else {
                         const resultReg = await reg.json()
