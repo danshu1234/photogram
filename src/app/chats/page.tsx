@@ -418,22 +418,22 @@ const Chats: FC = () => {
                 setChats((prevChats: any) => {
                         const newChats = prevChats?.map((el: any) => {
                             if (el.user === message.user) {
-                                const newMess = el.messages.filter((element: any) => element.id !== message.id)
+                                const newMess = el.messages.map((element: any) => {
+                                    if (message.id.includes(element.id)) {
+                                        return false
+                                    } else {
+                                        return element
+                                    }
+                                })
+                                const resultNewMess = newMess.filter((message: any) => message !== false)
                                 console.log('Prev mess: ')
                                 console.log(prevChats.messages)
                                 console.log('New mess: ')
-                                console.log(newMess)
-                                if (message.readStatus === true) {
-                                    return {
-                                        ...el,
-                                        messages: newMess,
-                                    }
-                                } else {
-                                    return {
-                                        ...el,
-                                        messages: newMess,
-                                        messCount: el.messCount - 1
-                                    }
+                                console.log(resultNewMess)
+                                return {
+                                    ...el,
+                                    messages: resultNewMess,
+                                    messCount: el.messCount - message.readStatus
                                 }
                             } else {
                                 return el
@@ -441,7 +441,7 @@ const Chats: FC = () => {
                         })
                         if (prevChats && newChats) {
                             const resultChats = sortChats(newChats)
-                            return resultChats
+                            return resultChats.filter(el => el.messages.length !== 0)
                         } else {
                             return prevChats
                         }

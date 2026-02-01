@@ -1,6 +1,6 @@
 'use client'
 
-import { FC, useState, memo } from "react"
+import { FC, useState, memo, useEffect } from "react"
 import { Message } from "@/app/Chat"
 import ImgList from "./ImgList"
 import ShareBtn from "./ShareBtn"
@@ -236,7 +236,7 @@ const MessDisplay: FC <MessDisplayProps> = (props) => {
                                         <button className="control-btn delete-btn" onClick={async() => {
                                             const messId = [item.id]
                                             let unreadCount: number = 0
-                                            if (item.read === true) {
+                                            if (item.read !== true) {
                                                 unreadCount = 1
                                             }
                                             const deleteMess = await fetch('http://localhost:4000/users-controller/delete/mess', {
