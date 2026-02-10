@@ -2,6 +2,7 @@
 
 import { FC } from "react"
 import getMessIdAndDate from "./getMessIdAndDate";
+import { SendPhoto } from "./chats/[email]/page";
 
 interface ShareBtnProps{
     text: string;

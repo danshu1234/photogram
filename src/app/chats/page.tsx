@@ -14,6 +14,12 @@ import useOnlineStatus from "../useOnlineStatus";
 import NameSearch from "../NameSearch";
 import decryptMess from "./decrpytMess";
 import useCheckPrivateKey from '../useCheckPrivateKey'
+import { QRCodeSVG } from "qrcode.react";
+import buildFormData from "./[email]/formDataBuild";
+import getMessIdAndDate from "../getMessIdAndDate";
+import nacl from "tweetnacl";
+import { decodeBase64 } from "tweetnacl-util";
+import encryptMess from "./encryptMess";
 
 interface MessageWithBonuce extends Message{
     origUser: string;
@@ -26,7 +32,7 @@ const Chats: FC = () => {
 
     const {} = useCheckReg()
     const {} = useOnlineStatus()
-    const {} = useCheckPrivateKey()
+    const { secretKey } = useCheckPrivateKey()
 
     const { trueEmail, setTrueEmail } = useGetEmail()
     const [shareMess, setShareMess] = useState<MessageWithBonuce | null>(null)
@@ -36,6 +42,7 @@ const Chats: FC = () => {
     const [deleteWarn, setDeleteWarn] = useState <{friendEmail: string, friendDel: boolean} | null> (null)
     const [typing, setTyping] = useState <string> ('')
     const [sendMess, setSendMess] = useState <string> ('')
+    const [showPrivateKey, setShowPrivateKey] = useState <boolean> (false)
 
     let showChats;
     let showChangePerm;
@@ -259,15 +266,48 @@ const Chats: FC = () => {
                                         if (shareMess === null) {
                                             window.location.href=`/chats/${item.user}`
                                         } else {
-                                            const formData = new FormData()
-                                            formData.append('user', shareMess.user)
-                                            formData.append('text', shareMess.text)
-                                            formData.append('date', shareMess.date)
-                                            formData.append('id', shareMess.id)
-                                            formData.append('ans', '')
-                                            formData.append('trueParamEmail', item.user)
-                                            formData.append('per', shareMess.per)
-                                            formData.append('type', shareMess.typeMess)
+                                            let resultPrivateKey: string = ''
+                                            const privateKey = localStorage.getItem(`${trueEmail}PrivateKey`)
+                                            if (privateKey) {
+                                                resultPrivateKey = privateKey
+                                            }
+                                            const decodePrivateKey = decodeBase64(resultPrivateKey)
+                                            const encoder = new TextEncoder()
+                                            const messageBytes = encoder.encode(shareMess.text)
+                                            const publicKeys = await fetch(`http://localhost:4000/users-controller/public/keys/${item.user}`, {
+                                                method: "GET",
+                                                credentials: 'include',
+                                            })
+                                            const resultPublicKeys = await publicKeys.json()
+                                            const testKeyPair = nacl.box.keyPair()
+                                            let encPublicKey: string = ''
+                                            for (let myPublicKey of resultPublicKeys.myPublicKeys) {
+                                                console.log(myPublicKey)
+                                                const message = new TextEncoder().encode("test")
+                                                const testNonce = nacl.randomBytes(nacl.box.nonceLength) 
+                                                const encrypted = nacl.box(
+                                                    message,
+                                                    testNonce,
+                                                    testKeyPair.publicKey,
+                                                    decodePrivateKey,
+                                                )
+                                                const decodeMyPublicKey = decodeBase64(myPublicKey)
+                                                const decrypted = nacl.box.open(
+                                                    encrypted,
+                                                    testNonce,
+                                                    decodeMyPublicKey,
+                                                    testKeyPair.secretKey,
+                                                )
+                                                if (decrypted) {
+                                                    encPublicKey = myPublicKey
+                                                    break
+                                                }
+                                            }
+                                            const resultTextForUser = encryptMess(resultPublicKeys.userPublicKeys, messageBytes, decodePrivateKey, encPublicKey)
+                                            const resultTextForMe = encryptMess(resultPublicKeys.myPublicKeys, messageBytes, decodePrivateKey, encPublicKey)
+                                            const { formattedDate, messId } = getMessIdAndDate()
+                                            const formData = buildFormData([], null, shareMess.user, [], resultTextForUser, formattedDate, shareMess.typeMess, messId, item.user, '', '', undefined, undefined, resultTextForMe)
+                                            formData.set('per', shareMess.user)
                                             formData.append('origUser', shareMess.origUser)
                                             formData.append('origId', shareMess.origId)
                                             const newChats = chats.map(el => {
@@ -510,6 +550,11 @@ const Chats: FC = () => {
             </div>
             <h3 onClick={() => window.location.href='/bot'}>AI-Chat</h3>
             {chats ? <NameSearch allUsers={chats} type="chats"/> : null}
+            {(showPrivateKey === true && secretKey) ? <div>
+                <p onClick={() => setShowPrivateKey(false)}>X</p>
+                <p>Отсканируйте QR код на мобильном устройстве для синхронизации сообщений</p>
+                <QRCodeSVG value={secretKey} size={256}/>
+            </div> : <p onClick={() => setShowPrivateKey(true)}>Синхронизация сообщений</p>}
             {showChats}
             {deleteWarn ? <div>
                 <p>Вы уверены, что хотите удалить чат?</p>
