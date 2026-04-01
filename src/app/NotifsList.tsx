@@ -1,4 +1,4 @@
-import { FC, memo } from "react";
+import { FC, memo, useEffect, useState } from "react";
 import styles from './NotifsList.module.css';
 import exitAcc from "./exitAcc";
 
@@ -6,6 +6,7 @@ interface Notif{
     type: string,
     photoId?: string,
     user: string,
+    photoCount?: number,
 }
 
 interface NotifsListProps{
@@ -15,6 +16,8 @@ interface NotifsListProps{
 }
 
 const NotifsList: FC <NotifsListProps> = (props) => {
+
+    const [resNotifs, setResNotifs] = useState <Notif[]> ([])
 
     let notifs;
 
@@ -43,11 +46,40 @@ const NotifsList: FC <NotifsListProps> = (props) => {
         props.setNotifs(resultNotifs)
     }
 
-    if (props.notifs.length !== 0 && Array.isArray(props.notifs) === true) {
+    useEffect(() => {
+      const notifsNames = props.notifs.map((el: Notif) => el.user)
+      const uniqueNotifsNames = Array.from(new Set(notifsNames))
+      const photoNotifs = uniqueNotifsNames.map(el => {
+        const thisUserPhotos = props.notifs.filter((element: Notif) => element.user === el && element.type === 'photo')
+        if (thisUserPhotos.length === 1) {
+          return {
+            user: el,
+            type: 'photo',
+            photoId: thisUserPhotos[0].photoId,
+            photoCount: 1,
+          }
+        } else {
+          return {
+            user: el,
+            type: 'photo',
+            photoCount: thisUserPhotos.length,
+          }
+        }
+      })
+      const resultPhotoNotifs = photoNotifs.filter(el => el.photoCount !== 0)
+      const resultSubNotifs = props.notifs.filter((el: Notif) => el.type !== 'photo')
+      setResNotifs([...resultSubNotifs, ...resultPhotoNotifs])
+    }, [])
+
+    if (resNotifs.length !== 0) {
         notifs = <ul className={styles.notifsList}>
-            {props.notifs.map((item, index) => {
+            {resNotifs.map((item, index) => {
                 if (item.type === 'photo') {
-                    return <li key={index}><p><span style={{cursor: 'pointer', color: 'blue'}} onClick={() => window.location.href=`/${item.user}`}>{item.user}</span> оценил(а) ваше <span style={{cursor: 'pointer', color: 'blue'}} onClick={() => window.open(`/bigphoto/${item.photoId}`, '_blank')}>фото</span></p></li>
+                    if (item.photoCount === 1) {
+                        return <li key={index}><p><span style={{cursor: 'pointer', color: 'blue'}} onClick={() => window.location.href=`/${item.user}`}>{item.user}</span> оценил(а) ваше <span style={{cursor: 'pointer', color: 'blue'}} onClick={() => window.open(`/bigphoto/${item.photoId}`, '_blank')}>фото</span></p></li>
+                    } else {
+                        return <li key={index}><p><span style={{cursor: 'pointer', color: 'blue'}} onClick={() => window.location.href=`/${item.user}`}>{item.user}</span> оценил(а) {item.photoCount} ваших фото</p></li>
+                    }
                 } else if (item.type === 'perm') {
                     return <li key={index}>
                         <div>
@@ -81,6 +113,10 @@ const NotifsList: FC <NotifsListProps> = (props) => {
                     return <li key={index}><p><span style={{cursor: 'pointer', color: 'blue'}} onClick={() => window.location.href=`/${item.user}`}>{item.user}</span> отклонил(а) ваш запрос на просмотр фото</p></li>
                 } else if (item.type === 'sub') {
                     return <li key={index}><p><span style={{cursor: 'pointer', color: 'blue'}} onClick={() => window.location.href=`/${item.user}`}>{item.user}</span> подписался(ась) на вас</p></li>
+                } else if (item.type === 'comment') {
+                    return <li key={index}><p><span style={{cursor: 'pointer', color: 'blue'}} onClick={() => window.location.href=`/${item.user}`}>{item.user}</span> прокомментировал(а) <span style={{cursor: 'pointer', color: 'blue'}} onClick={() => window.open(`/bigphoto/${item.photoId}`, '_blank')}>фото</span></p></li>
+                } else if (item.type === 'public') {
+                    return <li key={index}><p><span style={{cursor: 'pointer', color: 'blue'}} onClick={() => window.location.href=`/${item.user}`}>{item.user}</span> опубликовал(а) новую запись</p></li>
                 }
             })}
         </ul>

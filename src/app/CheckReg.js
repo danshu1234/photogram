@@ -1,8 +1,10 @@
 'use client'
 
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 
 const useCheckReg = () => {
+
+    const [isCheck, setIsCheck] = useState (false)
 
     useEffect(() => {
             const checkToken = async () => {
@@ -16,7 +18,7 @@ const useCheckReg = () => {
                 if (!tokenCheck.ok) {
                     const refreshToken = localStorage.getItem('photogram-enter-refresh')
                     if (refreshToken) {
-                            const getNewAccessToken = await fetch('http://localhost:4000/users-controller/get/new/token', {
+                        const getNewAccessToken = await fetch('http://localhost:4000/users-controller/get/new/token', {
                             method: "PATCH",
                             headers: {
                                 'Content-Type': 'application/json',
@@ -27,7 +29,7 @@ const useCheckReg = () => {
                         if (getNewAccessToken.ok) {
                             const resultNewAccessToken = await getNewAccessToken.json()
                             localStorage.setItem('photogram-enter-refresh', resultNewAccessToken.refreshToken)
-                            
+                            setIsCheck(true)
                         } else {
                             localStorage.removeItem('photogram-enter-refresh')
                             window.location.href = '/enter'
@@ -35,12 +37,14 @@ const useCheckReg = () => {
                     } else {
                         window.location.href = '/enter'
                     }
+                } else {
+                    setIsCheck(true)
                 }
             }
             checkToken()
     }, [])
 
-    return {}
+    return { isCheck }
 
 }
 

@@ -7,11 +7,14 @@ import useNotif from "@/app/useNotif"
 import Call from "@/app/Call"
 import useOnlineStatus from "@/app/useOnlineStatus"
 import { Message } from "@/app/Chat"
-import { ClipLoader } from "react-spinners"
+import { ClipLoader, RingLoader } from "react-spinners"
 import { fileTypeFromBlob } from 'file-type';
 import JSZip from "jszip"
+import decryptMess from "@/app/chats/decrpytMess"
 
 interface PhotoInfo{
+    messId: string;
+    photoId: string;
     url: string;
     user: string;
     date: string;
@@ -36,11 +39,25 @@ const Files: FC = () => {
     const { trueParamEmail } = useGetTrueParamEmail()
 
     const [typeFile, setTypeFile] = useState <string> ('photo')
-    const [bigPhoto, setBigPhoto] = useState <PhotoInfo | null> (null)
+    const [bigPhoto, setBigPhoto] = useState <PhotoInfo | string | null> (null)
     const [resultPhotos, setResultPhotos] = useState <PhotoInfo[] | null> (null) 
     const [resultVideos, setResultVideos] = useState <VideoMessage[] | null> (null)
     const [resultFiles, setResultFiles] = useState <Message[]> ([])
     let showFiles;
+    let showBigPhoto;
+
+    if (bigPhoto) {
+        if (typeof bigPhoto === 'string') {
+            showBigPhoto = <RingLoader/>
+        } else {
+            showBigPhoto = <div>
+                <p onClick={() => setBigPhoto(null)}>X</p>
+                <img src={bigPhoto.url} width={300} height={300}/>
+                <h3>{bigPhoto.user}</h3>
+                <h4>{bigPhoto.date}</h4>
+            </div>
+        }
+    }
 
     const changeVideo = (videoSrc: string, messId: string, date: string): VideoMessage[] => {
         if (resultVideos) {
@@ -93,7 +110,22 @@ const Files: FC = () => {
         if (resultPhotos !== null) {
             if (resultPhotos.length !== 0) {
                 showFiles = <ul>
-                    {resultPhotos.map((item, index) => <li key={index}><img src={item.url} width={100} height={100} onClick={() => setBigPhoto(item)}/></li>)}
+                    {resultPhotos.map((item, index) => <li key={index}><img src={item.url} width={100} height={100} onClick={async() => {
+                        setBigPhoto('loading')
+                        const messId = item.messId
+                        const photoId = item.photoId
+                        const bigPhoto = await fetch('http://localhost:4000/users-controller/big/photo', {
+                            method: "POST",
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },     
+                            body: JSON.stringify({ trueParamEmail, messId, photoId }),
+                            credentials: 'include',
+                        })
+                        const resultBigPhoto = await bigPhoto.blob()
+                        const imageUrl = URL.createObjectURL(resultBigPhoto)
+                        setBigPhoto({messId: messId, photoId: item.photoId, url: imageUrl, user: item.user, date: item.date})
+                    }}/></li>)}
                 </ul>
             } else {
                 showFiles = <h2>В этом чате пока нет фото</h2>
@@ -216,16 +248,16 @@ const Files: FC = () => {
             })
             resultVideoMessages = resultVideosMess
         }
-        let resultPhotos: PhotoInfo[] = []
+        let photos: PhotoInfo[] = []
         for (let item of resultMess) {
             if (item.photos.length !== 0) {
                 for (let el of item.photos) {
-                    resultPhotos = [...resultPhotos, {url: el, user: item.user, date: item.date}]
+                    photos = [...photos, {url: el.base64, user: item.user, date: item.date, messId: item.id, photoId: el.id}]
                 }
             }
         }
-        const files = resultMess.filter(((el: Message) => el.typeMess === 'file'))
-        setResultPhotos(resultPhotos)
+        const files = decryptMess(resultMess.filter(((el: Message) => el.typeMess === 'file')), trueEmail)
+        setResultPhotos(photos)
         setResultVideos(resultVideoMessages.reverse())
         setResultFiles(files)
     }
@@ -243,13 +275,8 @@ const Files: FC = () => {
             <p onClick={() => setTypeFile('video')}>Видео</p>
             <p onClick={() => setTypeFile('files')}>Файлы</p>
             {showFiles}
-            {bigPhoto !== null ? <div>
-                <Call/>
-                <p onClick={() => setBigPhoto(null)}>X</p>
-                <img src={bigPhoto.url} width={300} height={300}/>
-                <h3>{bigPhoto.user}</h3>
-                <h4>{bigPhoto.date}</h4>
-            </div> : null}
+            <Call/>
+            {showBigPhoto}
         </div>
     )
 }

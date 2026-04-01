@@ -23,13 +23,19 @@ import useCheckPrivateKey from "../useCheckPrivateKey";
 
 export default function Home() {
 
+  interface KeyWord{
+    label: string;
+    word: string;
+  }
+
   interface Notif{
     type: string,
     photoId?: string,
     user: string,
+    photoCount?: number,
   }
 
-  const {} = useCheckReg()
+  const { isCheck } = useCheckReg()
   const { trueEmail } = useGetEmail()
 
   const {} = useOnlineStatus()  
@@ -57,6 +63,8 @@ export default function Home() {
 
   const [socketId, setSocketId] = useState <string> ('')
   
+  const [activeKeyWord, setActiveKeyWord] = useState <string> ('rec')
+  const [keyWords, setKeyWords] = useState <KeyWord[] | null> (null)
   const [messCount, setMessCount] = useState <number> (0)
   const [sharePost, setSharePost] = useState <string> ('')
   const [isNotifs, setIsNotifs] = useState <boolean> (false)
@@ -68,13 +76,12 @@ export default function Home() {
 
   const [allUsers, setAllUsers] = useState <UserInterface[]> ([])
 
+  const [keyWordPhotos, setKeyWordPhotos] = useState <{label: string, photos: Photo[]}[] | null> (null)
   const [allPhotos, setAllPhotos] = useState <Photo[] | null> ([])
   const [photoIndex, setPhotoIndex] = useState <{start: number, finish: number}> ({start: 0, finish: 6})
   const [moreBtn, setMoreBtn] = useState <boolean> (true)
 
   const [savePhotos, setSavePhotos] = useState <string[]> ([])
-
-  const [datesArr, setDatesArr] = useState <string[]> ([])
 
   const [date, setDate] = useState <string> ('')
 
@@ -84,58 +91,61 @@ export default function Home() {
   let notifsList;
   let subsListBtn;
   let feechWindow;
-  let datesList;
+  let showKeyWords;
 
   const getAllPhotosAndSort = async () => {
     const start = photoIndex.start
-    const finish =photoIndex.finish
+    const finish = photoIndex.finish
     const allPhotosRes = await fetch('http://localhost:4000/photos/all', {
       method: "POST",
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ start, finish })
+      body: JSON.stringify({ start, finish }),
+      credentials: 'include',
     })
     const resultPhotosArr = await allPhotosRes.json()
     console.log(resultPhotosArr)
-    resultPhotosArr.photos.sort((a: Photo, b: Photo) => Number(b.id) - Number(a.id))
     let resultArr = []
-    for (let item of resultPhotosArr.photos) {
-    const findUser = allUsers.find(el => el.email === item.email)
-    if (findUser?.open === true) {
-      resultArr.push(item)
-    } else {
-      if (findUser?.permUsers.includes(trueEmail) || item.email === trueEmail) {
+    for (let item of resultPhotosArr.resultPhotos) {
+      const findUser = allUsers.find(el => el.email === item.email)
+      if (findUser?.open === true) {
         resultArr.push(item)
+      } else {
+        if (findUser?.permUsers.includes(trueEmail) || item.email === trueEmail) {
+          resultArr.push(item)
+        }
       }
     }
-  }
-  const finalArr = resultArr.map(el => {
-    return {
-      ...el,
-      photoIndex: 0,
-      bonuce: false,
+    const finalArr = resultArr.map(el => {
+      return {
+        ...el,
+        photoIndex: 0,
+        bonuce: false,
+      }
+    })
+    if (resultPhotosArr.newRecPhoto === true) {
+      setPhotoIndex({start: 0, finish: 6})
     }
-  })
-  let resultPhotos = []
-  if (photos && allPhotos) {
-    setPhotos([...photos, ...finalArr])
-    setAllPhotos([...allPhotos, ...finalArr])
-    resultPhotos = [...photos, ...finalArr]
-  } else {
-    setPhotos(finalArr)
-    setAllPhotos(finalArr)
-    resultPhotos = [...finalArr]
-  }
-  if (resultPhotosArr.allLength - resultPhotos.length) {
-      setPhotoIndex({start: photoIndex.start + 6, finish: photoIndex.finish + 6})
-    } else if (resultPhotosArr.allLength - resultPhotos.length === 2) {
-      setPhotoIndex({start: photoIndex.start + 6, finish: photoIndex.finish + 5})
-    } else if (resultPhotosArr.allLength - resultPhotos.length === 1) {
-      setPhotoIndex({start: photoIndex.start + 6, finish: photoIndex.finish + 4})
-    } else if (resultPhotosArr.allLength - resultPhotos.length === 0) {
-      setMoreBtn(false)
-  }
+    let resultPhotos = []
+    if (photos && allPhotos) {
+      setPhotos([...photos, ...finalArr])
+      setAllPhotos([...allPhotos, ...finalArr])
+      resultPhotos = [...photos, ...finalArr]
+    } else {
+      setPhotos(finalArr)
+      setAllPhotos(finalArr)
+      resultPhotos = [...finalArr]
+    }
+      if (resultPhotosArr.allLength - resultPhotos.length) {
+        setPhotoIndex({start: photoIndex.start + 6, finish: photoIndex.finish + 6})
+      } else if (resultPhotosArr.allLength - resultPhotos.length === 2) {
+        setPhotoIndex({start: photoIndex.start + 6, finish: photoIndex.finish + 5})
+      } else if (resultPhotosArr.allLength - resultPhotos.length === 1) {
+        setPhotoIndex({start: photoIndex.start + 6, finish: photoIndex.finish + 4})
+      } else if (resultPhotosArr.allLength - resultPhotos.length === 0) {
+        setMoreBtn(false)
+      }
   }
 
   
@@ -167,6 +177,22 @@ export default function Home() {
     }
   }
 
+  const getUserLabels = async () => {
+    const keyWords = await fetch('http://localhost:4000/users-controller/get/key/words', {
+      method: "GET",
+      credentials: 'include',
+    })
+    const resultKeyWords = await keyWords.json()
+    let keyWordsUser: KeyWord[] = [{label: 'rec', word: 'Рекомендации'}]
+    if (resultKeyWords.length !== 0) {
+      for (let item of resultKeyWords.keyWords) {
+        const label = item.label.split(', ')[0]
+        keyWordsUser = [...keyWordsUser, {label: item.label, word: label}]
+      }
+      setKeyWordPhotos(resultKeyWords.labelPhoto)
+      setKeyWords(keyWordsUser)
+    }
+  }
 
   useEffect(() => {
     if (photos !== null) {
@@ -183,21 +209,13 @@ export default function Home() {
   }, [allUsers, trueEmail])
 
   useEffect(() => {
-    if (allPhotos !== null) {
-      const resultDates = allPhotos.map(el => el.date)
-      const setPhotos = new Set(resultDates)
-      const resultArr = Array.from(setPhotos)
-      setDatesArr(resultArr)
-    }
-  }, [allPhotos])
-
-  useEffect(() => {
     const getAllUsers = async () => {
       const allUsers = await fetch('http://localhost:4000/users-controller/get/all/users')
       const resultUsers = await allUsers.json()
       setAllUsers(resultUsers)
     }
     getAllUsers()
+    getUserLabels()
   }, [])
 
   useEffect(() => {
@@ -244,6 +262,11 @@ export default function Home() {
             })
       } else if (message.type === 'delete') {
         setMessCount(prev => prev - 1)
+      } else if (message.type === 'notif') {
+        setNotifs(prevNotifs => {
+          const newNotifs = [...prevNotifs, {type: message.typeNotif, user: message.user}]
+          return newNotifs
+        })
       }
       })
 
@@ -281,6 +304,35 @@ export default function Home() {
     notifsList = <NotifsList notifs={notifs} setIsNotifs={setIsNotifs} setNotifs={setNotifs}/>
   }
 
+  if (keyWords) {
+    if (keyWords.length !== 0) {
+      showKeyWords = <ul style={{listStyle: 'none'}}>
+        {keyWords.map((item, index) => {
+          if (item.label === activeKeyWord) {
+            return <li key={index} style={{color: 'black'}}>{item.word}</li>
+          } else {
+            return <li key={index} style={{color: 'gray'}} onClick={() => {
+              if (item.label === 'rec') {
+                if (allPhotos) {
+                  setPhotos([...allPhotos])
+                  setActiveKeyWord(item.label)
+                }
+              } else {
+                if (keyWordPhotos) {
+                  const photoKeyWord = keyWordPhotos.find(el => el.label === item.label)
+                  if (photoKeyWord) {
+                    setPhotos(photoKeyWord.photos)
+                    setActiveKeyWord(item.label)
+                  }
+                }
+              }
+            }}>{item.word}</li>
+          }
+        })}
+      </ul>
+    }
+  }
+
   if (photos === null) {
     photosList = <div style={{
       display: 'flex',
@@ -299,16 +351,10 @@ export default function Home() {
     }
   }
 
-  if (datesArr.length !== 0) {
-    datesList = <select className={styles.dateSelect} onChange={(event: ChangeEvent<HTMLSelectElement>) => setDate(event.target.value)}>
-      <option value='Все'>Все</option>
-      {datesArr.map((item, index) => <option value={item} key={index}>{item}</option>)}
-    </select>
-  }
-
   return (
     <div className={styles.home}>
-      <header className={styles.header}>
+      {isCheck ? <div>
+        <header className={styles.header}>
         <img src='/images/Circle-icons-chat.svg.png' width={50} height={50} className={styles.messagesIcon} onClick={() => window.location.href='/chats'}/>
         <h1 className={styles.logo} onClick={() => window.location.reload()}>Photogram</h1>
         <FeedbackBtn/>
@@ -333,14 +379,12 @@ export default function Home() {
         {subsListBtn}
         <Search/>
         <NameSearch allUsers={allUsers} type="users"/>
-        <div className={styles.dateSelect}>
-          <h3>Сортировать по дате</h3>
-          {datesList}
-        </div>
+        {showKeyWords}
         {feechWindow}
         {photosList}
-        {moreBtn && photos ? <p onClick={getAllPhotosAndSort} style={{marginTop: '15px', cursor: 'pointer', color: 'blue', opacity: '0.5'}}>Показать больше</p> : null}
+        {(moreBtn && photos && activeKeyWord === 'rec') ? <p onClick={getAllPhotosAndSort} style={{marginTop: '15px', cursor: 'pointer', color: 'blue', opacity: '0.5'}}>Показать больше</p> : null}
       </main>
+      </div> : <RingLoader/>}
     </div>
   );
 }

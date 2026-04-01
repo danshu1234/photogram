@@ -27,6 +27,7 @@ interface Chat{
     avatar: string;
     pin: boolean;
     notifs: boolean;
+    onlineStatus: {status: string, plat: string};
 }
 
 export default Chat

@@ -4,12 +4,18 @@ import { ChangeEvent, FC, useEffect, useState } from "react";
 import styles from './EnterReg.module.css';
 import nacl from 'tweetnacl'
 import generateKeyPair from "./generateKeyPair";
+import { QRCodeSVG } from "qrcode.react";
+import { io } from "socket.io-client";
 
 interface Props{
     status: string
 }
 
 const EnterReg: FC <Props> = (props) => {
+
+    const socket = io('http://localhost:4000')
+
+    const [socketId, setSocketId] = useState ('')
     
     const [show, setShow] = useState <string> ('')
     const [name, setName] = useState <string> ('')
@@ -22,6 +28,32 @@ const EnterReg: FC <Props> = (props) => {
     useEffect(() => {
         localStorage.removeItem('photogram-enter')
         localStorage.removeItem('photogram-enter-refresh')
+    }, [])
+
+    useEffect(() => {
+        socket.on('connect', () => {
+            if (socket.id) {
+                setSocketId(socket.id)
+            }
+        })
+
+        socket.on('replyMessage', async(message: {type: string, tokens: {accessToken: string, refreshToken: string}}) => {
+            if (message.type === 'tokenQr') {
+                const accessToken = message.tokens.accessToken
+                localStorage.setItem('photogram-enter-refresh', message.tokens.refreshToken)
+                const saveToken = await fetch('http://localhost:4000/users-controller/save/token', {
+                    method: "POST",
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ accessToken })
+                })
+                const resultSaveToken = await saveToken.text()
+                if (resultSaveToken === 'OK') {
+                    window.location.href='/home'
+                }
+            }
+        })
     }, [])
 
     if (show === '') {
@@ -77,6 +109,7 @@ const EnterReg: FC <Props> = (props) => {
                     alert('Введите логин и пароль')
                 }
             }}>Войти</button>}
+            {props.status === 'enter' ? <QRCodeSVG value={socketId} width={200} height={200}/> : null}
             {props.status === 'reg' ? <p>Уже есть аккаунт? <span style={{color: 'blue'}} onClick={() => window.location.href='/enter'}>Войти</span></p> : <div><p>Нет аккаунта?<span style={{color: 'blue'}} onClick={() => window.location.href='/reg'}> Зарегистрироваться</span></p><p style={{color: 'blue'}} onClick={() => window.location.href='/emailenter'}>Войти по Email</p></div>}
             <p onClick={() => window.location.href = 'http://localhost:4000/users-controller/google'}>Войти через Google</p>
         </div>
@@ -89,12 +122,13 @@ const EnterReg: FC <Props> = (props) => {
                     const keyPair = generateKeyPair()
                     const privateKey = keyPair.privateKey
                     const publicKey = keyPair.publicKey
+                    const plat = 'desktop'
                     const reg = await fetch('http://localhost:4000/users-controller/reg/user', {
                         method: "POST",
                         headers: {
                             'Content-Type': 'application/json',
                         },
-                        body: JSON.stringify({ firstPass, secondPass, name, login, code, publicKey }),
+                        body: JSON.stringify({ firstPass, secondPass, name, login, code, publicKey, plat }),
                         credentials: 'include',
                     })
                     if (reg.ok) {

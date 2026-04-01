@@ -16,6 +16,7 @@ import exitAcc from "../exitAcc";
 import Call from "../Call";
 import useOnlineStatus from "../useOnlineStatus";
 import useCheckPrivateKey from "../useCheckPrivateKey";
+import postNotif from '../postNotif'
 
 export default function UserPage() {
     
@@ -36,6 +37,34 @@ export default function UserPage() {
     let avatar;
     let photoShow;
     let chatBtn;
+    let userNotifShow;
+    let onlineShow;
+
+    if (user) {
+        if (user.onlineStatus.status === 'Online') {
+            onlineShow = <img src='/images/shape.png' width={30} height={30}/>
+        }
+    }
+
+    if (trueEmail !== trueParamEmail) {
+        if (user?.userNotifs.includes(trueEmail)) {
+            userNotifShow = <p onClick={async() => {
+                if (user) {
+                    const newUserNotifs = user.userNotifs.filter(el => el !== trueEmail)
+                    setUser({...user, userNotifs: newUserNotifs})
+                    await postNotif(trueParamEmail, false)
+                }
+            }}>Не уведомлять о новых записях</p>
+        } else {
+            userNotifShow = <p onClick={async() => {
+                if (user) {
+                    const newUserNotifs = [...user.userNotifs, trueEmail]
+                    setUser({...user, userNotifs: newUserNotifs})
+                    await postNotif(trueParamEmail, true)
+                }
+            }}>Уведомлять о новых записях</p>
+        }
+    }
 
     if (user?.permMess === 'Все') {
         chatBtn = <ChatBtn trueParamEmail={trueParamEmail} />;
@@ -83,6 +112,7 @@ export default function UserPage() {
             <div className={styles.profileContainer}>
                 <div className={styles.headerSection}>
                     {avatar}
+                    {onlineShow}
                     <div className={styles.userInfo}>
                         {succesCopy === true ? <p>Ссылка успешно скопирована!</p> : null}
                         <p style={{cursor: 'pointer'}} onClick={async() => {
@@ -135,22 +165,7 @@ export default function UserPage() {
                         }}>Подписаться</button>
                     }
 
-                    {user.reports.includes(trueEmail) ? 
-                        <p className={styles.infoText}>Жалоба отправлена</p>
-                        :
-                        <button className={styles.dangerBtn} onClick={async () => {
-                            const targetEmail = trueParamEmail;
-                            await fetch('http://localhost:4000/users-controller/new/report', {
-                                method: "PATCH",
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                },
-                                body: JSON.stringify({ targetEmail }),
-                                credentials: 'include',
-                            });
-                            window.location.reload();
-                        }}>Пожаловаться</button>
-                    }
+                    {userNotifShow}
                 </div>
 
                 <div className={styles.photosSection}>

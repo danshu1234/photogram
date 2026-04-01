@@ -12,6 +12,7 @@ import useNotif from "../useNotif"
 import exitAcc from '../exitAcc'
 import Call from "../Call";
 import useOnlineStatus from "../useOnlineStatus";
+import EnterQr from "./EnterQr";
 
 export default function MyPage() {
   const {} = useNotif()
@@ -19,6 +20,7 @@ export default function MyPage() {
   const { trueEmail } = useGetEmail();
   const {} = useOnlineStatus()
 
+  const [enterCode, setEnterCode] = useState <boolean> (false)
   const [openAcc, setOpenAcc] = useState<boolean>(false) 
   const [subs, setSubs] = useState<string[]>([])
   const [isModal, setIsModal] = useState<boolean>(false)
@@ -161,6 +163,7 @@ export default function MyPage() {
   return (
     <div className={styles.container}>
       <Call/>
+      {enterCode === true ? <EnterQr setEnterCode={setEnterCode}/> : null}
       <header className={styles.header}>
         <Avatar type="edit"/>
         <span className={styles.email}>{trueEmail}</span>
@@ -187,6 +190,7 @@ export default function MyPage() {
         {photosList}
       </div>
       <div className={styles.exitPanel}>
+        <span onClick={() => setEnterCode(true)}>QR код для входа</span>
         <span 
           className={styles.exitButton} 
           onClick={async() => {
@@ -200,6 +204,16 @@ export default function MyPage() {
         >
           Выйти
         </span>
+        <span onClick={async() => {
+          const changeToken = await fetch('http://localhost:4000/users-controller/change/token', {
+            method: "GET",
+            credentials: 'include',
+          })
+          const resultChangeToken = await changeToken.text()
+          if (resultChangeToken === 'OK') {
+            alert('Все сеансы кроме этого успешно завершены')
+          }
+        }}>Завершить все сеансы кроме текущего</span>
       </div>
     </div>
   );

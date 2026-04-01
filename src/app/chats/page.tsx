@@ -216,7 +216,16 @@ const Chats: FC = () => {
                 <ul>
                     {chats.map((item, index) => {
                         let lastMess;
+                        let showOnline;
                         const lastMessage = item.messages[item.messages.length - 1];
+
+                        if (item.onlineStatus.status === 'Online') {
+                            if (item.onlineStatus.plat === 'desktop') {
+                                showOnline = <img src='/images/shape.png' width={20} height={20}/>
+                            } else {
+                                showOnline = <img src='/images/free-icon-iphone-16000799.png' width={20} height={20}/>
+                            }
+                        }
 
                         if (!localStorage.getItem(item.user)) {
                             if (sendMess !== item.user) {
@@ -239,8 +248,10 @@ const Chats: FC = () => {
                                         lastMess = <span>Пост</span>
                                     } else if (lastMessage.typeMess === 'video') {
                                         lastMess = <span>Видео</span>
-                                    } else {
+                                    } else if (lastMessage.typeMess === 'file') {
                                         lastMess = <span>Файл</span>
+                                    } else {
+                                        lastMess = <span>Геолокация</span>
                                     }
                                 } else {
                                     lastMess = <span>Печатает...</span>
@@ -258,6 +269,7 @@ const Chats: FC = () => {
                                     <div className={styles.avatarPlaceholder}>{item.user.charAt(0).toUpperCase()}</div> : 
                                     <img src={item.avatar} className={styles.avatar} alt={item.user}/>
                                 }
+                                {showOnline}
                             </div>
                             <div className={styles.chatContent}>
                                 <h3 

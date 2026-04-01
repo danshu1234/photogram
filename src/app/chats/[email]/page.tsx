@@ -30,6 +30,7 @@ import getGifs from "./getGifs"
 import SearchMess from "./SearchMess"
 import decryptMess from "../decrpytMess"
 import useCheckPrivateKey from "@/app/useCheckPrivateKey"
+import Geopos from "./Geopos"
 
 
 export interface SendPhoto{
@@ -54,6 +55,8 @@ const UserChat: FC = () => {
     const { trueEmail, setTrueEmail } = useGetEmail()
     const { trueParamEmail, setTrueParamEmail } = useGetTrueParamEmail()
 
+    const [geoLocation, setGeoLocation] = useState <{latitude: number, longitude: number} | null> (null)
+    const [preview, setPreview] = useState <any> ('')
     const [messFind, setMessFind] = useState <{id: string, text: string, date: string}[] | null> (null)
     const [messFindInput, setMessFindInput] = useState <string> ('')
     const [files, setFiles] = useState <File[]> ([])
@@ -103,9 +106,9 @@ const UserChat: FC = () => {
     if (trueEmail !== trueParamEmail) {
         if (Array.isArray(myBanArr)) {
             if (myBanArr.includes(trueParamEmail)) {
-                banBtn = <BanBtn trueParamEmail={trueParamEmail} banStatus={false}/>
+                banBtn = <BanBtn trueParamEmail={trueParamEmail} banStatus={false} myBanArr={myBanArr} setMyBanArr={setMyBanArr}/>
             } else {
-                banBtn = <BanBtn trueParamEmail={trueParamEmail} banStatus={true}/>
+                banBtn = <BanBtn trueParamEmail={trueParamEmail} banStatus={true} myBanArr={myBanArr} setMyBanArr={setMyBanArr}/>
             }
         }
     }
@@ -114,6 +117,11 @@ const UserChat: FC = () => {
         const resultGifs = await getGifs()
         setGifsArr(resultGifs)
     }
+
+    useEffect(() => {
+        console.log('Ban: ')
+        console.log(myBanArr)
+    }, [myBanArr])
 
     const succesSend = (mess: Message[], messId: string) => {
         console.log('Messages: ')
@@ -165,7 +173,7 @@ const UserChat: FC = () => {
         if (messages.length === 0) {
             showMess = <div className="empty-chat"><h2>Этот чат пока пуст</h2></div>
         } else if (messages.length !== 0) {
-            showMess = <MessDisplay messages={messages} email={trueEmail} trueParamEmail={trueParamEmail} setMessages={setMessages} setAnswMess={setAnswMess} setEditMess={setEditMess} setInputMess={setInputMess} setSucCopy={setSucCopy} setVideoMessId={setVideoMessId} pinMess={pinMess} setPinMess={setPinMess}/>
+            showMess = <MessDisplay messages={messages} email={trueEmail} trueParamEmail={trueParamEmail} setMessages={setMessages} setAnswMess={setAnswMess} setEditMess={setEditMess} setInputMess={setInputMess} setSucCopy={setSucCopy} setVideoMessId={setVideoMessId} pinMess={pinMess} setPinMess={setPinMess} setGeoLocation={setGeoLocation}/>
         }
     } else {
         showMess = <div className="loading-chat"><h2>Загрузка...</h2></div>
@@ -278,6 +286,12 @@ const UserChat: FC = () => {
             localStorage.removeItem(trueParamEmail)
         }
     }, [inputMess])
+
+    useEffect(() => {
+        console.log('Files: ')
+        console.log(files)
+    }, [files])
+
 
     useEffect(() => {
         const handleGlobalKeyPress = (event: any) => {
@@ -511,11 +525,11 @@ const UserChat: FC = () => {
         if (trueParamEmail !== '') {
                 const getStatusOnline = async () => {
                 const getUserStatusOnline = await fetch(`http://localhost:4000/users-controller/get/status/online/${trueParamEmail}`)
-                const resultUserOnlineStatus = await getUserStatusOnline.text()
-                if (resultUserOnlineStatus === 'Online') {
-                    setOnlineStatus(resultUserOnlineStatus)
+                const resultUserOnlineStatus = await getUserStatusOnline.json()
+                if (resultUserOnlineStatus.status === 'Online') {
+                    setOnlineStatus(resultUserOnlineStatus.status)
                 } else {
-                    setOnlineStatus(`Был(а) в сети ${resultUserOnlineStatus}`)
+                    setOnlineStatus(`Был(а) в сети ${resultUserOnlineStatus.status}`)
                 }
             }
             getStatusOnline()
@@ -591,9 +605,9 @@ const UserChat: FC = () => {
                         })} onDrop={((e) => {
                             if (messages) { 
                                 if (messages.length > 0) {
-                                    const files = e.dataTransfer.files
-                                    if (files.length > 0) {
-                                        const resultFile = files[0]
+                                    const resultFiles = e.dataTransfer.files
+                                    if (resultFiles.length > 0) {
+                                        const resultFile = resultFiles[0]
                                         if (resultFile) {
                                             if (resultFile.type === 'image/png' || resultFile.type === 'image/jpeg') {
                                                 const reader = new FileReader();
@@ -606,7 +620,7 @@ const UserChat: FC = () => {
                                                 setVideoFile({file: resultFile, type: 'video'})
                                             } else {
                                                 if (messages?.length !== 0) {
-                                                    setFiles([resultFile])
+                                                    setFiles([...files, resultFile])
                                                 }
                                             }
                                         }
@@ -620,7 +634,10 @@ const UserChat: FC = () => {
                     <div className="input-group">
                         <label className="file-upload-btn">
                             📎
-                        <input type="file" accept="image/*" onChange={handleFileChange} className="file-input"/>
+                        <input type="file" accept="image/*" onChange={handleFileChange} onDrop={(e) => {
+                            e.preventDefault()
+                            e.stopPropagation()
+                        }} className="file-input"/>
                         </label>
                         <div className="gif-btn" onClick={() => {
                             if (gifsArr.length === 0) {
@@ -672,8 +689,24 @@ const UserChat: FC = () => {
         }
         } else {
             showMessInter = <div>
-                <p onClick={() => setFiles([])}>X</p>
-                {files.map((item, index) => <p key={index}>Файл {index + 1}</p>)}
+                <p onClick={() => {
+                    setFiles([])
+                    setOverStatus(false)
+                }}>X</p>
+                {files.map((item, index) => {
+                    let resultSrc: string = ''
+                    if (item.name.endsWith('.docx')) {
+                        resultSrc = '/images/7271005.png'
+                    } else if (item.name.endsWith('.xlsx')) {
+                        resultSrc = '/images/9496502.png'
+                    } else if (item.name.endsWith('.pdf')) {
+                        resultSrc = '/images/0xpj6n9hwyvcgr2cbtz4smr9l128iht4.png'
+                    }
+                    return <div key={index}>
+                        <img src={resultSrc} width={60} height={60}/>
+                        <p>{item.name}</p>
+                    </div>
+                })}
                 <input type="file" accept=".xlsx, .docx, .pdf" onChange={(e: ChangeEvent<HTMLInputElement>) => {
                     const resultFile = e.target.files?.[0];
                     if (resultFile) {
@@ -753,12 +786,22 @@ const UserChat: FC = () => {
 
             {photos}
             {showGifs}
+            <p onClick={async() => {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        const resultLocation = `${position.coords.latitude} ${position.coords.longitude}`
+                        sendMess('geopos', resultLocation, imageBase64, videoFile, messages, editMess, trueEmail, setMessages, answMess, setAnswMess, setImageBase64, setVideoFile, setInputMess, setOverStatus, setFiles, files, succesSend, trueParamEmail, backUpMess, setEditMess, setProcessSendMess)
+                    }
+                )
+            }}>Геолокация</p>
             {videoFile ? <div>
                 <p onClick={() => setVideoFile(null)}>X</p>
                 <h3>{videoFile.type === 'video' ? 'Видеофайл' : 'Файл'}</h3>
                 {processSendMess === false ? <SendBtn sendMess={sendMess} editMess={editMess} inputMess={videoFile.file.name} type='video' imageBase64={imageBase64} messages={messages} setEditMess={setEditMess} trueEmail={trueEmail} trueParamEmail={trueParamEmail} setAnswMess={setAnswMess} setImageBase64={setImageBase64} setVideoFile={setVideoFile} setInputMess={setInputMess} videoFile={videoFile} setMessages={setMessages} setProcessSendMess={setProcessSendMess} backUpMess={backUpMess} succesSend={succesSend} answMess={answMess} setOverStatus={setOverStatus} files={files} setFiles={setFiles}/> : <ClipLoader/>}
             </div> : null}
             {showMessInter}
+            {preview !== '' ? <img src={preview} width={200} height={200}/> : null}
+            {geoLocation ? <Geopos geoLocation={geoLocation} trueParamEmail={trueParamEmail} setGeoLocation={setGeoLocation}/> : null}
         </div>
     )
 }

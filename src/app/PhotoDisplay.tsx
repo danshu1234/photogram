@@ -29,39 +29,53 @@ const PhotoDisplay: FC<PropsPhotoDisplay> = (props) => {
     const likeUnlikePhoto = async () => {
         const { id, trueEmail, userEmail } = props;
         if (!props.likeUrl.includes('сердце')) {
-            await fetch('http://localhost:4000/photos/like/this/photo', {
-                method: "PATCH",
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ id }),
-                credentials: 'include',
-            });
-            await fetch('http://localhost:4000/users-controller/new/notif', {
-                method: "PATCH",
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ userEmail, photoId: id, type: 'photo' }),
-                credentials: 'include',
-            });
             props.setPhotos(props.photos.map(el =>
                 el.id === id ? { ...el, likes: [...el.likes, trueEmail] } : el
-            ));
-        } else {
-            await fetch('http://localhost:4000/photos/unlike/photo', {
+            ))
+            const likePhoto = await fetch('http://localhost:4000/photos/like/this/photo', {
                 method: "PATCH",
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({ id }),
                 credentials: 'include',
-            });
-            const findPhoto = props.photos.find(el => el.id === id);
-            const filteredLikes = findPhoto?.likes.filter(el => el !== trueEmail) || [];
+            })
+            const resultLikePhoto = await likePhoto.text()
+            if (resultLikePhoto !== 'OK') {
+                props.setPhotos(props.photos.map(el =>
+                    el.id === id ? { ...el, likes: el.likes.filter(element => element !== trueEmail) } : el
+                ))               
+            }
+            if (props.userEmail !== trueEmail) {
+                await fetch('http://localhost:4000/users-controller/new/notif', {
+                    method: "PATCH",
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ userEmail, photoId: id, type: 'photo' }),
+                    credentials: 'include',
+                })
+            }
+        } else {
+            const findPhoto = props.photos.find(el => el.id === id)
+            const filteredLikes = findPhoto?.likes.filter(el => el !== trueEmail) || []
             props.setPhotos(props.photos.map(el =>
                 el.id === id ? { ...el, likes: filteredLikes } : el
-            ));
+            ))
+            const unlikePhoto = await fetch('http://localhost:4000/photos/unlike/photo', {
+                method: "PATCH",
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ id }),
+                credentials: 'include',
+            })
+            const resultUnlikePhoto = await unlikePhoto.text()
+            if (resultUnlikePhoto !== 'OK') {
+                props.setPhotos(props.photos.map(el =>
+                    el.id === id ? { ...el, likes: [...el.likes, trueEmail] } : el
+                ))
+            }
         }
     };
 

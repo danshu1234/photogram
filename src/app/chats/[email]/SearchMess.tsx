@@ -14,8 +14,8 @@ const SearchMess: FC <SearchMessProps> = (props) => {
 
     return (
         <div>
-            <input placeholder="Сообщение" onChange={((e: ChangeEvent<HTMLInputElement>) => props.setMessFindInput(e.target.value))}/>
-            <p onClick={() => {
+            <input placeholder="Поиск сообщения" onChange={((e: ChangeEvent<HTMLInputElement>) => props.setMessFindInput(e.target.value))}/>
+            {props.messFindInput !== '' ? <p onClick={() => {
                 const textIncludesMess = props.messages?.filter(el => el.typeMess === 'text' && el.text.includes(props.messFindInput))
                 if (textIncludesMess && textIncludesMess?.length !== 0) {
                     const resultTextIncludesMess = textIncludesMess.map(el => {
@@ -29,7 +29,7 @@ const SearchMess: FC <SearchMessProps> = (props) => {
                 } else {
                     props.setMessFind([])
                 }
-            }}>Найти</p>
+            }}>Найти</p> : null}
         </div>
     )
 }

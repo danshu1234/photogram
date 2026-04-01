@@ -19,7 +19,12 @@ const sendMess = async (type: string, inputMess: string, imageBase64: SendPhoto[
             }
             const decodePrivateKey = decodeBase64(resultPrivateKey)
             const encoder = new TextEncoder()
-            const messageBytes = encoder.encode(inputMess)
+            let messageBytes: any = ''
+            if (!fileName) {
+                messageBytes = encoder.encode(inputMess)
+            } else {
+                messageBytes = encoder.encode(fileName)
+            }
             const publicKeys = await fetch(`http://localhost:4000/users-controller/public/keys/${trueParamEmail}`, {
                 method: "GET",
                 credentials: 'include',
@@ -52,6 +57,47 @@ const sendMess = async (type: string, inputMess: string, imageBase64: SendPhoto[
             const resultTextForUser = encryptMess(resultPublicKeys.userPublicKeys, messageBytes, decodePrivateKey, encPublicKey)
             const resultTextForMe = encryptMess(resultPublicKeys.myPublicKeys, messageBytes, decodePrivateKey, encPublicKey)
             const videoId = uuidv4()
+            let previewVideo: string | undefined = undefined
+            if (videoFile) {
+                const preview = new Promise((resolve, reject) => {
+                    const video = document.createElement('video');
+                    video.preload = 'metadata';
+                    
+                    const videoUrl = URL.createObjectURL(videoFile.file);
+                    video.src = videoUrl;
+                    
+                    video.onloadedmetadata = () => {
+                      video.currentTime = Math.min(1, video.duration);
+                    };
+            
+                    video.onseeked = () => {
+                        const canvas = document.createElement('canvas');
+                        canvas.width = video.videoWidth;
+                        canvas.height = video.videoHeight;
+                        const ctx = canvas.getContext('2d');
+                        if (ctx) {
+                          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                        
+                          const previewUrl = canvas.toDataURL('image/jpeg', 0.8);
+                        
+                          URL.revokeObjectURL(videoUrl);
+                          video.remove();
+                        
+                          resolve(previewUrl);
+                        } else {
+                          reject(new Error('Не удалось создать контекст canvas'));
+                        }
+                    }
+                    video.onerror = (error) => {
+                      URL.revokeObjectURL(videoUrl);
+                      reject(error);
+                    };
+                });
+                const resultPreview = await preview
+                if (typeof resultPreview === 'string') {
+                    previewVideo = resultPreview
+                }
+            }
             const messRealCount = await fetch('http://localhost:4000/users-controller/mess/length', {
                 method: "POST",
                 headers: {
@@ -66,7 +112,7 @@ const sendMess = async (type: string, inputMess: string, imageBase64: SendPhoto[
                     if (editMess === '') {
                         const { formattedDate, messId } = getMessIdAndDate() 
                         let newMess: Message[] = []
-                        if (type === 'text' || type === 'voice') {
+                        if (type === 'text' || type === 'voice' || type === 'geopos') {
                             console.log('New messages: ')
                             console.log(messages)
                             const resultNewMess = [...messages, {user: trueEmail, text: inputMess, photos: imageBase64.map(el => {
@@ -111,7 +157,7 @@ const sendMess = async (type: string, inputMess: string, imageBase64: SendPhoto[
                             credentials: 'include',
                         })
                         const resultSendMess = await sendMess.json()
-                        console.log(`Result of the sending: ${resultSendMess}`)
+                        console.log(`Result of the sending: ${resultSendMess.status}`)
                         if (resultSendMess.status !== 'OK') {
                             const resultBackupMess = backUpMess(messages, messId)
                             setMessages(resultBackupMess)

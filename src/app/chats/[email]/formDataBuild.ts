@@ -1,7 +1,7 @@
 import EncryptMess from "../../../../server-for-photogram/src/MessEncryptInterface"
 import { SendPhoto } from "./page"
 
-const buildFormData = (imageBase64: SendPhoto[], videoFile: {file: File, type: string} | null, trueEmail: string, files: File[], inputMess: string | EncryptMess[], formattedDate: string, type: string, messId: string, trueParamEmail: string, answMess: string, videoId: string, file?: File, fileName?: string, resultTextForMe?: string | EncryptMess[]) => {
+const buildFormData = (imageBase64: SendPhoto[], videoFile: {file: File, type: string} | null, trueEmail: string, files: File[], inputMess: string | EncryptMess[], formattedDate: string, type: string, messId: string, trueParamEmail: string, answMess: string, videoId: string, file?: File, fileName?: string, resultTextForMe?: string | EncryptMess[], previewVideo?: string) => {
     const formData = new FormData()
     console.log(inputMess)
     if (imageBase64.length !== 0) {
@@ -15,20 +15,15 @@ const buildFormData = (imageBase64: SendPhoto[], videoFile: {file: File, type: s
     }
     formData.append('user', trueEmail)
     if (videoFile === null) {
-        if (files.length === 0) {
-            if (fileName) {
-                formData.append('text', fileName)
-            } else {
-                formData.append('text', JSON.stringify(inputMess))
-                formData.append('myText', JSON.stringify(resultTextForMe))
-            }
-        } else if (files.length !== 0 && fileName) {
-            formData.append('text', fileName)
-        }
+        formData.append('text', JSON.stringify(inputMess))
+        formData.append('myText', JSON.stringify(resultTextForMe))
     } else {
         if (type === 'video' && videoFile) {
             formData.append('text', videoFile.file.name)
         }
+    }
+    if (previewVideo) {
+        formData.append('previewVideo', previewVideo)
     }
     formData.append('date', formattedDate)
     formData.append('id', messId)

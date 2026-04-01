@@ -36,12 +36,23 @@ const CreatePhoto: FC<CreateProps> = (props) => {
         const year = date.getFullYear();
         const result = `${day}.${month}.${year}`;
 
+        const userPostNotifs = await fetch('http://localhost:4000/users-controller/user/get/notifs', {
+            method: "GET",
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            credentials: 'include',
+        })
+
+        const resultUserPostNotifs = await userPostNotifs.json()
+
         const formData = new FormData()
 
         if (photo !== null) {
             formData.append('photo', photo.file)
             formData.append('id', Date.now().toString())
             formData.append('date', result)
+            formData.append('userPostNotifs', JSON.stringify(resultUserPostNotifs))
         }
 
         const createPhoto = await fetch('http://localhost:4000/photos/create', {

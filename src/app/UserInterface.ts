@@ -1,5 +1,6 @@
 import Notif from "./NotifInterface"
 import Chat from "./Chat"
+import { KeyWord } from "../../server-for-photogram/src/PhotoSchema"
 
 interface UserInterface {
     code?: string,
@@ -21,6 +22,9 @@ interface UserInterface {
     permMess: string,
     birthday: string,
     savePosts: string[],
+    userNotifs: string[],
+    onlineStatus: {status: string, plat: string},
+    keyWords: KeyWord[],
 }
 
 export default UserInterface

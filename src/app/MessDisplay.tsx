@@ -24,6 +24,7 @@ interface MessDisplayProps{
     setInputMess: Function;
     setSucCopy: Function;
     setVideoMessId: Function;
+    setGeoLocation: Function;
 }
 
 const MessDisplay: FC <MessDisplayProps> = (props) => {
@@ -123,7 +124,15 @@ const MessDisplay: FC <MessDisplayProps> = (props) => {
                         }
                     }}>Видеозапись</p>
                 } else if (item.typeMess === 'file') {
-                    showMess = <p onClick={async() => {
+                    let resultSrc: string = ''
+                    if (item.text.endsWith('.docx')) {
+                        resultSrc = '/images/7271005.png'
+                    } else if (item.text.endsWith('.xlsx')) {
+                        resultSrc = '/images/9496502.png'
+                    } else if (item.text.endsWith('.pdf')) {
+                        resultSrc = '/images/0xpj6n9hwyvcgr2cbtz4smr9l128iht4.png'
+                    }
+                    showMess = <div onClick={async() => {
                         const messId = item.id
                         const file = await fetch('http://localhost:4000/users-controller/get/file', {
                             method: "POST",
@@ -140,7 +149,17 @@ const MessDisplay: FC <MessDisplayProps> = (props) => {
                         a.download = item.text; 
                         a.click();
                         URL.revokeObjectURL(url);
-                    }}>Файл</p>
+                    }}>
+                        <img src={resultSrc} width={90} height={80}/>
+                        <p>{item.text}</p>
+                    </div>
+                } else if (item.typeMess === 'geopos') {
+                    showMess = <p onClick={() => {
+                        const location = item.text.split(' ')
+                        const latitude = Number(location[0])
+                        const longitude = Number(location[1])
+                        props.setGeoLocation({latitude: latitude, longitude: longitude})
+                    }}>Геолокация</p>
                 }
 
                 let readStaus;

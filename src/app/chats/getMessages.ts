@@ -13,6 +13,7 @@ const getMessages = async (trueParamEmail: string, setPinMess: Function, setMess
         credentials: 'include',
     })
     const resultMess = await getMess.json()
+    console.log(resultMess)
     const getMessCount = await fetch('http://localhost:4000/users-controller/get/friend/mess/count', {
         method: "POST",
         headers: {
