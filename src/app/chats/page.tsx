@@ -20,10 +20,13 @@ import getMessIdAndDate from "../getMessIdAndDate";
 import nacl from "tweetnacl";
 import { decodeBase64 } from "tweetnacl-util";
 import encryptMess from "./encryptMess";
+import getNotifsMess from "../getNotifsMess";
+import CreateGroup from "./CreateGroup";
 
 interface MessageWithBonuce extends Message{
     origUser: string;
     origId: string;
+    origChatId: string;
 }
 
 const Chats: FC = () => {
@@ -35,6 +38,9 @@ const Chats: FC = () => {
     const { secretKey } = useCheckPrivateKey()
 
     const { trueEmail, setTrueEmail } = useGetEmail()
+    
+    const [allUsers, setAllUsers] = useState <UserInterface[]> ([])
+    const [createGroupChat, setCreateGroupChat] = useState <boolean> (false)
     const [shareMess, setShareMess] = useState<MessageWithBonuce | null>(null)
     const [basePerm, setBasePerm] = useState<string>('')
     const [changePerm, setChangePerm] = useState<string>('')
@@ -48,6 +54,13 @@ const Chats: FC = () => {
     let showChangePerm;
     let saveChangePermBtn;
     let shareMessage;
+    let createGroupInter;
+
+    if (createGroupChat) {
+        createGroupInter = <CreateGroup allUsers={allUsers} setCreateGroupChat={setCreateGroupChat}/>
+    } else {
+        createGroupInter = <p onClick={() => setCreateGroupChat(true)}>Создать чат</p>
+    }
 
     if (shareMess) {
         shareMessage = <div className={styles.shareMessage}>
@@ -125,6 +138,7 @@ const Chats: FC = () => {
                 credentials: 'include',
             })
             const resultChats = await chats.json()  
+            console.log(resultChats)
             if (resultChats.length !== 0) {
                 const resultMyChats = resultChats.map((el: any) => {
                     const resultMess = decryptMess(el.messages, trueEmail)
@@ -145,13 +159,13 @@ const Chats: FC = () => {
             }
         }
         if (resChats.length !== 0) {
-            const allUsers = await fetch('http://localhost:4000/users-controller/get/all/users')
-            const resultUsers = await allUsers.json()
             const finalChats = resChats.map((el: Chat) => {
-                const findUser = resultUsers.find((element: UserInterface) => element.email === el.user)
-                return {
-                    ...el,
-                    avatar: findUser.avatar,
+                const findUser = allUsers.find((element: UserInterface) => element.email === el.user)
+                if (findUser) {
+                    return {
+                        ...el,
+                        avatar: findUser.avatar
+                    }
                 }
             })
             const newChats = sortChats(finalChats)
@@ -162,7 +176,7 @@ const Chats: FC = () => {
     }
 
     const pinUnpinChat = async (user: string, pin: boolean) => {
-        const newChats = await fetch('http://localhost:4000/users-controller/pin/chat', {
+        await fetch('http://localhost:4000/users-controller/pin/chat', {
             method: "PATCH",
             headers: {
                 'Content-Type': 'application/json',
@@ -170,18 +184,20 @@ const Chats: FC = () => {
             body: JSON.stringify({ user, pin }),
             credentials: 'include',
         })
-        const resultChats = await newChats.json()
-        const allUsers = await fetch('http://localhost:4000/users-controller/get/all/users')
-        const resultUsers = await allUsers.json()
-        const finalChats = resultChats.map((el: Chat) => {
-            const findUser = resultUsers.find((element: UserInterface) => element.email === el.user)
-            return {
-                ...el,
-                avatar: findUser.avatar,
-            }
-        })
-        const resultNewChats = sortChats(finalChats)
-        setChats(resultNewChats)
+        if (chats) {
+            const newChats = chats.map(el => {
+                if (el.user === user) {
+                    return {
+                        ...el,
+                        pin: pin,
+                    }
+                } else {
+                    return el
+                }
+            })
+            const resultNewChats = sortChats(newChats)
+            setChats(resultNewChats)
+        }
     }
 
     const changeNotifs = async (notifs: boolean, user: string) => {
@@ -263,7 +279,7 @@ const Chats: FC = () => {
                             lastMess = <span>[Черновик]</span>
                         }
                         
-                        return <li key={index} className={`${styles.chatItem} ${item.pin ? styles.pinned : ''}`}>
+                        return <li key={index} className={`${styles.chatItem}`}>
                             <div>
                                 {item.avatar === '' ? 
                                     <div className={styles.avatarPlaceholder}>{item.user.charAt(0).toUpperCase()}</div> : 
@@ -322,6 +338,7 @@ const Chats: FC = () => {
                                             formData.set('per', shareMess.user)
                                             formData.append('origUser', shareMess.origUser)
                                             formData.append('origId', shareMess.origId)
+                                            formData.append('origChatId', shareMess.origChatId)
                                             const newChats = chats.map(el => {
                                                 if (el.user === item.user) {
                                                     return {
@@ -403,10 +420,10 @@ const Chats: FC = () => {
     }
 
     useEffect(() => {
-        if (trueEmail !== '') {
+        if (trueEmail !== '' && allUsers.length !== 0) {
             getChats()
         }
-    }, [trueEmail])
+    }, [trueEmail, allUsers])
 
     useEffect(() => {
         socket.on('connect', () => {
@@ -454,7 +471,7 @@ const Chats: FC = () => {
                     return prev
                 })
                 if (document.visibilityState !== 'visible') {
-                    getUserChats(user)
+                    getNotifsMess(user)
                 }
             } else if (message.type === 'onlineStatus') {
                 const userEmail = message.user
@@ -550,11 +567,20 @@ const Chats: FC = () => {
     }, [socketId, trueEmail])
 
     useEffect(() => {
+        const getAllUsers = async () => {
+            const allUsers = await fetch('http://localhost:4000/users-controller/get/all/users')
+            const resultUsers = await allUsers.json()
+            setAllUsers(resultUsers)
+        }
+        getAllUsers()
+    }, [])
+
+    useEffect(() => {
         console.log(deleteWarn)
     }, [deleteWarn])
     
     return (
-        <div className={styles.container}>
+        <div className={styles.container}>  
             <Call/>
             <div className={styles.header}>
                 {shareMessage}
@@ -568,6 +594,7 @@ const Chats: FC = () => {
                 <QRCodeSVG value={secretKey} size={256}/>
             </div> : <p onClick={() => setShowPrivateKey(true)}>Синхронизация сообщений</p>}
             {showChats}
+            {createGroupInter}
             {deleteWarn ? <div>
                 <p>Вы уверены, что хотите удалить чат?</p>
                 <p>Также удалить для {deleteWarn.friendEmail}</p>

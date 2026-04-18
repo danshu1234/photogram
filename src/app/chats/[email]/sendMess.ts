@@ -150,7 +150,12 @@ const sendMess = async (type: string, inputMess: string, imageBase64: SendPhoto[
                         setInputMess('')
                         setOverStatus(false)
                         setFiles([])
-                        const formData = buildFormData(imageBase64, videoFile, trueEmail, files, resultTextForUser, formattedDate, type, messId, trueParamEmail, answMess, videoId, file, fileName, resultTextForMe)
+                        let formData: any = ''
+                        if (type === 'text' || type === 'geopos') {
+                            formData = buildFormData(imageBase64, videoFile, trueEmail, files, resultTextForUser, formattedDate, type, messId, trueParamEmail, answMess, videoId, file, fileName, resultTextForMe)
+                        } else if (type === 'voice') {
+                            formData = buildFormData(imageBase64, videoFile, trueEmail, files, inputMess, formattedDate, type, messId, trueParamEmail, answMess, videoId, file, fileName, resultTextForMe)
+                        }
                         const sendMess = await fetch('http://localhost:4000/users-controller/new/mess', {
                             method: "PATCH",
                             body: formData,
@@ -171,12 +176,14 @@ const sendMess = async (type: string, inputMess: string, imageBase64: SendPhoto[
                         }
                     } else {
                         const per = ''
+                        const text = JSON.stringify(resultTextForUser)
+                        const myText = JSON.stringify(resultTextForMe)
                         await fetch('http://localhost:4000/users-controller/edit/mess', {
                             method: "PATCH",
                             headers: {
                                 'Content-Type': 'application/json',
                             },
-                            body: JSON.stringify({ trueParamEmail, editMess, inputMess, per }),
+                            body: JSON.stringify({ trueParamEmail, editMess, inputMess, per, text, myText }),
                             credentials: 'include',
                         })
                         const newMess = messages.map(el => {

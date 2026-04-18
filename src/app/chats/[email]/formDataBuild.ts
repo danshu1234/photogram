@@ -15,8 +15,13 @@ const buildFormData = (imageBase64: SendPhoto[], videoFile: {file: File, type: s
     }
     formData.append('user', trueEmail)
     if (videoFile === null) {
-        formData.append('text', JSON.stringify(inputMess))
-        formData.append('myText', JSON.stringify(resultTextForMe))
+        if (type !== 'voice') {
+            formData.append('text', JSON.stringify(inputMess))
+            formData.append('myText', JSON.stringify(resultTextForMe))
+        } else if (type === 'voice' && typeof inputMess === 'string') {
+            formData.append('text', inputMess)
+            formData.append('myText', JSON.stringify(resultTextForMe))
+        }
     } else {
         if (type === 'video' && videoFile) {
             formData.append('text', videoFile.file.name)

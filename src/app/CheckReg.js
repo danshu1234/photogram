@@ -30,6 +30,7 @@ const useCheckReg = () => {
                             const resultNewAccessToken = await getNewAccessToken.json()
                             localStorage.setItem('photogram-enter-refresh', resultNewAccessToken.refreshToken)
                             setIsCheck(true)
+                            window.location.reload()
                         } else {
                             localStorage.removeItem('photogram-enter-refresh')
                             window.location.href = '/enter'

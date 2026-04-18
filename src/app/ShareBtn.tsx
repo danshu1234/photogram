@@ -13,6 +13,7 @@ interface ShareBtnProps{
     email: string;
     user: string;
     trueParamEmail: string;
+    chatId: string;
 }
 
 const ShareBtn: FC <ShareBtnProps> = (props) => {
@@ -30,6 +31,7 @@ const ShareBtn: FC <ShareBtnProps> = (props) => {
                 edit: false,
                 typeMess: props.typeMess,
                 per: props.user,
+                origChatId: props.chatId,
                 origId: props.id,
                 origUser: props.trueParamEmail,
             }
@@ -44,6 +46,7 @@ const ShareBtn: FC <ShareBtnProps> = (props) => {
                 edit: false,
                 typeMess: props.typeMess,
                 per: props.per,
+                origChatId: props.chatId,
                 origId: props.id,
                 origUser: props.trueParamEmail,
             }

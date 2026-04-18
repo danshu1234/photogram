@@ -20,6 +20,7 @@ import exitAcc from "../exitAcc";
 import Call from "../Call";
 import useOnlineStatus from "../useOnlineStatus"
 import useCheckPrivateKey from "../useCheckPrivateKey";
+import getNotifsMess from "../getNotifsMess"
 
 export default function Home() {
 
@@ -36,7 +37,7 @@ export default function Home() {
   }
 
   const { isCheck } = useCheckReg()
-  const { trueEmail } = useGetEmail()
+  const { trueEmail, setTrueEmail } = useGetEmail()
 
   const {} = useOnlineStatus()  
   const {} = useCheckPrivateKey()
@@ -248,7 +249,10 @@ export default function Home() {
       if (message.type === 'message') {
         const user = message.user
           if (document.visibilityState !== 'visible') {
-            getUserChats(user)
+            setTrueEmail(prevTrueEmail => {
+              getNotifsMess(user)
+              return prevTrueEmail
+            })
           }
         setMessCount(prev => prev + 1)
       } else if (message.type === 'onlineStatus') {

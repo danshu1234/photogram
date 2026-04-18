@@ -25,6 +25,7 @@ interface MessDisplayProps{
     setSucCopy: Function;
     setVideoMessId: Function;
     setGeoLocation: Function;
+    chatId: string;
 }
 
 const MessDisplay: FC <MessDisplayProps> = (props) => {
@@ -311,7 +312,7 @@ const MessDisplay: FC <MessDisplayProps> = (props) => {
                                         </button>
                                     )}
 
-                                    {item.per === '' ? <ShareBtn text={item.text} date={item.date} id={item.id} typeMess={item.typeMess} per={item.per} email={props.email} user={item.user} trueParamEmail={trueParamEmail}/> : null}
+                                    {item.per === '' ? <ShareBtn text={item.text} date={item.date} id={item.id} typeMess={item.typeMess} per={item.per} email={props.email} user={item.user} trueParamEmail={trueParamEmail} chatId={props.chatId}/> : null}
                           
                                     {item.typeMess === 'text' && item.text !== '' && (
                                         <button className="control-btn copy-btn" onClick={async() => {

@@ -1,6 +1,6 @@
 'use client'
 
-import { ChangeEvent, FC, useEffect, useState } from "react"
+import { ChangeEvent, FC, useEffect, useRef, useState } from "react"
 import useGetTrueParamEmail from "@/app/useGetTrueParamEmail"
 import useGetEmail from "@/app/useGetEmail"
 import { Message, PhotoMess } from "@/app/Chat"
@@ -31,6 +31,7 @@ import SearchMess from "./SearchMess"
 import decryptMess from "../decrpytMess"
 import useCheckPrivateKey from "@/app/useCheckPrivateKey"
 import Geopos from "./Geopos"
+import { useStopwatch } from 'react-timer-hook';
 
 
 export interface SendPhoto{
@@ -41,6 +42,10 @@ export interface SendPhoto{
 const UserChat: FC = () => {
     
     const { startRecording, stopRecording, mediaBlobUrl } = useReactMediaRecorder({audio: true})
+
+    const { seconds, minutes, isRunning, start, pause, reset } = useStopwatch({ autoStart: false });
+
+    const ref = useRef <HTMLDivElement> (null)
 
     const router = useRouter()
     
@@ -55,6 +60,8 @@ const UserChat: FC = () => {
     const { trueEmail, setTrueEmail } = useGetEmail()
     const { trueParamEmail, setTrueParamEmail } = useGetTrueParamEmail()
 
+    const [timerVoice, setTimerVoice] = useState <boolean> (false)
+    const [chatId, setChatId] = useState <string> ('')
     const [geoLocation, setGeoLocation] = useState <{latitude: number, longitude: number} | null> (null)
     const [preview, setPreview] = useState <any> ('')
     const [messFind, setMessFind] = useState <{id: string, text: string, date: string}[] | null> (null)
@@ -138,6 +145,19 @@ const UserChat: FC = () => {
         }
     }
 
+    const getChatId = async () => {
+        const chatUserId = await fetch('http://localhost:4000/users-controller/chat/id', {
+            method: "POST",
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ trueParamEmail }),
+            credentials: 'include',
+        })
+        const resultChatUserId = await chatUserId.text()
+        setChatId(resultChatUserId)
+    }
+
     const getSaveInput = () => {
         const thisUserInput = localStorage.getItem(trueParamEmail)
         if (thisUserInput) {
@@ -173,7 +193,7 @@ const UserChat: FC = () => {
         if (messages.length === 0) {
             showMess = <div className="empty-chat"><h2>Этот чат пока пуст</h2></div>
         } else if (messages.length !== 0) {
-            showMess = <MessDisplay messages={messages} email={trueEmail} trueParamEmail={trueParamEmail} setMessages={setMessages} setAnswMess={setAnswMess} setEditMess={setEditMess} setInputMess={setInputMess} setSucCopy={setSucCopy} setVideoMessId={setVideoMessId} pinMess={pinMess} setPinMess={setPinMess} setGeoLocation={setGeoLocation}/>
+            showMess = <MessDisplay messages={messages} email={trueEmail} trueParamEmail={trueParamEmail} setMessages={setMessages} setAnswMess={setAnswMess} setEditMess={setEditMess} setInputMess={setInputMess} setSucCopy={setSucCopy} setVideoMessId={setVideoMessId} pinMess={pinMess} setPinMess={setPinMess} setGeoLocation={setGeoLocation} chatId={chatId}/>
         }
     } else {
         showMess = <div className="loading-chat"><h2>Загрузка...</h2></div>
@@ -345,8 +365,19 @@ const UserChat: FC = () => {
             getUserPermAndSubs()
             zeroMess(trueParamEmail)
             openChat()
+            getChatId()
         }
     }, [trueParamEmail, trueEmail, secretKey])
+
+    useEffect(() => {
+        if (messages) {
+            if (ref) {
+                if (ref.current) {
+                    ref.current.scrollTop = ref.current.scrollHeight
+                }
+            }
+        }
+    }, [messages])
 
     useEffect(() => {
         if (mediaBlobUrl !== undefined) {
@@ -420,7 +451,10 @@ const UserChat: FC = () => {
                 })
                 const user = message.user
                 if (document.visibilityState !== 'visible') {
-                    getUserChats(user)
+                    setTrueEmail(prevTrueEmail => {
+                        getUserChats(prevTrueEmail, user)
+                        return prevTrueEmail
+                    })
                 }
                 const userSocket = message.socketId
                 await fetch(`http://localhost:4000/users-controller/zero/mess/count/${userSocket}`)
@@ -465,7 +499,11 @@ const UserChat: FC = () => {
                                     controls: false,
                                 }
                             })
-                            setMessages(myMess)
+                            setTrueEmail(prevTrueEmail => {
+                                const resultMess = decryptMess(myMess, prevTrueEmail)
+                                setMessages(resultMess)
+                                return prevTrueEmail
+                            })
                         }
                         return prev
                     })
@@ -648,6 +686,8 @@ const UserChat: FC = () => {
                         }}>🎬</div>
                         {startStop === false ? 
                             <div className="record-btn" onClick={async() => {
+                                setTimerVoice(true)
+                                reset()
                                 startRecording()
                                 setStartStop(true)
                                 await fetch('http://localhost:4000/users-controller/start/voice', {
@@ -660,6 +700,8 @@ const UserChat: FC = () => {
                                 })
                             }}>🎤</div> : 
                             <div className="stop-record-btn" onClick={async() => {
+                                setTimerVoice(false)
+                                pause()
                                 setStartStop(false)
                                 stopRecording()
                                 await fetch('http://localhost:4000/users-controller/stop/voice', {
@@ -779,8 +821,10 @@ const UserChat: FC = () => {
                     {messFind.map((item, index) => <li key={index} onClick={() => scrollToMessage(item.id)}><div><p>{item.text}</p><p>{item.date}</p></div></li>)}
                 </ul> : <p>Ничего не найдено</p>}
             </div> : null}
+
+            {timerVoice ? <p>{minutes} мин. {seconds} сек.</p> : null}
             
-            <div id="messages-container" className="messages-container">
+            <div id="messages-container" className="messages-container" ref={ref}>
                 {showMess}
             </div>
 

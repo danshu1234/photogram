@@ -21,13 +21,14 @@ export interface Message{
 }
 
 interface Chat{
+    id: string;
     user: string;
     messages: Message[];
-    messCount: number;
     avatar: string;
+    onlineStatus: {status: string, plat: string};
+    messCount: number;
     pin: boolean;
     notifs: boolean;
-    onlineStatus: {status: string, plat: string};
 }
 
 export default Chat
