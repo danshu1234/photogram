@@ -7,7 +7,7 @@ import { decodeBase64, encodeBase64 } from "tweetnacl-util";
 import nacl from "tweetnacl";
 import encryptMess from "../encryptMess";
 
-const sendMess = async (type: string, inputMess: string, imageBase64: SendPhoto[], videoFile: {file: File, type: string} | null, messages: Message[] | null, editMess: string, trueEmail: string, setMessages: Function, answMess: string, setAnswMess: Function, setImageBase64: Function, setVideoFile: Function, setInputMess: Function, setOverStatus: Function, setFiles: Function, files: File[], succesSend: Function, trueParamEmail: string, backUpMess: Function, setEditMess: Function, setProcessSendMess: Function, fileName?: string, file?: File) => {
+const sendMess = async (type: string, inputMess: string, imageBase64: SendPhoto[], videoFile: {file: File, type: string} | null, messages: Message[] | null, editMess: string, trueEmail: string, setMessages: Function | null, answMess: string, setAnswMess: Function | null, setImageBase64: Function | null, setVideoFile: Function | null, setInputMess: Function | null, setOverStatus: Function | null, setFiles: Function | null, files: File[], succesSend: Function | null, trueParamEmail: string, backUpMess: Function | null, setEditMess: Function | null, setProcessSendMess: Function | null, usersChat: string[], groupName?: string, fileName?: string, file?: File) => {
     const isText = inputMess !== ''
     const isPhotos = imageBase64.length !== 0
     if ((isText && isPhotos) || (isText && !isPhotos) || (!isText && isPhotos) || (!isPhotos && videoFile) || (!isPhotos && !videoFile && files.length !== 0) || fileName) {
@@ -25,15 +25,21 @@ const sendMess = async (type: string, inputMess: string, imageBase64: SendPhoto[
             } else {
                 messageBytes = encoder.encode(fileName)
             }
-            const publicKeys = await fetch(`http://localhost:4000/users-controller/public/keys/${trueParamEmail}`, {
-                method: "GET",
+            const publicKeys = await fetch('http://localhost:4000/users-controller/public/keys', {
+                method: "POST",
+                headers: {
+                    'Content-Type': 'application/json',
+                }, 
+                body: JSON.stringify({ usersChat }),
                 credentials: 'include',
             })
             const resultPublicKeys = await publicKeys.json()
+            console.log('Keys: ')
+            console.log(resultPublicKeys)
+            const myPublicKeys = resultPublicKeys.find((el: any) => el.user === trueEmail)
             const testKeyPair = nacl.box.keyPair()
             let encPublicKey: string = ''
-            for (let myPublicKey of resultPublicKeys.myPublicKeys) {
-                console.log(myPublicKey)
+            for (let myPublicKey of myPublicKeys.publicKeys) {
                 const message = new TextEncoder().encode("test")
                 const testNonce = nacl.randomBytes(nacl.box.nonceLength) 
                 const encrypted = nacl.box(
@@ -54,8 +60,13 @@ const sendMess = async (type: string, inputMess: string, imageBase64: SendPhoto[
                     break
                 }
             }
-            const resultTextForUser = encryptMess(resultPublicKeys.userPublicKeys, messageBytes, decodePrivateKey, encPublicKey)
-            const resultTextForMe = encryptMess(resultPublicKeys.myPublicKeys, messageBytes, decodePrivateKey, encPublicKey)
+            const resultText = resultPublicKeys.map((el: any) => {
+                const resultUserText = encryptMess(el.publicKeys, messageBytes, decodePrivateKey, encPublicKey)
+                return {
+                    user: el.user,
+                    message: resultUserText,
+                }
+            })
             const videoId = uuidv4()
             let previewVideo: string | undefined = undefined
             if (videoFile) {
@@ -107,6 +118,8 @@ const sendMess = async (type: string, inputMess: string, imageBase64: SendPhoto[
                 credentials: 'include',      
             })
             const resultMessRealCount = await messRealCount.json()
+            console.log('Mess count: ')
+            console.log(resultMessRealCount)
             if (resultMessRealCount !== 0) {
                 if (messages) {
                     if (editMess === '') {
@@ -122,39 +135,47 @@ const sendMess = async (type: string, inputMess: string, imageBase64: SendPhoto[
                                 }
                             }), date: formattedDate, id: messId, ans: answMess, edit: false, typeMess: type, per: '', controls: false, pin: false, read: false, sending: true}]
                             newMess = resultNewMess
-                            setMessages(resultNewMess)
+                            if (setMessages) {
+                                setMessages(resultNewMess)
+                            }
                         } else {
-                            setMessages((prev: Message[]) => {
-                                if (prev) {
-                                    if (fileName) {
-                                        const resultNewMess = [...prev, {user: trueEmail, text: fileName, photos: [], date: formattedDate, id: messId, ans: answMess, edit: false, typeMess: type, per: '', controls: false, pin: false, read: false, sending: true}] 
-                                        newMess = resultNewMess
-                                        return resultNewMess
-                                    } else {
-                                        if (videoFile) {
-                                            const resultNewMess = [...prev, {user: trueEmail, text: videoId, photos: [], date: formattedDate, id: messId, ans: answMess, edit: false, typeMess: type, per: '', controls: false, pin: false, read: false, sending: true}] 
+                            if (setMessages) {
+                                setMessages((prev: Message[]) => {
+                                    if (prev) {
+                                        if (fileName) {
+                                            const resultNewMess = [...prev, {user: trueEmail, text: fileName, photos: [], date: formattedDate, id: messId, ans: answMess, edit: false, typeMess: type, per: '', controls: false, pin: false, read: false, sending: true}] 
                                             newMess = resultNewMess
                                             return resultNewMess
                                         } else {
-                                            return prev
+                                            if (videoFile) {
+                                                const resultNewMess = [...prev, {user: trueEmail, text: videoId, photos: [], date: formattedDate, id: messId, ans: answMess, edit: false, typeMess: type, per: '', controls: false, pin: false, read: false, sending: true}] 
+                                                newMess = resultNewMess
+                                                return resultNewMess
+                                            } else {
+                                                return prev
+                                            }
                                         }
+                                    } else {
+                                        return prev
                                     }
-                                } else {
-                                    return prev
-                                }
-                            })
+                                })
+                            }
                         }
-                        setAnswMess('')
-                        setImageBase64([])
-                        setVideoFile(null)
-                        setInputMess('')
-                        setOverStatus(false)
-                        setFiles([])
+                        if (setAnswMess) {
+                            setAnswMess('')
+                        }
+                        if (setImageBase64 && setVideoFile && setInputMess && setOverStatus && setFiles) {
+                            setImageBase64([])
+                            setVideoFile(null)
+                            setInputMess('')
+                            setOverStatus(false)
+                            setFiles([])
+                        }
                         let formData: any = ''
                         if (type === 'text' || type === 'geopos') {
-                            formData = buildFormData(imageBase64, videoFile, trueEmail, files, resultTextForUser, formattedDate, type, messId, trueParamEmail, answMess, videoId, file, fileName, resultTextForMe)
+                            formData = buildFormData(imageBase64, videoFile, trueEmail, files, resultText, formattedDate, type, messId, trueParamEmail, answMess, videoId, file, fileName)
                         } else if (type === 'voice') {
-                            formData = buildFormData(imageBase64, videoFile, trueEmail, files, inputMess, formattedDate, type, messId, trueParamEmail, answMess, videoId, file, fileName, resultTextForMe)
+                            formData = buildFormData(imageBase64, videoFile, trueEmail, files, inputMess, formattedDate, type, messId, trueParamEmail, answMess, videoId, file, fileName)
                         }
                         const sendMess = await fetch('http://localhost:4000/users-controller/new/mess', {
                             method: "PATCH",
@@ -164,26 +185,31 @@ const sendMess = async (type: string, inputMess: string, imageBase64: SendPhoto[
                         const resultSendMess = await sendMess.json()
                         console.log(`Result of the sending: ${resultSendMess.status}`)
                         if (resultSendMess.status !== 'OK') {
-                            const resultBackupMess = backUpMess(messages, messId)
-                            setMessages(resultBackupMess)
+                            if (backUpMess) {
+                                const resultBackupMess = backUpMess(messages, messId)
+                                if (setMessages) {
+                                    setMessages(resultBackupMess)
+                                }
+                            }
                             if (type === 'video') {
                                 alert('Превышен допустимый объем файлов')
                             } else {
                                 alert('Произошла ошибка при отправке сообщения')
                             }
                         } else {
-                            succesSend(newMess, messId)
+                            if (succesSend) {
+                                succesSend(newMess, messId)
+                            }
                         }
                     } else {
                         const per = ''
-                        const text = JSON.stringify(resultTextForUser)
-                        const myText = JSON.stringify(resultTextForMe)
+                        const text = JSON.stringify(resultText)
                         await fetch('http://localhost:4000/users-controller/edit/mess', {
                             method: "PATCH",
                             headers: {
                                 'Content-Type': 'application/json',
                             },
-                            body: JSON.stringify({ trueParamEmail, editMess, inputMess, per, text, myText }),
+                            body: JSON.stringify({ trueParamEmail, editMess, inputMess, per, text }),
                             credentials: 'include',
                         })
                         const newMess = messages.map(el => {
@@ -197,11 +223,15 @@ const sendMess = async (type: string, inputMess: string, imageBase64: SendPhoto[
                                 return el
                             }
                         })
-                        setMessages(newMess)
-                        setEditMess('')
-                        setImageBase64([])
-                        setProcessSendMess(false)
-                        setFiles([])
+                        if (setMessages) {
+                            setMessages(newMess)
+                        }
+                        if (setEditMess && setImageBase64 && setProcessSendMess && setFiles) {
+                            setEditMess('')
+                            setImageBase64([])
+                            setProcessSendMess(false)
+                            setFiles([])
+                        }
                     }                        
                 }
             } else {
@@ -216,14 +246,23 @@ const sendMess = async (type: string, inputMess: string, imageBase64: SendPhoto[
                             }
                         }), date: formattedDate, id: messId, ans: answMess, edit: false, typeMess: type, per: '', controls: false, pin: false, read: false, sending: true}]
                         newMess = resultNewMess
-                        setMessages(resultNewMess)
-                        setInputMess('')
+                        if (setMessages && setInputMess) {
+                            setInputMess('')
+                            setMessages(resultNewMess)
+                        }
                     } else {
                         const resultNewMess = [...messages, {user: trueEmail, text: inputMess, photos: [], date: formattedDate, id: messId, ans: answMess, edit: false, typeMess: 'video', per: '', controls: false, pin: false, read: false, sending: true}]
                         newMess = resultNewMess
-                        setMessages(resultNewMess)
+                        if (setMessages) {
+                            setMessages(resultNewMess)
+                        }
                     }
-                    const formData = buildFormData(imageBase64, videoFile, trueEmail, files, resultTextForUser, formattedDate, type, messId, trueParamEmail, answMess, videoId, file, fileName, resultTextForMe)
+                    const chatUsers: string[] = usersChat.filter(el => el !== trueEmail)
+                    const formData = buildFormData(imageBase64, videoFile, trueEmail, files, resultText, formattedDate, type, messId, trueParamEmail, answMess, videoId, file, fileName)
+                    formData.append('users', JSON.stringify(chatUsers))
+                    if (groupName) {
+                        formData.append('groupName', groupName)
+                    }
                     const firstMess = await fetch('http://localhost:4000/users-controller/new/chat', {
                         method: "PATCH",
                         body: formData,
@@ -231,27 +270,37 @@ const sendMess = async (type: string, inputMess: string, imageBase64: SendPhoto[
                     })
                     const resultFirstMess = await firstMess.json()
                     if (resultFirstMess.status !== 'OK') {
-                        const resultBackupMess = backUpMess(messages, messId)
-                        setMessages(resultBackupMess)
+                        if (backUpMess) {
+                            const resultBackupMess = backUpMess(messages, messId)
+                            if (setMessages) {
+                                setMessages(resultBackupMess)
+                            }
+                        }
                         if (type === 'video') {
                             alert('Превышен допустимый объем файлов')
                         } else {
                             alert('Произошла ошибка при отправке сообщения')
                         }
                     } else {
-                        succesSend(newMess, messId)
+                        if (succesSend) {
+                            succesSend(newMess, messId)
+                        }
                     }
                 }
             }
-            setImageBase64([])
-            setInputMess('')
-            setFiles([])
+            if (setImageBase64 && setInputMess && setFiles) {
+                setImageBase64([])
+                setInputMess('')
+                setFiles([])
+            }
         } catch (e) {
             console.log(e)
             alert('Превышен допустимый объем файлов')
-            setImageBase64([])
-            setInputMess('')
-            setFiles([])
+            if (setImageBase64 && setImageBase64 && setInputMess && setFiles) {
+                setImageBase64([])
+                setInputMess('')
+                setFiles([])
+            }
         }                   
     }
 }

@@ -194,6 +194,7 @@ const MessDisplay: FC <MessDisplayProps> = (props) => {
                     }}>
                         <div className="message-content">
                             {dateShow}
+                            {item.user !== email ? <p>{item.user}</p> : null}
                             {item.per !== '' && <div className="forwarded-from">Переслано от {item.per}</div>}
                             {item.ans && <div className="reply-preview">{item.ans}</div>}
                             

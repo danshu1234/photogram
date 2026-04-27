@@ -60,6 +60,8 @@ const UserChat: FC = () => {
     const { trueEmail, setTrueEmail } = useGetEmail()
     const { trueParamEmail, setTrueParamEmail } = useGetTrueParamEmail()
 
+    const [nameChat, setNameChat] = useState <string> ('')
+    const [usersChat, setUsersChat] = useState <string[]> ([])
     const [timerVoice, setTimerVoice] = useState <boolean> (false)
     const [chatId, setChatId] = useState <string> ('')
     const [geoLocation, setGeoLocation] = useState <{latitude: number, longitude: number} | null> (null)
@@ -94,6 +96,17 @@ const UserChat: FC = () => {
     let banBtn;
     let showGifs;
     let showVideoSend;
+    let chatName;
+
+    if (trueParamEmail.includes('@')) {
+        if (trueEmail === trueParamEmail) {
+            chatName = <h3 className="chat-user-name">Избранное</h3>
+        } else {
+            chatName = <h3 className="chat-user-name" onClick={() => window.location.href=`/${trueParamEmail}`}>{trueParamEmail}</h3>
+        }
+    } else {
+        chatName = <h3 className="chat-user-name">{nameChat}</h3>
+    }
 
     if (messages) {
         if (messages.length > 0) {
@@ -156,6 +169,30 @@ const UserChat: FC = () => {
         })
         const resultChatUserId = await chatUserId.text()
         setChatId(resultChatUserId)
+    }
+
+    const getNameChat = async () => {
+        const chatName = await fetch(`http://localhost:4000/users-controller/chat/name/${trueParamEmail}`)
+        const resultChatName = await chatName.text()
+        setNameChat(resultChatName)
+    }
+
+    const getUsersChat = async () => {
+        if (!trueParamEmail.includes('@')) {
+            const usersChat = await fetch('http://localhost:4000/users-controller/get/users/chat', {
+                method: "POST",
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ trueParamEmail }),
+                credentials: 'include',
+            })
+            const resultUsersChat = await usersChat.json()
+            setUsersChat(resultUsersChat)
+        } else {
+            const resultUsersChat = [trueEmail, trueParamEmail]
+            setUsersChat(resultUsersChat)
+        }
     }
 
     const getSaveInput = () => {
@@ -246,7 +283,7 @@ const UserChat: FC = () => {
 
     const sendFiles = async () => {
         for (let file of files) {
-            await sendMess('file', inputMess, imageBase64, videoFile, messages, editMess, trueEmail, setMessages, answMess, setAnswMess, setImageBase64, setVideoFile, setInputMess, setOverStatus, setFiles, files, succesSend, trueParamEmail, backUpMess, setEditMess, setProcessSendMess, file.name, file)
+            await sendMess('file', inputMess, imageBase64, videoFile, messages, editMess, trueEmail, setMessages, answMess, setAnswMess, setImageBase64, setVideoFile, setInputMess, setOverStatus, setFiles, files, succesSend, trueParamEmail, backUpMess, setEditMess, setProcessSendMess, usersChat, undefined, file.name, file)
         }
     }
 
@@ -318,7 +355,7 @@ const UserChat: FC = () => {
           if (event.key === 'Enter') {
             setVideoFile(prev => {
                 if (prev) {
-                    sendMess('video', inputMess, imageBase64, videoFile, messages, editMess, trueEmail, setMessages, answMess, setAnswMess, setImageBase64, setVideoFile, setInputMess, setOverStatus, setFiles, files, succesSend, trueParamEmail, backUpMess, setEditMess, setProcessSendMess)
+                    sendMess('video', inputMess, imageBase64, videoFile, messages, editMess, trueEmail, setMessages, answMess, setAnswMess, setImageBase64, setVideoFile, setInputMess, setOverStatus, setFiles, files, succesSend, trueParamEmail, backUpMess, setEditMess, setProcessSendMess, usersChat)
                     return prev
                 } else {
                     setFiles(prevFiles => {
@@ -326,7 +363,7 @@ const UserChat: FC = () => {
                             sendFiles()
                             return prevFiles
                         } else {
-                            sendMess('text', inputMess, imageBase64, videoFile, messages, editMess, trueEmail, setMessages, answMess, setAnswMess, setImageBase64, setVideoFile, setInputMess, setOverStatus, setFiles, files, succesSend, trueParamEmail, backUpMess, setEditMess, setProcessSendMess)
+                            sendMess('text', inputMess, imageBase64, videoFile, messages, editMess, trueEmail, setMessages, answMess, setAnswMess, setImageBase64, setVideoFile, setInputMess, setOverStatus, setFiles, files, succesSend, trueParamEmail, backUpMess, setEditMess, setProcessSendMess, usersChat)
                             return prevFiles
                         }
                     })
@@ -360,12 +397,18 @@ const UserChat: FC = () => {
     useEffect(() => {
         if (trueParamEmail !== '' && trueEmail !== '' && secretKey !== '') {
             getMessages(trueParamEmail, setPinMess, setMessages, trueEmail)
-            getBanArr()
+            if (trueParamEmail.includes('@')) {
+                getBanArr()
+            }
+            if (!trueParamEmail.includes('@')) {
+                getNameChat()
+            }
             getMyBanArr()
             getUserPermAndSubs()
             zeroMess(trueParamEmail)
             openChat()
             getChatId()
+            getUsersChat()
         }
     }, [trueParamEmail, trueEmail, secretKey])
 
@@ -396,7 +439,7 @@ const UserChat: FC = () => {
                 const base64String = await getBase64FromBlobUrl(mediaBlobUrl)
 
                 if (typeof base64String === 'string') {
-                    sendMess('voice', base64String, imageBase64, videoFile, messages, editMess, trueEmail, setMessages, answMess, setAnswMess, setImageBase64, setVideoFile, setInputMess, setOverStatus, setFiles, files, succesSend, trueParamEmail, backUpMess, setEditMess, setProcessSendMess)
+                    sendMess('voice', base64String, imageBase64, videoFile, messages, editMess, trueEmail, setMessages, answMess, setAnswMess, setImageBase64, setVideoFile, setInputMess, setOverStatus, setFiles, files, succesSend, trueParamEmail, backUpMess, setEditMess, setProcessSendMess, usersChat)
                 }
             }
             newVoiceMess()
@@ -410,15 +453,15 @@ const UserChat: FC = () => {
             }
         })
 
-        socket.on('replyMessage', async(message: {type: string, user: string, text: any, photos: PhotoMess[], date: string, id: string | string[], ans: string, socketId?: string, mess: Message[], typeMess: string, per: string}) => {
+        socket.on('replyMessage', async(message: {type: string, user: {email: string, name: string, sender: string}, text: any, photos: PhotoMess[], date: string, id: string | string[], ans: string, socketId?: string, mess: Message[] | string, typeMess: string, per: string}) => {
             if (message.type === 'message') {
                 setTrueParamEmail(prev => {
-                    if (prev === message.user) {
+                    if ((!message.user.email.includes('@') && prev === message.user.email) || (message.user.email.includes('@') && prev === message.user.sender)) {
                         setTrueEmail((prevTrueEmail: string) => {
                             setMessages(prevMess => {
                                 if (prevMess) {
                                     if (typeof message.id === 'string') {
-                                        const newMess = decryptMess([...prevMess, {user: message.user, text: message.text, id: message.id, photos: message.photos, date: message.date, typeMess: message.typeMess, ans: message.ans, controls: false, per: message.per, pin: false, read: false, sending: false}], prevTrueEmail)
+                                        const newMess = decryptMess([...prevMess, {user: message.user.sender, text: message.text, id: message.id, photos: message.photos, date: message.date, typeMess: message.typeMess, ans: message.ans, controls: false, per: message.per, pin: false, read: false, sending: false}], prevTrueEmail)
                                         console.log('New mess: ')
                                         console.log(newMess)
                                         return newMess
@@ -432,7 +475,7 @@ const UserChat: FC = () => {
                             return prevTrueEmail
                         })
                         const readMess = async () => {
-                            const targetEmail = message.user
+                            const targetEmail = message.user.email
                             await fetch('http://localhost:4000/users-controller/read/mess', {
                                 method: "POST",
                                 headers: {
@@ -461,7 +504,7 @@ const UserChat: FC = () => {
             } else if (message.type === 'typing') {
                 setTrueParamEmail(prev => {
                     setTrueEmail(prevTrueEmail => {
-                        if (message.user === prev && prevTrueEmail !== message.user) {
+                        if (message.user.email === prev && prevTrueEmail !== message.user.email) {
                             console.log('typing')
                             setTyping('Печатает...')
                         }
@@ -492,26 +535,38 @@ const UserChat: FC = () => {
             } else if (message.type === 'editMess') {
                 if (message.mess) {
                     setTrueParamEmail(prev => {
-                        if (prev === message.user) {
-                            const myMess = message.mess.map(el => {
-                                return {
-                                    ...el,
-                                    controls: false,
+                        setTrueEmail(prevTrueEmail => {
+                            setMessages(prevMessages => {
+                                if (prevMessages) {
+                                    const myMess = prevMessages.map(el => {
+                                        if (el.id === message.mess) {
+                                            return {
+                                                ...el,
+                                                text: message.text,
+                                                controls: false,
+                                            }
+                                        } else {
+                                            return {
+                                                ...el,
+                                                controls: false,
+                                            }
+                                        }
+                                    })
+                                    const resultMess = decryptMess(myMess, prevTrueEmail)
+                                    return resultMess
+                                } else {
+                                    return prevMessages
                                 }
                             })
-                            setTrueEmail(prevTrueEmail => {
-                                const resultMess = decryptMess(myMess, prevTrueEmail)
-                                setMessages(resultMess)
-                                return prevTrueEmail
-                            })
-                        }
+                            return prevTrueEmail
+                        })
                         return prev
                     })
                 }
             } else if (message.type === 'startVoice') {
                 setTrueParamEmail(prev => {
                     setTrueEmail(prevTrueEmail => {
-                        if (message.user === prev && prevTrueEmail !== message.user) {
+                        if (message.user.email === prev && prevTrueEmail !== message.user.email) {
                             console.log('typing')
                             setTyping('Записывает голосовое...')
                         }
@@ -521,7 +576,7 @@ const UserChat: FC = () => {
                 })
             } else if (message.type === 'stopVoice') {
                 setTrueParamEmail(prev => {
-                    if (prev === message.user) {
+                    if (prev === message.user.email) {
                         setTyping('')
                     }
                     return prev
@@ -539,7 +594,7 @@ const UserChat: FC = () => {
                 })
             } else if (message.type === 'openChat') {
                 setTrueParamEmail(prevTrueParamEmail => {
-                    if (prevTrueParamEmail === message.user) {
+                    if (prevTrueParamEmail === message.user.email) {
                         setMessages(prevMessages => {
                             if (prevMessages) {
                                 const resultMess = prevMessages.map(el => {
@@ -560,7 +615,7 @@ const UserChat: FC = () => {
     }, [])
     
     useEffect(() => {
-        if (trueParamEmail !== '') {
+        if (trueParamEmail !== '' && trueParamEmail.includes('@')) {
                 const getStatusOnline = async () => {
                 const getUserStatusOnline = await fetch(`http://localhost:4000/users-controller/get/status/online/${trueParamEmail}`)
                 const resultUserOnlineStatus = await getUserStatusOnline.json()
@@ -575,18 +630,6 @@ const UserChat: FC = () => {
         }
     }, [trueParamEmail])
 
-    useEffect(() => {
-        if (trueParamEmail !== '') {
-            const checkUser = async () => {
-                const checkThisUser = await fetch(`http://localhost:4000/users-controller/check/user/${trueParamEmail}`)
-                const resultCheckThisUser = await checkThisUser.text()
-                if (resultCheckThisUser === 'undefined') {
-                    router.back()
-                }
-            }
-            checkUser()
-        }
-    }, [trueParamEmail])
     
     useEffect(() => {
         console.log(messages)
@@ -610,9 +653,9 @@ const UserChat: FC = () => {
 
     if (videoFile === null) {
         if (files.length === 0) {
-            if (trueEmail !== '' && Array.isArray(usersBan) && mySubs !== null && userSubs !== null && userPermMess !== null) {
-            if (usersBan.includes(trueEmail) === false) {
-                if (userPermMess === 'Все' || (userPermMess === 'Только друзья' && mySubs.includes(trueParamEmail) && userSubs.includes(trueEmail))) {
+            if ((trueEmail !== '' && Array.isArray(usersBan) && mySubs !== null && userSubs !== null && userPermMess !== null) || !trueParamEmail.includes('@')) {
+            if (usersBan?.includes(trueEmail) === false || !trueParamEmail.includes('@')) {
+                if (userPermMess === 'Все' || (userPermMess === 'Только друзья' && mySubs?.includes(trueParamEmail) && userSubs?.includes(trueEmail)) || !trueParamEmail.includes('@')) {
                     showMessInter = <div className="message-input-container">
                     <div className="reply-indicator">
                         <p>{answMess}</p>
@@ -715,7 +758,7 @@ const UserChat: FC = () => {
                             }}>⏹️</div>
                         }
                         {showVideoSend}
-                        {processSendMess === false ? <SendBtn sendMess={sendMess} editMess={editMess} inputMess={inputMess} type='text' imageBase64={imageBase64} messages={messages} setEditMess={setEditMess} trueEmail={trueEmail} trueParamEmail={trueParamEmail} setAnswMess={setAnswMess} setImageBase64={setImageBase64} setVideoFile={setVideoFile} setInputMess={setInputMess} videoFile={videoFile} setMessages={setMessages} setProcessSendMess={setProcessSendMess} backUpMess={backUpMess} succesSend={succesSend} answMess={answMess} setOverStatus={setOverStatus} files={files} setFiles={setFiles}/> : <ClipLoader/>}
+                        {processSendMess === false ? <SendBtn sendMess={sendMess} editMess={editMess} inputMess={inputMess} type='text' imageBase64={imageBase64} messages={messages} setEditMess={setEditMess} trueEmail={trueEmail} trueParamEmail={trueParamEmail} setAnswMess={setAnswMess} setImageBase64={setImageBase64} setVideoFile={setVideoFile} setInputMess={setInputMess} videoFile={videoFile} setMessages={setMessages} setProcessSendMess={setProcessSendMess} backUpMess={backUpMess} succesSend={succesSend} answMess={answMess} setOverStatus={setOverStatus} files={files} setFiles={setFiles} usersChat={usersChat}/> : <ClipLoader/>}
                     </div>
                 </div>
                 } else {
@@ -773,9 +816,9 @@ const UserChat: FC = () => {
         <div className="chat-container">
             <Call/>
             <div className="chat-header">
-                {trueParamEmail === trueEmail ? <h3 className="chat-user-name">Избранное</h3> : <h3 className="chat-user-name" onClick={() => window.location.href=`/${trueParamEmail}`}>{trueParamEmail}</h3>}
+                {chatName}
                 {trueEmail !== trueParamEmail ? <button onClick={() => window.open(`/call/${trueParamEmail}`, '_blank')}>Позвонить</button> : null}
-                {trueEmail !== trueParamEmail ? <div className="online-status">
+                {(trueEmail !== trueParamEmail && trueParamEmail.includes('@')) ? <div className="online-status">
                     <span className={`status-dot ${onlineStatus === 'Online' ? 'online' : 'offline'}`}></span>
                     <span>{onlineStatus}</span>
                 </div> : null}
@@ -834,14 +877,14 @@ const UserChat: FC = () => {
                 navigator.geolocation.getCurrentPosition(
                     (position) => {
                         const resultLocation = `${position.coords.latitude} ${position.coords.longitude}`
-                        sendMess('geopos', resultLocation, imageBase64, videoFile, messages, editMess, trueEmail, setMessages, answMess, setAnswMess, setImageBase64, setVideoFile, setInputMess, setOverStatus, setFiles, files, succesSend, trueParamEmail, backUpMess, setEditMess, setProcessSendMess)
+                        sendMess('geopos', resultLocation, imageBase64, videoFile, messages, editMess, trueEmail, setMessages, answMess, setAnswMess, setImageBase64, setVideoFile, setInputMess, setOverStatus, setFiles, files, succesSend, trueParamEmail, backUpMess, setEditMess, setProcessSendMess, usersChat)
                     }
                 )
             }}>Геолокация</p>
             {videoFile ? <div>
                 <p onClick={() => setVideoFile(null)}>X</p>
                 <h3>{videoFile.type === 'video' ? 'Видеофайл' : 'Файл'}</h3>
-                {processSendMess === false ? <SendBtn sendMess={sendMess} editMess={editMess} inputMess={videoFile.file.name} type='video' imageBase64={imageBase64} messages={messages} setEditMess={setEditMess} trueEmail={trueEmail} trueParamEmail={trueParamEmail} setAnswMess={setAnswMess} setImageBase64={setImageBase64} setVideoFile={setVideoFile} setInputMess={setInputMess} videoFile={videoFile} setMessages={setMessages} setProcessSendMess={setProcessSendMess} backUpMess={backUpMess} succesSend={succesSend} answMess={answMess} setOverStatus={setOverStatus} files={files} setFiles={setFiles}/> : <ClipLoader/>}
+                {processSendMess === false ? <SendBtn sendMess={sendMess} editMess={editMess} inputMess={videoFile.file.name} type='video' imageBase64={imageBase64} messages={messages} setEditMess={setEditMess} trueEmail={trueEmail} trueParamEmail={trueParamEmail} setAnswMess={setAnswMess} setImageBase64={setImageBase64} setVideoFile={setVideoFile} setInputMess={setInputMess} videoFile={videoFile} setMessages={setMessages} setProcessSendMess={setProcessSendMess} backUpMess={backUpMess} succesSend={succesSend} answMess={answMess} setOverStatus={setOverStatus} files={files} setFiles={setFiles} usersChat={usersChat}/> : <ClipLoader/>}
             </div> : null}
             {showMessInter}
             {preview !== '' ? <img src={preview} width={200} height={200}/> : null}

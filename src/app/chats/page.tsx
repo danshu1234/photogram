@@ -57,7 +57,7 @@ const Chats: FC = () => {
     let createGroupInter;
 
     if (createGroupChat) {
-        createGroupInter = <CreateGroup allUsers={allUsers} setCreateGroupChat={setCreateGroupChat}/>
+        createGroupInter = <CreateGroup allUsers={allUsers} setCreateGroupChat={setCreateGroupChat} trueEmail={trueEmail}/>
     } else {
         createGroupInter = <p onClick={() => setCreateGroupChat(true)}>Создать чат</p>
     }
@@ -166,6 +166,11 @@ const Chats: FC = () => {
                         ...el,
                         avatar: findUser.avatar
                     }
+                } else {
+                    return {
+                        ...el,
+                        avatar: '',
+                    }
                 }
             })
             const newChats = sortChats(finalChats)
@@ -233,7 +238,25 @@ const Chats: FC = () => {
                     {chats.map((item, index) => {
                         let lastMess;
                         let showOnline;
+                        let chatName;
+                        let avatar;
                         const lastMessage = item.messages[item.messages.length - 1];
+
+                        if (item.users.length >= 3) {
+                            avatar = item.name?.charAt(0).toUpperCase()
+                        } else {
+                            avatar = item.user.charAt(0).toUpperCase()
+                        }
+
+                        if (item.users.length >= 3) {
+                            chatName = item.name
+                        } else {
+                            if (item.user === trueEmail) {
+                                chatName = 'Избранное'
+                            } else {
+                                chatName = item.user
+                            }
+                        }
 
                         if (item.onlineStatus.status === 'Online') {
                             if (item.onlineStatus.plat === 'desktop') {
@@ -282,7 +305,7 @@ const Chats: FC = () => {
                         return <li key={index} className={`${styles.chatItem}`}>
                             <div>
                                 {item.avatar === '' ? 
-                                    <div className={styles.avatarPlaceholder}>{item.user.charAt(0).toUpperCase()}</div> : 
+                                    <div className={styles.avatarPlaceholder}>{avatar}</div> : 
                                     <img src={item.avatar} className={styles.avatar} alt={item.user}/>
                                 }
                                 {showOnline}
@@ -292,7 +315,11 @@ const Chats: FC = () => {
                                     className={styles.userName}
                                     onClick={async() => {
                                         if (shareMess === null) {
-                                            window.location.href=`/chats/${item.user}`
+                                            if (item.users.length < 3) {
+                                                window.location.href=`/chats/${item.user}`
+                                            } else {
+                                                window.location.href=`/chats/${item.id}`
+                                            }
                                         } else {
                                             let resultPrivateKey: string = ''
                                             const privateKey = localStorage.getItem(`${trueEmail}PrivateKey`)
@@ -367,7 +394,7 @@ const Chats: FC = () => {
                                         }
                                     }}
                                 >
-                                    {item.user === trueEmail ? 'Избранное' : item.user}
+                                    {chatName}
                                 </h3>
                                 <div className={styles.lastMessage}>
                                     {lastMessage.user === trueEmail && <span className={styles.youLabel}>Вы:</span>}
@@ -439,11 +466,17 @@ const Chats: FC = () => {
                 const user = message.user
                 setTrueEmail((prev: any) => {
                     setChats((prevChats: any) => {
-                        const findThisChat = prevChats.find((el: Chat) => el.user === user)
+                        let findThisChat: any = ''
+                        if (!user.email.includes('@')) {
+                            findThisChat = prevChats.find((el: Chat) => el.user === user.email)
+                        } else {
+                            findThisChat = prevChats.find((el: Chat) => el.user === user.sender)
+                        }
                         if (findThisChat !== undefined) {
+                            console.log('Here')
                             const newChats = prevChats.map((el: any) => {
-                                if (el.user === user) {
-                                    const newMess = decryptMess([...el.messages, {user: message.user, text: message.text, id: message.id, photos: message.photos, date: message.date, typeMess: message.typeMess, ans: message.ans, controls: false, per: '', pin: false, read: false}], prev)
+                                if ((!user.email.includes('@') && el.user === user.email) || (user.email.includes('@') && el.user === user.sender)) {
+                                    const newMess = decryptMess([...el.messages, {user: message.user.name, text: message.text, id: message.id, photos: message.photos, date: message.date, typeMess: message.typeMess, ans: message.ans, controls: false, per: '', pin: false, read: false}], prev)
                                     return {
                                         ...el,
                                         messages: newMess,
@@ -471,7 +504,7 @@ const Chats: FC = () => {
                     return prev
                 })
                 if (document.visibilityState !== 'visible') {
-                    getNotifsMess(user)
+                    getUserChats('', user)
                 }
             } else if (message.type === 'onlineStatus') {
                 const userEmail = message.user
@@ -484,9 +517,10 @@ const Chats: FC = () => {
                 })
             } else if (message.type === 'delete') {
                 console.log('Delete a message')
+                console.log(message)
                 setChats((prevChats: any) => {
                         const newChats = prevChats?.map((el: any) => {
-                            if (el.user === message.user) {
+                            if ((!message.user.email.includes('@') && el.user === message.user.email) || (message.user.email.includes('@') && el.user === message.user.sender)) {
                                 const newMess = el.messages.map((element: any) => {
                                     if (message.id.includes(element.id)) {
                                         return false
@@ -517,6 +551,40 @@ const Chats: FC = () => {
                     })
                 } else if (message.type === 'typing') {
                     setTyping(message.user)
+                } else if (message.type === 'editMess') {
+                    setTrueEmail(prevTrueEmail => {
+                        setChats(prevChats => {
+                            if (prevChats) {
+                                const newChats = prevChats.map(el => {
+                                    if ((!message.user.email.includes('@') && el.user === message.user.email) || (message.user.email.includes('@') && el.user === message.user.sender)) {
+                                        const newMess = el.messages.map(element => {
+                                            if (element.id === message.mess) {
+                                                return {
+                                                    ...element,
+                                                    text: message.text,
+                                                }
+                                            } else {
+                                                return element
+                                            }
+                                        })
+                                        console.log('New messages: ')
+                                        console.log(newMess)
+                                        const resultNewMess = decryptMess(newMess, prevTrueEmail)
+                                        return {
+                                            ...el,
+                                            messages: resultNewMess,
+                                        }
+                                    } else {
+                                        return el
+                                    }
+                                })
+                                return newChats
+                            } else {
+                                return prevChats
+                            }
+                        })
+                        return prevTrueEmail
+                    })
                 }
             })
         }, [])
@@ -587,7 +655,7 @@ const Chats: FC = () => {
                 {showChangePerm}
             </div>
             <h3 onClick={() => window.location.href='/bot'}>AI-Chat</h3>
-            {chats ? <NameSearch allUsers={chats} type="chats"/> : null}
+            {chats ? <NameSearch allUsers={chats} type="chats" trueEmail={trueEmail}/> : null}
             {(showPrivateKey === true && secretKey) ? <div>
                 <p onClick={() => setShowPrivateKey(false)}>X</p>
                 <p>Отсканируйте QR код на мобильном устройстве для синхронизации сообщений</p>

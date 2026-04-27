@@ -29,6 +29,8 @@ interface Chat{
     messCount: number;
     pin: boolean;
     notifs: boolean;
+    name?: string;
+    users: string[];
 }
 
 export default Chat

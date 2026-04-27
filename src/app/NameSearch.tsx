@@ -7,7 +7,8 @@ interface NameSearchProps{
     allUsers: any[],
     type: string,
     usersGroup?: string[];
-    setUsersGroup?: Function
+    trueEmail?: string;
+    setUsersGroup?: Function;
 }
 
 const NameSearch: FC<NameSearchProps> = (props) => {
@@ -21,8 +22,8 @@ const NameSearch: FC<NameSearchProps> = (props) => {
             showUsers = <p className={styles.nameSearchEmpty}>Ничего не найдено</p>
         } else {
             showUsers = <ul className={styles.nameSearchList}>
-                {usersList.map((item, index) => (
-                  <li key={index}>
+                {usersList.map((item, index) => {
+                    return <li key={index}>
                     <p onClick={() => {
                         if (props.type === 'users') {
                             window.location.href=`${item.email}`
@@ -30,16 +31,25 @@ const NameSearch: FC<NameSearchProps> = (props) => {
                             window.location.href=`chats/${item.user}`
                         } else if (props.type === 'groupCreate') {
                             if (props.usersGroup && props.setUsersGroup) {
-                                const resultUsersGroup = [...props.usersGroup, item.email]
-                                props.setUsersGroup(resultUsersGroup)
+                                if (props.trueEmail !== item.email) {
+                                    console.log(props.usersGroup)
+                                    if (!props.usersGroup.includes(item.email)) {
+                                        const resultUsersGroup = [...props.usersGroup, item.email]
+                                        props.setUsersGroup(resultUsersGroup)
+                                    }
+                                }
                             }
                         }
                     }}>{(props.type === 'users' || props.type === 'groupCreate') ? item.email : item.user}</p>
-                  </li>
-                ))}
+                    </li>
+                })}
             </ul>
         }
     }
+    
+    useEffect(() => {
+        console.log(`Email: ${props.trueEmail}`)
+    }, [])
 
     useEffect(() => {
         if (nameInput === '') {

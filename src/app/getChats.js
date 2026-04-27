@@ -1,20 +1,19 @@
 import showNotification from "./ShowNotif"
 
 const getUserChats = async (emailUser, user) => {
-    const userChats = await fetch('http://localhost:4000/users-controller/get/chats', {
-        method: "GET",
+    const trueParamEmail = user.email
+    const notifStatus = await fetch('http://localhost:4000/users-controller/get/notif/status', {
+        method: "POST",
         headers: {
             'Content-Type': 'application/json',
         },
+        body: JSON.stringify({ trueParamEmail }),
         credentials: 'include',
     })
-    const resultChats = await userChats.json()
-    console.log(resultChats)
-    const findThisChat = resultChats[0]
-    const myStatusNotifs = findThisChat.notifs
-    if (myStatusNotifs === true) {
+    const reusltNotifStatus = await notifStatus.json()
+    if (reusltNotifStatus) {
         console.log('Новое сообщение')
-        showNotification('Новое сообщение', `Новое сообщение от ${user}`)
+        showNotification('Новое сообщение', `Новое сообщение от ${user.name}`)
     }
 }
 

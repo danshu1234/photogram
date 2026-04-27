@@ -29,6 +29,7 @@ export interface SendBtnProps{
     setOverStatus: Function;
     setFiles: Function;
     files: File[];
+    usersChat: string[];
     succesSend: Function;
     trueParamEmail: string;
     backUpMess: Function;
@@ -43,7 +44,7 @@ const SendBtn: FC <SendBtnProps> = (props) => {
     return (
         <button 
             className={`send-btn ${isActive ? 'active' : 'inactive'}`}
-            onClick={async() => props.sendMess(props.type, props.inputMess, props.imageBase64, props.videoFile, props.messages, props.editMess, props.trueEmail, props.setMessages, props.answMess, props.setAnswMess, props.setImageBase64, props.setVideoFile, props.setInputMess, props.setOverStatus, props.setFiles, props.files, props.succesSend, props.trueParamEmail, props.backUpMess, props.setEditMess, props.setProcessSendMess)}
+            onClick={async() => props.sendMess(props.type, props.inputMess, props.imageBase64, props.videoFile, props.messages, props.editMess, props.trueEmail, props.setMessages, props.answMess, props.setAnswMess, props.setImageBase64, props.setVideoFile, props.setInputMess, props.setOverStatus, props.setFiles, props.files, props.succesSend, props.trueParamEmail, props.backUpMess, props.setEditMess, props.setProcessSendMess, props.usersChat)}
             disabled={!isActive && props.editMess === ''}
         >
             {props.editMess ? '✏️' : '➤'}
