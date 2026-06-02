@@ -36,7 +36,7 @@ const CreateGroup: FC <CreateGroupProps> = (props) => {
             </ul>
             {(usersGroup.length > 1 && groupName !== '') ? <button onClick={() => {
                 const resultUsersGroup = [...usersGroup, props.trueEmail]
-                sendMess('text', 'Добро пожаловать в чат', [], null, [], '', props.trueEmail, null, '', null, null, null, null, null, null, [], null, '', null, null, null, resultUsersGroup, groupName)
+                sendMess('text', 'Добро пожаловать в чат', [], null, [], '', props.trueEmail, null, null, null, null, null, null, null, null, [], null, '', null, null, null, resultUsersGroup, groupName)
             }}>Создать чат</button> : null}
         </div>
     )

@@ -4,6 +4,7 @@ const getGifs = async (keyword?: string) => {
     if (!keyword) {
         const gifs = await fetch(`https://api.giphy.com/v1/gifs/trending?api_key=${giphyKey}&limit=${20}&rating=g`)
         const resultGifs = await gifs.json()
+        console.log('fwnjnfw')
         const finalGifs = resultGifs.data.map((el: any) => el.images.original.url)
         return finalGifs
     } else {

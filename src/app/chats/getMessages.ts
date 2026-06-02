@@ -22,7 +22,7 @@ const getMessages = async (trueParamEmail: string, setPinMess: Function, setMess
         body: JSON.stringify({ trueParamEmail }),
         credentials: 'include'
     })
-    const resultFriendMessCount = await getMessCount.json()
+    const resultFriendMessCount = await getMessCount.json() 
     const pinnedMess = resultMess.filter((el: any) => el.pin === true)
     if (pinnedMess.length !== 0) {
         const resultPinnesMess = pinnedMess.map((el: Message) => {
@@ -44,34 +44,34 @@ const getMessages = async (trueParamEmail: string, setPinMess: Function, setMess
             ...el,
             controls: false,
             sending: false,
+            emojies: false,
         }
     })
-    let resultMessages: any[] = []
-    if (myMess.length !== resultFriendMessCount) {
-        const readMess = myMess.slice(0, myMess.length - resultFriendMessCount).map((el: any) => {
-            return {
-                ...el, 
-                read: true,
+    let resultMessages: any[] = myMess.map((el: any) => {
+        return {
+            ...el,
+            read: [],
+        }
+    })
+    for (let item of resultFriendMessCount) {
+        const unreadCount = myMess.length - item.countMess
+        resultMessages = resultMessages.map((element, index) => {
+            if (index < unreadCount) {
+                return {
+                    ...element,
+                    read: [...element.read, {user: item.user, read: true}]
+                }
+            } else {
+                return {
+                    ...element,
+                    read: [...element.read, {user: item.user, read: false}]
+                }
             }
         })
-        const unreadMess = myMess.slice(readMess.length, myMess.length).map((el: any) => {
-            return {
-                ...el, 
-                read: false,
-            }
-        })
-        const resultMyMess = [...readMess, ...unreadMess]
-        resultMessages = resultMyMess
-    } else {
-        const resultMyMess = myMess.map((el: any) => {
-            return {
-                ...el, 
-                read: false,
-            }
-        })
-        resultMessages = resultMyMess
     }
     const resultMyMessages = decryptMess(resultMessages, trueEmail)
+    console.log('Messages: ')
+    console.log(resultMyMessages)
     setMessages(resultMyMessages.filter((el: Message) => el.text !== undefined))
 }
 

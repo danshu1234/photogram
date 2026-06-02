@@ -1,6 +1,6 @@
 'use client'
 
-import { ChangeEvent, FC, useEffect, useState } from "react"
+import { ChangeEvent, FC, useEffect, useRef, useState } from "react"
 import useGetEmail from "../useGetEmail"
 import Chat from "../Chat"
 import { io } from "socket.io-client";
@@ -22,6 +22,7 @@ import { decodeBase64 } from "tweetnacl-util";
 import encryptMess from "./encryptMess";
 import getNotifsMess from "../getNotifsMess";
 import CreateGroup from "./CreateGroup";
+import exitChat from "./[email]/LeaveChat";
 
 interface MessageWithBonuce extends Message{
     origUser: string;
@@ -49,6 +50,9 @@ const Chats: FC = () => {
     const [typing, setTyping] = useState <string> ('')
     const [sendMess, setSendMess] = useState <string> ('')
     const [showPrivateKey, setShowPrivateKey] = useState <boolean> (false)
+
+    const trueEmailRef = useRef(trueEmail)
+    const allUsersRef = useRef(allUsers)
 
     let showChats;
     let showChangePerm;
@@ -141,7 +145,7 @@ const Chats: FC = () => {
             console.log(resultChats)
             if (resultChats.length !== 0) {
                 const resultMyChats = resultChats.map((el: any) => {
-                    const resultMess = decryptMess(el.messages, trueEmail)
+                    const resultMess = decryptMess(el.messages, trueEmailRef.current)
                     const checkAllText = resultMess.every((element: any) => element.text === undefined)
                     if (checkAllText === true) {
                         return false
@@ -160,7 +164,7 @@ const Chats: FC = () => {
         }
         if (resChats.length !== 0) {
             const finalChats = resChats.map((el: Chat) => {
-                const findUser = allUsers.find((element: UserInterface) => element.email === el.user)
+                const findUser = allUsersRef.current.find((element: UserInterface) => element.email === el.user)
                 if (findUser) {
                     return {
                         ...el,
@@ -169,7 +173,7 @@ const Chats: FC = () => {
                 } else {
                     return {
                         ...el,
-                        avatar: '',
+                        avatar: el.avatar,
                     }
                 }
             })
@@ -242,13 +246,17 @@ const Chats: FC = () => {
                         let avatar;
                         const lastMessage = item.messages[item.messages.length - 1];
 
-                        if (item.users.length >= 3) {
-                            avatar = item.name?.charAt(0).toUpperCase()
+                        if ('name' in item) {
+                            if (item.avatar !== '') {
+                                avatar = <img src={item.avatar} width={40} height={40}/>
+                            } else {
+                                avatar = item.name?.charAt(0).toUpperCase()
+                            }
                         } else {
                             avatar = item.user.charAt(0).toUpperCase()
                         }
 
-                        if (item.users.length >= 3) {
+                        if ('name' in item) {
                             chatName = item.name
                         } else {
                             if (item.user === trueEmail) {
@@ -289,6 +297,8 @@ const Chats: FC = () => {
                                         lastMess = <span>Видео</span>
                                     } else if (lastMessage.typeMess === 'file') {
                                         lastMess = <span>Файл</span>
+                                    } else if (lastMessage.typeMess === 'vote') {
+                                        lastMess = <span>Опрос</span>
                                     } else {
                                         lastMess = <span>Геолокация</span>
                                     }
@@ -321,47 +331,65 @@ const Chats: FC = () => {
                                                 window.location.href=`/chats/${item.id}`
                                             }
                                         } else {
-                                            let resultPrivateKey: string = ''
-                                            const privateKey = localStorage.getItem(`${trueEmail}PrivateKey`)
-                                            if (privateKey) {
-                                                resultPrivateKey = privateKey
-                                            }
-                                            const decodePrivateKey = decodeBase64(resultPrivateKey)
-                                            const encoder = new TextEncoder()
-                                            const messageBytes = encoder.encode(shareMess.text)
-                                            const publicKeys = await fetch(`http://localhost:4000/users-controller/public/keys/${item.user}`, {
-                                                method: "GET",
-                                                credentials: 'include',
-                                            })
-                                            const resultPublicKeys = await publicKeys.json()
-                                            const testKeyPair = nacl.box.keyPair()
-                                            let encPublicKey: string = ''
-                                            for (let myPublicKey of resultPublicKeys.myPublicKeys) {
-                                                console.log(myPublicKey)
-                                                const message = new TextEncoder().encode("test")
-                                                const testNonce = nacl.randomBytes(nacl.box.nonceLength) 
-                                                const encrypted = nacl.box(
-                                                    message,
-                                                    testNonce,
-                                                    testKeyPair.publicKey,
-                                                    decodePrivateKey,
-                                                )
-                                                const decodeMyPublicKey = decodeBase64(myPublicKey)
-                                                const decrypted = nacl.box.open(
-                                                    encrypted,
-                                                    testNonce,
-                                                    decodeMyPublicKey,
-                                                    testKeyPair.secretKey,
-                                                )
-                                                if (decrypted) {
-                                                    encPublicKey = myPublicKey
-                                                    break
+                                            let formData = new FormData()
+                                            if (shareMess.typeMess !== 'gif') {
+                                                let resultPrivateKey: string = ''
+                                                const privateKey = localStorage.getItem(`${trueEmail}PrivateKey`)
+                                                if (privateKey) {
+                                                    resultPrivateKey = privateKey
                                                 }
+                                                const decodePrivateKey = decodeBase64(resultPrivateKey)
+                                                const encoder = new TextEncoder()
+                                                const messageBytes = encoder.encode(shareMess.text)
+                                                const usersChat = item.users
+                                                const publicKeys = await fetch('http://localhost:4000/users-controller/public/keys', {
+                                                    method: "POST",
+                                                    headers: {
+                                                        'Content-Type': 'application/json',
+                                                    }, 
+                                                    body: JSON.stringify({ usersChat }),
+                                                    credentials: 'include',
+                                                })
+                                                const resultPublicKeys = await publicKeys.json()
+                                                console.log('Keys: ')
+                                                console.log(resultPublicKeys)
+                                                const myPublicKeys = resultPublicKeys.find((el: any) => el.user === trueEmail)
+                                                const testKeyPair = nacl.box.keyPair()
+                                                let encPublicKey: string = ''
+                                                for (let myPublicKey of myPublicKeys.publicKeys) {
+                                                    const message = new TextEncoder().encode("test")
+                                                    const testNonce = nacl.randomBytes(nacl.box.nonceLength) 
+                                                    const encrypted = nacl.box(
+                                                        message,
+                                                        testNonce,
+                                                        testKeyPair.publicKey,
+                                                        decodePrivateKey,
+                                                    )
+                                                    const decodeMyPublicKey = decodeBase64(myPublicKey)
+                                                    const decrypted = nacl.box.open(
+                                                        encrypted,
+                                                        testNonce,
+                                                        decodeMyPublicKey,
+                                                        testKeyPair.secretKey,
+                                                    )
+                                                    if (decrypted) {
+                                                        encPublicKey = myPublicKey
+                                                        break
+                                                    }
+                                                }
+                                                const resultText = resultPublicKeys.map((el: any) => {
+                                                    const resultUserText = encryptMess(el.publicKeys, messageBytes, decodePrivateKey, encPublicKey)
+                                                    return {
+                                                        user: el.user,
+                                                        message: resultUserText,
+                                                    }
+                                                })
+                                                const { formattedDate, messId } = getMessIdAndDate()
+                                                formData = buildFormData([], null, shareMess.user, [], resultText, formattedDate, shareMess.typeMess, messId, item.user, null, '', undefined, undefined)
+                                            } else {
+                                                const { formattedDate, messId } = getMessIdAndDate()
+                                                formData = buildFormData([], null, shareMess.user, [], shareMess.text, formattedDate, shareMess.typeMess, messId, item.user, null, '', undefined, undefined)
                                             }
-                                            const resultTextForUser = encryptMess(resultPublicKeys.userPublicKeys, messageBytes, decodePrivateKey, encPublicKey)
-                                            const resultTextForMe = encryptMess(resultPublicKeys.myPublicKeys, messageBytes, decodePrivateKey, encPublicKey)
-                                            const { formattedDate, messId } = getMessIdAndDate()
-                                            const formData = buildFormData([], null, shareMess.user, [], resultTextForUser, formattedDate, shareMess.typeMess, messId, item.user, '', '', undefined, undefined, resultTextForMe)
                                             formData.set('per', shareMess.user)
                                             formData.append('origUser', shareMess.origUser)
                                             formData.append('origId', shareMess.origId)
@@ -370,7 +398,7 @@ const Chats: FC = () => {
                                                 if (el.user === item.user) {
                                                     return {
                                                         ...el,
-                                                        messages: [...el.messages, {user: shareMess.user, text: shareMess.text, photos: [], date: shareMess.date, id: shareMess.id, ans: '', edit: false, typeMess: shareMess.typeMess, pin: false, controls: false, per: '', read: false, sending: false}]
+                                                        messages: [...el.messages, {user: shareMess.user, text: shareMess.text, photos: [], date: shareMess.date, id: shareMess.id, ans: null, edit: false, typeMess: shareMess.typeMess, pin: false, controls: false, per: '', read: [], sending: false, reactions: [], emojies: false}]
                                                     }
                                                 } else {
                                                     return el
@@ -435,7 +463,11 @@ const Chats: FC = () => {
                                         alt="Уведомления выключены"
                                     />
                                 }
-                                <button onClick={async() => setDeleteWarn({friendEmail: item.user, friendDel: false})}>Удалить чат</button>
+                                {item.user.includes('@') ? <button onClick={async() => setDeleteWarn({friendEmail: item.user, friendDel: false})}>Удалить чат</button> : <button onClick={async() => {
+                                    await exitChat(trueEmail, null, item.id, null, item.users, [])
+                                    const newChats = chats.filter(el => el.id !== item.id)
+                                    setChats(newChats)
+                                }}>Выйти из чата</button>}
                             </div>
                         </li>
                     })}
@@ -460,48 +492,48 @@ const Chats: FC = () => {
         })
 
         socket.on('replyMessage', async(message: any) => {
+            console.log('HERE')
             if (message.type === 'message') {
                 console.log('New message')
                 console.log(message)
                 const user = message.user
-                setTrueEmail((prev: any) => {
-                    setChats((prevChats: any) => {
-                        let findThisChat: any = ''
-                        if (!user.email.includes('@')) {
-                            findThisChat = prevChats.find((el: Chat) => el.user === user.email)
-                        } else {
-                            findThisChat = prevChats.find((el: Chat) => el.user === user.sender)
-                        }
-                        if (findThisChat !== undefined) {
-                            console.log('Here')
-                            const newChats = prevChats.map((el: any) => {
-                                if ((!user.email.includes('@') && el.user === user.email) || (user.email.includes('@') && el.user === user.sender)) {
-                                    const newMess = decryptMess([...el.messages, {user: message.user.name, text: message.text, id: message.id, photos: message.photos, date: message.date, typeMess: message.typeMess, ans: message.ans, controls: false, per: '', pin: false, read: false}], prev)
-                                    return {
-                                        ...el,
-                                        messages: newMess,
-                                        messCount: el.messCount + 1
-                                    }
-                                } else {
-                                    return el
+                setChats((prevChats: any) => {
+                    console.log('Chats: ')
+                    console.log(prevChats)
+                    let findThisChat: any = ''
+                    if (!user.email.includes('@')) {
+                        findThisChat = prevChats.find((el: Chat) => el.user === user.email)
+                    } else {
+                        findThisChat = prevChats.find((el: Chat) => el.user === user.sender)
+                    }
+                    if (findThisChat !== undefined) {
+                        console.log('Here')
+                        const newChats = prevChats.map((el: any) => {
+                            if ((!user.email.includes('@') && el.user === user.email) || (user.email.includes('@') && el.user === user.sender)) {
+                                const newMess = decryptMess([...el.messages, {user: message.user.name, text: message.text, id: message.id, photos: message.photos, date: message.date, typeMess: message.typeMess, ans: message.ans, controls: false, per: '', pin: false, read: false}], trueEmailRef.current)
+                                return {
+                                    ...el,
+                                    messages: newMess,
+                                    messCount: el.messCount + 1
                                 }
-                            })
-                            console.log('New chats: ')
-                            console.log(newChats)
-                            if (newChats) {
-                                const resultChats = sortChats(newChats)
-                                console.log('Result chats: ')
-                                console.log(resultChats)
-                                return resultChats
                             } else {
-                                return prevChats
+                                return el
                             }
+                        })
+                        console.log('New chats: ')
+                        console.log(newChats)
+                        if (newChats) {
+                            const resultChats = sortChats(newChats)
+                            console.log('Result chats: ')
+                            console.log(resultChats)
+                            return resultChats
                         } else {
-                            const newChats: Chat[] = [...prevChats, {user: user, messages: decryptMess([{user: message.user, text: message.text, id: message.id, photos: message.photos, date: message.date, typeMess: message.typeMess, ans: message.ans, controls: false, per: '', pin: false, read: false, sending: false}], prev), messCount: 1, avatar: '', pin: false, notifs: true}]
-                            return newChats
+                            return prevChats
                         }
-                    })
-                    return prev
+                    } else {
+                        getChats()
+                        return prevChats
+                    }
                 })
                 if (document.visibilityState !== 'visible') {
                     getUserChats('', user)
@@ -536,7 +568,7 @@ const Chats: FC = () => {
                                 return {
                                     ...el,
                                     messages: resultNewMess,
-                                    messCount: el.messCount - message.readStatus
+                                    messCount: message.readStatus,
                                 }
                             } else {
                                 return el
@@ -595,6 +627,15 @@ const Chats: FC = () => {
             setShareMess(JSON.parse(getStorage))
         }
     }, [])
+
+
+    useEffect(() => {
+        trueEmailRef.current = trueEmail
+    }, [trueEmail])
+
+    useEffect(() => {
+        allUsersRef.current = allUsers
+    }, [allUsers])
 
     useEffect(() => {
         if (typing !== '') {
@@ -665,8 +706,10 @@ const Chats: FC = () => {
             {createGroupInter}
             {deleteWarn ? <div>
                 <p>Вы уверены, что хотите удалить чат?</p>
-                <p>Также удалить для {deleteWarn.friendEmail}</p>
+                {deleteWarn.friendEmail.includes('@') ? <div>
+                    <p>Также удалить для {deleteWarn.friendEmail}</p>
                 <input type="checkbox" onChange={() => setDeleteWarn({friendEmail: deleteWarn.friendEmail, friendDel: !deleteWarn.friendDel})}/>
+                </div> : null}
                 <button onClick={async() => {
                     const friendEmail = deleteWarn.friendEmail
                     const friendDel = deleteWarn.friendDel

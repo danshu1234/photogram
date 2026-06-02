@@ -32,6 +32,11 @@ import decryptMess from "../decrpytMess"
 import useCheckPrivateKey from "@/app/useCheckPrivateKey"
 import Geopos from "./Geopos"
 import { useStopwatch } from 'react-timer-hook';
+import PartChat from "./ParticipChat"
+import UserInterface from "@/app/UserInterface"
+import AnsMess from "./Answ"
+import exitChat from './LeaveChat'
+import CreateVoting from "./VotingCreate"
 
 
 export interface SendPhoto{
@@ -60,6 +65,11 @@ const UserChat: FC = () => {
     const { trueEmail, setTrueEmail } = useGetEmail()
     const { trueParamEmail, setTrueParamEmail } = useGetTrueParamEmail()
 
+    const [createVoting, setCreateVoting] = useState <boolean> (false)
+    const [allUsers, setAllUsers] = useState <UserInterface[]> ([])
+    const [admin, setAdmin] = useState <string[]> ([])
+    const [entrants, setEntrants] = useState <boolean> (false)
+    const [participantsChat, setParticipantsChat] = useState <string[] | null> (null)
     const [nameChat, setNameChat] = useState <string> ('')
     const [usersChat, setUsersChat] = useState <string[]> ([])
     const [timerVoice, setTimerVoice] = useState <boolean> (false)
@@ -83,7 +93,7 @@ const UserChat: FC = () => {
     const [userSubs, setUserSubs] = useState <string[] | null> (null)
     const [userPermMess, setUserPermMess] = useState <string | null> (null)
     const [editMess, setEditMess] = useState <string> ('')
-    const [answMess, setAnswMess] = useState <string> ('')
+    const [answMess, setAnswMess] = useState <AnsMess | null> (null)
     const [myBanArr, setMyBanArr] = useState <string[] | null> (null)
     const [usersBan, setUsersBan] = useState <string[] | null> (null)
     const [typing, setTyping] = useState <string> ('')
@@ -97,6 +107,14 @@ const UserChat: FC = () => {
     let showGifs;
     let showVideoSend;
     let chatName;
+    let showUsers;
+    let usersInter;
+
+    if (participantsChat) {
+        if (!trueParamEmail.includes('@') && allUsers.length !== 0) {
+            showUsers = <p onClick={() => setEntrants(true)}>Участники</p>
+        }
+    }
 
     if (trueParamEmail.includes('@')) {
         if (trueEmail === trueParamEmail) {
@@ -138,6 +156,15 @@ const UserChat: FC = () => {
         setGifsArr(resultGifs)
     }
 
+    const scrollToMessage = (messId: string) => {
+        scroller.scrollTo(messId, {
+            duration: 500,
+            smooth: true,
+            containerId: 'messages-container', 
+            offset: -50
+        });
+    };
+
     useEffect(() => {
         console.log('Ban: ')
         console.log(myBanArr)
@@ -158,6 +185,29 @@ const UserChat: FC = () => {
         }
     }
 
+    if (participantsChat) {
+        if (entrants) {
+            usersInter = <PartChat participantsChat={participantsChat} setEntrans={setEntrants} admin={admin} trueEmail={trueEmail} trueParamEmail={trueParamEmail} setParticipantsChat={setParticipantsChat} messages={messages} setMessages={setMessages} succesSend={succesSend} allUsers={allUsers}/>
+        }
+    }
+
+    const getUsers = async () => {
+        const users = await fetch('http://localhost:4000/users-controller/get/group/users', {
+            method: "POST",
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ trueParamEmail }),
+            credentials: 'include',
+        })
+        const resultUsers = await users.json()
+        if (resultUsers.usersGroup !== 'PART_ERR') {
+            console.log(resultUsers)
+            setParticipantsChat(resultUsers.usersGroup)
+            setAdmin(resultUsers.admin)
+        } 
+    }
+
     const getChatId = async () => {
         const chatUserId = await fetch('http://localhost:4000/users-controller/chat/id', {
             method: "POST",
@@ -171,10 +221,29 @@ const UserChat: FC = () => {
         setChatId(resultChatUserId)
     }
 
+    const getAllUsers = async () => {
+      const allUsers = await fetch('http://localhost:4000/users-controller/get/all/users')
+      const resultUsers = await allUsers.json()
+      console.log('Here')
+      setAllUsers(resultUsers)
+    }
+
     const getNameChat = async () => {
         const chatName = await fetch(`http://localhost:4000/users-controller/chat/name/${trueParamEmail}`)
         const resultChatName = await chatName.text()
         setNameChat(resultChatName)
+    }
+
+    const clearEmojies = () => {
+        if (messages) {
+            const newMessages = messages.map(el => {
+                return {
+                    ...el,
+                    emojies: false
+                }
+            })
+            setMessages(newMessages)
+        }
     }
 
     const getUsersChat = async () => {
@@ -203,7 +272,7 @@ const UserChat: FC = () => {
     }
 
     if (gifsArr.length !== 0) {
-        showGifs = <Gifs gifsArr={gifsArr} getAllGifs={getAllGifs} setGifsArr={setGifsArr} messages={messages} trueEmail={trueEmail} trueParamEmail={trueParamEmail} answMess={answMess} setInputMess={setInputMess} setMessages={setMessages} backUpMess={backUpMess} succesSend={succesSend}/>
+        showGifs = <Gifs gifsArr={gifsArr} getAllGifs={getAllGifs} setGifsArr={setGifsArr} messages={messages} trueEmail={trueEmail} trueParamEmail={trueParamEmail} answMess={answMess} setInputMess={setInputMess} setMessages={setMessages} backUpMess={backUpMess} succesSend={succesSend} usersChat={participantsChat}/>
     }
 
     if (imageBase64.length !== 0) {
@@ -230,7 +299,7 @@ const UserChat: FC = () => {
         if (messages.length === 0) {
             showMess = <div className="empty-chat"><h2>Этот чат пока пуст</h2></div>
         } else if (messages.length !== 0) {
-            showMess = <MessDisplay messages={messages} email={trueEmail} trueParamEmail={trueParamEmail} setMessages={setMessages} setAnswMess={setAnswMess} setEditMess={setEditMess} setInputMess={setInputMess} setSucCopy={setSucCopy} setVideoMessId={setVideoMessId} pinMess={pinMess} setPinMess={setPinMess} setGeoLocation={setGeoLocation} chatId={chatId}/>
+            showMess = <MessDisplay messages={messages} email={trueEmail} trueParamEmail={trueParamEmail} setMessages={setMessages} setAnswMess={setAnswMess} setEditMess={setEditMess} setInputMess={setInputMess} setSucCopy={setSucCopy} setVideoMessId={setVideoMessId} pinMess={pinMess} setPinMess={setPinMess} setGeoLocation={setGeoLocation} chatId={chatId} trueEmail={trueEmail} scrollToMessage={scrollToMessage}/>
         }
     } else {
         showMess = <div className="loading-chat"><h2>Загрузка...</h2></div>
@@ -312,15 +381,6 @@ const UserChat: FC = () => {
             credentials: 'include',
         })
     }
-
-    const scrollToMessage = (messId: string) => {
-        scroller.scrollTo(messId, {
-            duration: 500,
-            smooth: true,
-            containerId: 'messages-container', 
-            offset: -50
-        });
-    };
 
     useEffect(() => {
         if (typing !== '' && typing !== 'Записывает голосовое...') {
@@ -409,6 +469,8 @@ const UserChat: FC = () => {
             openChat()
             getChatId()
             getUsersChat()
+            getUsers()
+            getAllUsers()
         }
     }, [trueParamEmail, trueEmail, secretKey])
 
@@ -417,6 +479,7 @@ const UserChat: FC = () => {
             if (ref) {
                 if (ref.current) {
                     ref.current.scrollTop = ref.current.scrollHeight
+                    ref.current = null
                 }
             }
         }
@@ -453,7 +516,7 @@ const UserChat: FC = () => {
             }
         })
 
-        socket.on('replyMessage', async(message: {type: string, user: {email: string, name: string, sender: string}, text: any, photos: PhotoMess[], date: string, id: string | string[], ans: string, socketId?: string, mess: Message[] | string, typeMess: string, per: string}) => {
+        socket.on('replyMessage', async(message: {type: string, user: {email: string, name: string, sender: string}, text: any, photos: PhotoMess[], date: string, id: string | string[], ans: string, socketId?: string, mess: Message[] | string, typeMess: string, per: string, reactions: {reaction: string, users: string[]}[], votes: {id: string, option: string, users: string[]}[], users?: string[]}) => {
             if (message.type === 'message') {
                 setTrueParamEmail(prev => {
                     if ((!message.user.email.includes('@') && prev === message.user.email) || (message.user.email.includes('@') && prev === message.user.sender)) {
@@ -461,7 +524,11 @@ const UserChat: FC = () => {
                             setMessages(prevMess => {
                                 if (prevMess) {
                                     if (typeof message.id === 'string') {
-                                        const newMess = decryptMess([...prevMess, {user: message.user.sender, text: message.text, id: message.id, photos: message.photos, date: message.date, typeMess: message.typeMess, ans: message.ans, controls: false, per: message.per, pin: false, read: false, sending: false}], prevTrueEmail)
+                                        if (message.typeMess === 'vote') {
+                                            const newMess = decryptMess([...prevMess, {user: message.user.sender, text: message.text, id: message.id, photos: message.photos, date: message.date, typeMess: message.typeMess, ans: message.ans, controls: false, per: message.per, pin: false, read: [], sending: false, reactions: [], votes: message.votes, allUserVotes: []}], prevTrueEmail)
+                                            return newMess
+                                        }
+                                        const newMess = decryptMess([...prevMess, {user: message.user.sender, text: message.text, id: message.id, photos: message.photos, date: message.date, typeMess: message.typeMess, ans: message.ans, controls: false, per: message.per, pin: false, read: [], sending: false, reactions: []}], prevTrueEmail)
                                         console.log('New mess: ')
                                         console.log(newMess)
                                         return newMess
@@ -585,7 +652,17 @@ const UserChat: FC = () => {
                 setMessages(prev => {
                     if (prev) {
                         const resultMess = prev.map(el => {
-                            return {...el, read: true}
+                            const resultRead = el.read.map(element => {
+                                if (element.user === message.user.sender) {
+                                    return {
+                                        user: element.user,
+                                        read: true,
+                                    }
+                                } else {
+                                    return element
+                                }
+                            })
+                            return {...el, read: resultRead}
                         })
                         return resultMess
                     } else {
@@ -593,12 +670,24 @@ const UserChat: FC = () => {
                     }
                 })
             } else if (message.type === 'openChat') {
+                console.log('User: ')
+                console.log(message.user)
                 setTrueParamEmail(prevTrueParamEmail => {
-                    if (prevTrueParamEmail === message.user.email) {
+                    if (prevTrueParamEmail === message.user.sender) {
                         setMessages(prevMessages => {
                             if (prevMessages) {
                                 const resultMess = prevMessages.map(el => {
-                                    return {...el, read: true}
+                                    const resultRead = el.read.map(element => {
+                                        if (element.user === message.user.sender) {
+                                            return {
+                                                user: element.user,
+                                                read: true,
+                                            }
+                                        } else {
+                                            return element
+                                        }
+                                    })
+                                    return {...el, read: resultRead}
                                 })
                                 return resultMess
                             } else {
@@ -608,6 +697,24 @@ const UserChat: FC = () => {
                         return prevTrueParamEmail
                     } else {
                         return prevTrueParamEmail
+                    }
+                })
+            } else if (message.type === 'reaction') {
+                setMessages(prevMessages => {
+                    if (prevMessages) {
+                        const newMessages = prevMessages.map(el => {
+                            if (el.id === message.id) {
+                                return {
+                                    ...el,
+                                    reactions: message.reactions,
+                                }
+                            } else {
+                                return el
+                            }
+                        })
+                        return newMessages
+                    } else {
+                        return prevMessages
                     }
                 })
             }
@@ -656,60 +763,61 @@ const UserChat: FC = () => {
             if ((trueEmail !== '' && Array.isArray(usersBan) && mySubs !== null && userSubs !== null && userPermMess !== null) || !trueParamEmail.includes('@')) {
             if (usersBan?.includes(trueEmail) === false || !trueParamEmail.includes('@')) {
                 if (userPermMess === 'Все' || (userPermMess === 'Только друзья' && mySubs?.includes(trueParamEmail) && userSubs?.includes(trueEmail)) || !trueParamEmail.includes('@')) {
-                    showMessInter = <div className="message-input-container">
-                    <div className="reply-indicator">
-                        <p>{answMess}</p>
-                        {answMess !== '' ? <div className="reply-close" onClick={() => setAnswMess('')}>×</div> : null}                        
-                    </div>
-                    {overStatus === false ? <input 
-                            placeholder="Сообщение" 
-                            className="message-input"
-                            onChange={async(event: ChangeEvent<HTMLInputElement>) => {
-                            setInputMess(event.target.value)
-                            await fetch('http://localhost:4000/users-controller/typing', {
-                                method: "POST",
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                },
-                                body: JSON.stringify({ trueParamEmail }),
-                                credentials: 'include',
-                            })
-                            }} 
-                            value={inputMess}
-                            onDragOver={((e) => {
+                    if (participantsChat?.includes(trueEmail)) {
+                        showMessInter = <div className="message-input-container">
+                            <div className="reply-indicator">
+                                {answMess ? <p>{answMess.text}</p> : null}
+                                {answMess  ? <div className="reply-close" onClick={() => setAnswMess(null)}>×</div> : null}                        
+                            </div>
+                            {overStatus === false ? <input 
+                                placeholder="Сообщение" 
+                                className="message-input"
+                                onChange={async(event: ChangeEvent<HTMLInputElement>) => {
+                                setInputMess(event.target.value)
+                                await fetch('http://localhost:4000/users-controller/typing', {
+                                    method: "POST",
+                                    headers: {
+                                        'Content-Type': 'application/json',
+                                    },
+                                    body: JSON.stringify({ trueParamEmail }),
+                                    credentials: 'include',
+                                })
+                                }} 
+                                value={inputMess}
+                                onDragOver={((e) => {
+                                    e.preventDefault()
+                                    setOverStatus(true)
+                                })}
+                            /> : <div style={{width: 300, height: 100, border: '2px solid black'}} onDragOver={((e) => e.preventDefault())} onDragLeave={((e) => {
                                 e.preventDefault()
-                                setOverStatus(true)
-                            })}
-                        /> : <div style={{width: 300, height: 100, border: '2px solid black'}} onDragOver={((e) => e.preventDefault())} onDragLeave={((e) => {
-                            e.preventDefault()
-                            setOverStatus(false)
-                        })} onDrop={((e) => {
-                            if (messages) { 
-                                if (messages.length > 0) {
-                                    const resultFiles = e.dataTransfer.files
-                                    if (resultFiles.length > 0) {
-                                        const resultFile = resultFiles[0]
-                                        if (resultFile) {
-                                            if (resultFile.type === 'image/png' || resultFile.type === 'image/jpeg') {
-                                                const reader = new FileReader();
-                                                reader.onload = async (event) => {
-                                                    const resultPhoto = event.target?.result as string
-                                                    setImageBase64([...imageBase64, {file: resultFile, base64: resultPhoto}])
-                                                };
-                                                reader.readAsDataURL(resultFile);
-                                            } else if (resultFile.type === 'video/mp4') {
-                                                setVideoFile({file: resultFile, type: 'video'})
-                                            } else {
-                                                if (messages?.length !== 0) {
-                                                    setFiles([...files, resultFile])
+                                setOverStatus(false)
+                            })} onDrop={((e) => {
+                                if (messages) { 
+                                    if (messages.length > 0) {
+                                        const resultFiles = e.dataTransfer.files
+                                        if (resultFiles.length > 0) {
+                                            const resultFile = resultFiles[0]
+                                            if (resultFile) {
+                                                if (resultFile.type === 'image/png' || resultFile.type === 'image/jpeg') {
+                                                    const reader = new FileReader();
+                                                    reader.onload = async (event) => {
+                                                        const resultPhoto = event.target?.result as string
+                                                        setImageBase64([...imageBase64, {file: resultFile, base64: resultPhoto}])
+                                                    };
+                                                    reader.readAsDataURL(resultFile);
+                                                } else if (resultFile.type === 'video/mp4') {
+                                                    setVideoFile({file: resultFile, type: 'video'})
+                                                } else {
+                                                    if (messages?.length !== 0) {
+                                                        setFiles([...files, resultFile])
+                                                    }
                                                 }
                                             }
                                         }
                                     }
+                                    e.preventDefault()
                                 }
-                                e.preventDefault()
-                            }
-                        })}>
+                            })}>
                                 <p>Копировать файл</p>
                             </div>}
                     <div className="input-group">
@@ -760,7 +868,16 @@ const UserChat: FC = () => {
                         {showVideoSend}
                         {processSendMess === false ? <SendBtn sendMess={sendMess} editMess={editMess} inputMess={inputMess} type='text' imageBase64={imageBase64} messages={messages} setEditMess={setEditMess} trueEmail={trueEmail} trueParamEmail={trueParamEmail} setAnswMess={setAnswMess} setImageBase64={setImageBase64} setVideoFile={setVideoFile} setInputMess={setInputMess} videoFile={videoFile} setMessages={setMessages} setProcessSendMess={setProcessSendMess} backUpMess={backUpMess} succesSend={succesSend} answMess={answMess} setOverStatus={setOverStatus} files={files} setFiles={setFiles} usersChat={usersChat}/> : <ClipLoader/>}
                     </div>
+                    <p onClick={async() => {
+                        navigator.geolocation.getCurrentPosition((position) => {
+                            const resultLocation = `${position.coords.latitude} ${position.coords.longitude}`
+                            sendMess('geopos', resultLocation, imageBase64, videoFile, messages, editMess, trueEmail, setMessages, answMess, setAnswMess, setImageBase64, setVideoFile, setInputMess, setOverStatus, setFiles, files, succesSend, trueParamEmail, backUpMess, setEditMess, setProcessSendMess, usersChat)
+                        }
+                    )
+                    }}>Геолокация</p>
+                    {messages?.length !== 0 ? <p onClick={() => setCreateVoting(true)}>Опрос</p> : null}
                 </div>
+                    }
                 } else {
                     showMessInter = <div className="restricted-message">
                     <p>Пользователь ограничил отправку сообщений</p>
@@ -813,18 +930,20 @@ const UserChat: FC = () => {
 
 
     return (
-        <div className="chat-container">
+        <div className="chat-container" onClick={clearEmojies}>
             <Call/>
             <div className="chat-header">
                 {chatName}
-                {trueEmail !== trueParamEmail ? <button onClick={() => window.open(`/call/${trueParamEmail}`, '_blank')}>Позвонить</button> : null}
+                {(trueEmail !== trueParamEmail && trueParamEmail.includes('@')) ? <button onClick={() => window.open(`/call/${trueParamEmail}`, '_blank')}>Позвонить</button> : null}
                 {(trueEmail !== trueParamEmail && trueParamEmail.includes('@')) ? <div className="online-status">
                     <span className={`status-dot ${onlineStatus === 'Online' ? 'online' : 'offline'}`}></span>
                     <span>{onlineStatus}</span>
                 </div> : null}
                 {bonuceAction === true ? <div className="chat-actions">
+                    {(participantsChat && !trueParamEmail.includes('@') && participantsChat.includes(trueEmail)) ? <p onClick={async() => exitChat(trueEmail, setMessages, trueParamEmail, succesSend, participantsChat, messages)}>Выйти из чата</p> : null}
                     {banBtn}
                     {messages?.length !== 0 ? <button className="files-btn" onClick={() => window.location.href=`/files/${trueParamEmail}`}>Файлы чата</button> : null}
+                    {showUsers}
                     <button className="close-actions-btn" onClick={() => setBonuceAction(false)}>✕</button>
                 </div> : <button className="show-actions-btn" onClick={() => setBonuceAction(true)}>⋮</button>}
             </div>
@@ -866,6 +985,10 @@ const UserChat: FC = () => {
             </div> : null}
 
             {timerVoice ? <p>{minutes} мин. {seconds} сек.</p> : null}
+
+            {usersInter}
+
+            {createVoting === true ? <CreateVoting sendMess={sendMess} editMess={editMess} inputMess={''} type='video' imageBase64={imageBase64} messages={messages} setEditMess={setEditMess} trueEmail={trueEmail} trueParamEmail={trueParamEmail} setAnswMess={setAnswMess} setImageBase64={setImageBase64} setVideoFile={setVideoFile} setInputMess={setInputMess} videoFile={videoFile} setMessages={setMessages} setProcessSendMess={setProcessSendMess} backUpMess={backUpMess} succesSend={succesSend} answMess={answMess} setOverStatus={setOverStatus} files={files} setFiles={setFiles} usersChat={usersChat} setCreateVoting={setCreateVoting}/> : null}
             
             <div id="messages-container" className="messages-container" ref={ref}>
                 {showMess}
@@ -873,14 +996,6 @@ const UserChat: FC = () => {
 
             {photos}
             {showGifs}
-            <p onClick={async() => {
-                navigator.geolocation.getCurrentPosition(
-                    (position) => {
-                        const resultLocation = `${position.coords.latitude} ${position.coords.longitude}`
-                        sendMess('geopos', resultLocation, imageBase64, videoFile, messages, editMess, trueEmail, setMessages, answMess, setAnswMess, setImageBase64, setVideoFile, setInputMess, setOverStatus, setFiles, files, succesSend, trueParamEmail, backUpMess, setEditMess, setProcessSendMess, usersChat)
-                    }
-                )
-            }}>Геолокация</p>
             {videoFile ? <div>
                 <p onClick={() => setVideoFile(null)}>X</p>
                 <h3>{videoFile.type === 'video' ? 'Видеофайл' : 'Файл'}</h3>

@@ -4,6 +4,7 @@ import { Message } from "@/app/Chat"
 import { FC } from "react";
 import getMessIdAndDate from "./getMessIdAndDate";
 import "./SendBtn.css"
+import AnsMess from "./chats/[email]/Answ";
 
 interface SendPhoto{
     file: File;
@@ -21,7 +22,7 @@ export interface SendBtnProps{
     messages: Message[] | null;
     trueEmail: string;
     setMessages: Function;
-    answMess: string;
+    answMess: AnsMess | null;
     setAnswMess: Function;
     setImageBase64: Function;
     setVideoFile: Function;
@@ -44,7 +45,34 @@ const SendBtn: FC <SendBtnProps> = (props) => {
     return (
         <button 
             className={`send-btn ${isActive ? 'active' : 'inactive'}`}
-            onClick={async() => props.sendMess(props.type, props.inputMess, props.imageBase64, props.videoFile, props.messages, props.editMess, props.trueEmail, props.setMessages, props.answMess, props.setAnswMess, props.setImageBase64, props.setVideoFile, props.setInputMess, props.setOverStatus, props.setFiles, props.files, props.succesSend, props.trueParamEmail, props.backUpMess, props.setEditMess, props.setProcessSendMess, props.usersChat)}
+            onClick={async() => {
+                const photosCountPack = Math.ceil(props.imageBase64.length / 10)
+                let resultPhotos: any[] = []
+                for (let i=0; i<photosCountPack; i++) {
+                    resultPhotos = [...resultPhotos, []]
+                }
+                console.log('Photos: ')
+                console.log(resultPhotos)
+                const imagesWithSequenNumbers = props.imageBase64.map((el, index) => {
+                    return {
+                        ...el,
+                        index: index,
+                    }
+                })
+                for (let item of imagesWithSequenNumbers) {
+                    const numberImage = Math.floor(item.index / 10)
+                    resultPhotos = resultPhotos.map((element, index) => {
+                        if (index === numberImage) {
+                            return [...element, {file: item.file, base64: item.base64}]
+                        } else {
+                            return element
+                        }
+                    })
+                }
+                for (let photosPack of resultPhotos) {
+                    props.sendMess(props.type, props.inputMess, photosPack, props.videoFile, props.messages, props.editMess, props.trueEmail, props.setMessages, props.answMess, props.setAnswMess, props.setImageBase64, props.setVideoFile, props.setInputMess, props.setOverStatus, props.setFiles, props.files, props.succesSend, props.trueParamEmail, props.backUpMess, props.setEditMess, props.setProcessSendMess, props.usersChat)
+                }
+            }}
             disabled={!isActive && props.editMess === ''}
         >
             {props.editMess ? '✏️' : '➤'}

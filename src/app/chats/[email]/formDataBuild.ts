@@ -1,7 +1,8 @@
 import EncryptMess from "../../../../server-for-photogram/src/MessEncryptInterface"
+import AnsMess from "./Answ"
 import { SendPhoto } from "./page"
 
-const buildFormData = (imageBase64: SendPhoto[], videoFile: {file: File, type: string} | null, trueEmail: string, files: File[], inputMess: string | EncryptMess[], formattedDate: string, type: string, messId: string, trueParamEmail: string, answMess: string, videoId: string, file?: File, fileName?: string, resultTextForMe?: string | EncryptMess[], previewVideo?: string) => {
+const buildFormData = (imageBase64: SendPhoto[], videoFile: {file: File, type: string} | null, trueEmail: string, files: File[], inputMess: string | EncryptMess[], formattedDate: string, type: string, messId: string, trueParamEmail: string, answMess: AnsMess | null, videoId: string, file?: File, fileName?: string, resultTextForMe?: string | EncryptMess[], previewVideo?: string) => {
     const formData = new FormData()
     console.log(inputMess)
     if (imageBase64.length !== 0) {
@@ -30,7 +31,7 @@ const buildFormData = (imageBase64: SendPhoto[], videoFile: {file: File, type: s
     }
     formData.append('date', formattedDate)
     formData.append('id', messId)
-    formData.append('ans', answMess)
+    formData.append('ans', JSON.stringify(answMess))
     formData.append('trueParamEmail', trueParamEmail)
     formData.append('per', '')
     formData.append('type', type)

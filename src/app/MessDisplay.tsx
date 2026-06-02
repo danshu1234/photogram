@@ -1,6 +1,6 @@
 'use client'
 
-import { FC, useState, memo, useEffect } from "react"
+import React, { FC, useState, memo, useEffect } from "react"
 import { Message } from "@/app/Chat"
 import ImgList from "./ImgList"
 import ShareBtn from "./ShareBtn"
@@ -25,23 +25,29 @@ interface MessDisplayProps{
     setSucCopy: Function;
     setVideoMessId: Function;
     setGeoLocation: Function;
+    trueEmail: string;
     chatId: string;
+    scrollToMessage: Function;
 }
 
 const MessDisplay: FC <MessDisplayProps> = (props) => {
 
-    const [imgArr, setImgArr] = useState <string[]> ([])
-    const [startIndex, setStartIndex] = useState <number> (0)
-    let imgList;
+    const emoji: string[] = ['😂', '❤️', '🤣', '👍', '😭', '🙏', '😘', '🥰', '😍', '😊']
 
-    if (imgArr.length !== 0) {
-        imgList = <div className="image-modal-overlay" onClick={() => setImgArr([])}>
-            <div className="image-modal-content" onClick={(e) => e.stopPropagation()}>
-                <button className="image-modal-close" onClick={() => setImgArr([])}>×</button>
-                <ImgList imgArr={imgArr} startIndex={startIndex} setStartIndex={setStartIndex}/>
-                <Download downloadFile={imgArr[startIndex]}/>
+    const [photos, setPhotos] = useState <{id: string, photo: string}[]> ([])
+    const [imgBig, setImgBig] = useState <string | null> (null)
+    const [startIndex, setStartIndex] = useState <number> (0)
+    let imgBigShow;
+
+    if (imgBig !== null) {
+        if (imgBig === '') {
+            imgBigShow = <p>Загрузка...</p>
+        } else {
+            imgBigShow = <div>
+                <p onClick={() => setImgBig(null)}>X</p>
+                <img src={imgBig} width={300} height={300}/>
             </div>
-        </div>
+        }
     }
 
     const openMessControls = (messId: string) => {
@@ -61,6 +67,71 @@ const MessDisplay: FC <MessDisplayProps> = (props) => {
             })
             props.setMessages(newMess)
         }
+    }
+
+    const reaction = async (messId: string, emoji: string, type: string) => {
+        let reactionsMess: any[] = []
+        let messEmojies: string = ''
+        const trueParamEmail = props.trueParamEmail
+        if (props.messages) {
+            const newMessages = props.messages.map(el => {
+                if (el.id === messId) {
+                    messEmojies = el.id
+                    let resultReactions: any[] = []
+                    if (type === 'reactionNew') {
+                        resultReactions = [...el.reactions, {reaction: emoji, users: [props.trueEmail]}]
+                        reactionsMess = resultReactions
+                    } else if (type === 'addReaction') {
+                        const emojiesMess = el.reactions.map(element => {
+                            if (element.reaction === emoji) {
+                                return {
+                                    reaction: element.reaction,
+                                    users: [...element.users, props.trueEmail]
+                                }
+                            } else {
+                                return el
+                            }
+                        })
+                        resultReactions = emojiesMess
+                        reactionsMess = resultReactions
+                    } else if (type === 'reactionDel') {
+                        const emojiesMess = el.reactions.map(element => {
+                            if (element.reaction === emoji) {
+                                const reactionUsers = element.users.filter(user => user !== props.trueEmail)
+                                if (reactionUsers.length !== 0) {
+                                    return {
+                                        reaction: element.reaction,
+                                        users: reactionUsers,
+                                    }
+                                } else {
+                                    return false
+                                }
+                            } else {
+                                return element
+                            }
+                        })
+                        const reusultMessEmojies = emojiesMess.filter(reaction => reaction !== false)
+                        resultReactions = reusultMessEmojies
+                        reactionsMess = resultReactions
+                    }
+                    return {
+                        ...el,
+                        reactions: resultReactions,
+                    }
+                } else {
+                    return el
+                }
+            })
+            props.setMessages(newMessages)
+        }
+        await fetch('http://localhost:4000/users-controller/new/reactions', {
+            method: "PATCH",
+            headers: {
+                'Content-Type': 'application/json', 
+            },
+            body: JSON.stringify({ reactionsMess, messEmojies, trueParamEmail }),
+            credentials: 'include',
+        })
     }
 
     const pinMess = async (messId: string, pin: boolean) => {
@@ -91,7 +162,7 @@ const MessDisplay: FC <MessDisplayProps> = (props) => {
 
     return (
         <div className="messages-display">
-            {imgList}
+            {imgBigShow}
             {props.messages?.map((item, index) => {
                 const email = props.email
                 const trueParamEmail = props.trueParamEmail
@@ -161,12 +232,75 @@ const MessDisplay: FC <MessDisplayProps> = (props) => {
                         const longitude = Number(location[1])
                         props.setGeoLocation({latitude: latitude, longitude: longitude})
                     }}>Геолокация</p>
+                } else if (item.typeMess === 'vote') {
+                    showMess = <div>
+                        <p>{item.text}</p>
+                        <ul>
+                            {item.votes?.map((element, index) => {
+                                let persentageUsers = 0
+                                if (item.allUserVotes) {
+                                    persentageUsers = (100 * element.users.length) / item.allUserVotes.length
+                                }
+                                return <li key={index}>
+                                    <div>
+                                        <p onClick={(async(event: React.MouseEvent) => {
+                                            event.stopPropagation()
+                                            if (!item.allUserVotes?.includes(props.trueEmail)) {
+                                                const newMessages = props.messages?.map(message => {
+                                                    if (message.id === item.id) {
+                                                        const newVotes = message.votes?.map(vote => {
+                                                            if (vote.id === element.id) {
+                                                                return {
+                                                                    id: element.id,
+                                                                    option: vote.option,
+                                                                    users: [...vote.users, props.trueEmail],
+                                                                }
+                                                            } else {
+                                                                return vote
+                                                            }
+                                                        })
+                                                        if (message.allUserVotes) {
+                                                            return {
+                                                                ...message,
+                                                                votes: newVotes,
+                                                                allUserVotes: [...message.allUserVotes, props.trueEmail]
+                                                            }
+                                                        }
+                                                    } else {
+                                                        return message
+                                                    }
+                                                })
+                                                console.log('MESS: ')
+                                                console.log(newMessages)
+                                                props.setMessages(newMessages)
+                                                const messId = item.id
+                                                const voteId = element.id
+                                                await fetch('http://localhost:4000/users-controller/vote/user', {
+                                                    method: "PATCH",
+                                                    headers: {
+                                                        'Content-Type': 'application/json',
+                                                    },
+                                                    body: JSON.stringify({ trueParamEmail, messId, voteId }),
+                                                    credentials: 'include',
+                                                })
+                                            }
+                                        })}>{element.option}</p>
+                                        {item.allUserVotes?.includes(props.trueEmail) ? <div>
+                                            <p>{element.users.length}</p>
+                                            <div style={{backgroundColor: 'green', height: 4, width: persentageUsers}}></div>
+                                            <p>{(100 * element.users.length) / item.allUserVotes.length}%</p>
+                                        </div> : null}
+                                    </div>
+                                </li>
+                            })}
+                        </ul>
+                    </div>
                 }
 
                 let readStaus;
                 
-                if (item.user !== trueParamEmail) {
-                    if (item.read === true) {
+                if (item.user === props.trueEmail) {
+                    if (item.read.find(el => el.read === true && el.user !== props.trueEmail)) {
                         readStaus = <img src='https://img.icons8.com/?size=100&id=0H26EziLCAhq&format=png&color=000000' width={30} height={30}/>
                     } else {
                         readStaus = <img src='https://img.icons8.com/?size=100&id=82769&format=png&color=000000' width={30} height={30}/>
@@ -177,26 +311,80 @@ const MessDisplay: FC <MessDisplayProps> = (props) => {
 
                 return (
                     <Element name={item.id} key={index} className={messageClass} onClick={(e) => {
+                        e.stopPropagation()
                         if (item.controls === false) {
                             openMessControls(item.id)
                         } else {
-                            e.stopPropagation()
                             if (props.messages) {
                                 const newMessages = props.messages.map(el => {
-                                return {
-                                    ...el,
-                                    controls: false,
+                                    return {
+                                        ...el,
+                                        controls: false,
+                                    }
+                                })
+                                props.setMessages(newMessages)
+                            }
+                        }
+                    }}
+                    onContextMenu={(event: React.MouseEvent) => {
+                        event.preventDefault()
+                        if (props.messages) {
+                            const newMessages = props.messages.map(el => {
+                                if (el.id === item.id) {
+                                    return {
+                                        ...el,
+                                        emojies: true,
+                                    }
+                                } else {
+                                    return {
+                                        ...el,
+                                        emojies: false,
+                                    }
                                 }
                             })
                             props.setMessages(newMessages)
-                            }
                         }
-                    }}>
+                    }}
+                    >
                         <div className="message-content">
                             {dateShow}
-                            {item.user !== email ? <p>{item.user}</p> : null}
+                            {(item.typeMess === 'vote' && item.allUserVotes?.includes(props.trueEmail)) ? <p onClick={(async(event: React.MouseEvent) => {
+                                event.stopPropagation()
+                                const messId = item.id
+                                const newMessages = props.messages?.map(message => {
+                                    if (message.id === item.id) {
+                                        const newVotes = message.votes?.map(vote => {
+                                            if (vote.users.includes(props.trueEmail)) {
+                                                return {
+                                                    ...vote,
+                                                    users: vote.users.filter(user => user !== props.trueEmail)
+                                                }
+                                            } else {
+                                                return vote
+                                            }
+                                        })
+                                        return {
+                                            ...message,
+                                            votes: newVotes,
+                                            allUserVotes: message.allUserVotes?.filter(element => element !== props.trueEmail)
+                                        }
+                                    } else {
+                                        return message
+                                    }
+                                })
+                                props.setMessages(newMessages)
+                                await fetch('http://localhost:4000/users-controller/voice/revoke', {
+                                    method: "PATCH",
+                                    headers: {
+                                        'Content-Type': 'application/json', 
+                                    },
+                                    body: JSON.stringify({ trueParamEmail, messId }),
+                                    credentials: 'include',
+                                }) 
+                            })}>Отменить голос</p> : null}
+                            {(item.user !== email && !props.trueParamEmail.includes('@')) ? <p>{item.user}</p> : null}
                             {item.per !== '' && <div className="forwarded-from">Переслано от {item.per}</div>}
-                            {item.ans && <div className="reply-preview">{item.ans}</div>}
+                            {item.ans && <div className="reply-preview" onClick={() => props.scrollToMessage(item.ans?.id)}>{item.ans.text}</div>}
                             
                             <div className="message-body">
                                 {showMess}
@@ -205,52 +393,76 @@ const MessDisplay: FC <MessDisplayProps> = (props) => {
 
                             {item.photos.length !== 0 && (
                                 <div className="message-photos">
-                                    {item.photos.map((el, index) => (
-                                        <div key={index} className="photo-thumbnail">
-                                            {el.base64.includes('image') ? (
+                                    {item.photos.map((el, indexPhoto) => (
+                                        <div key={indexPhoto} className="photo-thumbnail">
+                                            {(el.base64 !== '' && el.base64.includes('image')) ? 
                                                 <img src={el.base64} onClick={async() => {
                                                     const messId = item.id
-                                                    const bigPhotos = await fetch('http://localhost:4000/users-controller/big/photos', {
+                                                    const photoId = el.id
+                                                    const findPhoto = photos.find(el => el.id === photoId)
+                                                    if (findPhoto) {
+                                                        console.log('HERE')
+                                                        setImgBig(findPhoto.photo)
+                                                    } else {
+                                                        const bigPhoto = await fetch('http://localhost:4000/users-controller/big/photos', {
+                                                            method: "POST",
+                                                            headers: {
+                                                                'Content-Type': 'application/json', 
+                                                            },
+                                                            body: JSON.stringify({ messId, trueParamEmail, photoId }),
+                                                            credentials: 'include',
+                                                        })
+                                                        const resultBigPhoto = await bigPhoto.blob();
+                                                        const metadataHeader = bigPhoto.headers.get('X-Metadata');
+                                                        if (metadataHeader) {
+                                                            const idResultPhoto = JSON.parse(metadataHeader)
+                                                            const bigPhoto = URL.createObjectURL(resultBigPhoto)
+                                                            const newPhotos = [...photos, {id: idResultPhoto, photo: bigPhoto}]
+                                                            setPhotos(newPhotos)
+                                                            setImgBig(bigPhoto);
+                                                        }
+                                                    }
+                                                }}/>
+                                             : 
+                                                <img src='/images/free-icon-graduation-pictures-8924667.png' width={80} height={80} onClick={async(event: React.MouseEvent) => {
+                                                    event.stopPropagation()
+                                                    const messId = item.id
+                                                    const previewPhoto = await fetch('http://localhost:4000/users-controller/preview/photo', {
                                                         method: "POST",
                                                         headers: {
                                                             'Content-Type': 'application/json', 
                                                         },
-                                                        body: JSON.stringify({ messId, trueParamEmail }),
+                                                        body: JSON.stringify({ messId, trueParamEmail, indexPhoto }),
                                                         credentials: 'include',
                                                     })
-                                                    const zipBlob = await bigPhotos.blob()
-                                                    const zip = new JSZip();
-                                                    const zipContent = await zip.loadAsync(zipBlob)
-                                                    const photoPromises: Promise<{name: string, base64: string}>[] = []
-                                                    const blobToBase64 = (blob: Blob): Promise<string | ArrayBuffer | null> => {
-                                                        return new Promise((resolve, reject) => {
-                                                            const reader = new FileReader();
-                                                            reader.onloadend = () => resolve(reader.result);
-                                                            reader.onerror = reject;
-                                                            reader.readAsDataURL(blob);
-                                                        })
-                                                    }
-                                                    zipContent.forEach((relativePath, zipEntry) => {
-                                                    if (!zipEntry.dir) { 
-                                                            const promise = (async () => {
-                                                                const fileBlob = await zipEntry.async('blob');
-                                                                const base64 = await blobToBase64(fileBlob);
+                                                    const resultPreviewPhoto = await previewPhoto.text()
+                                                    if (props.messages) {
+                                                        const newMessages = props.messages.map(el => {
+                                                            if (el.id === item.id) {
+                                                                const messPhotos = el.photos.map((element, photoIndex) => {
+                                                                    if (photoIndex === indexPhoto) {
+                                                                        return {
+                                                                            base64: resultPreviewPhoto,
+                                                                            id: element.id,
+                                                                        }
+                                                                    } else {
+                                                                        return element
+                                                                    }
+                                                                })
                                                                 return {
-                                                                    name: zipEntry.name,
-                                                                    base64: base64 as string
+                                                                    ...el,
+                                                                    photos: messPhotos,
                                                                 }
-                                                            })()
-                                                            photoPromises.push(promise);
-                                                        }
-                                                    })
-                                                    const photos = await Promise.all(photoPromises)
-                                                    const resultPhotos = photos.map(el => el.base64)
-                                                    setImgArr(resultPhotos)
-                                                    setStartIndex(index)
+                                                            } else {
+                                                                return el
+                                                            }
+                                                        })
+                                                        console.log('Messages: ')
+                                                        console.log(newMessages)
+                                                        props.setMessages(newMessages)
+                                                    }
                                                 }}/>
-                                            ) : (
-                                                null
-                                            )}
+                                            }
                                         </div>
                                     ))}
                                 </div>
@@ -258,21 +470,53 @@ const MessDisplay: FC <MessDisplayProps> = (props) => {
 
                             <p>{resultTime}</p>
 
+                            {item.emojies === true ? <div>
+                                <ul>
+                                    {emoji.map((element, index) => {
+                                        if (!item.reactions.find(el => el.reaction === element)) {
+                                            return <li key={index} onClick={async(event: React.MouseEvent) => {
+                                                event.stopPropagation()
+                                                reaction(item.id, element, 'reactionNew')
+                                            }}>{element}</li>
+                                        }
+                                    })}
+                                </ul>
+                            </div> : null}
+
+                            {item.reactions.length !== 0 ? <div>
+                                <ul>
+                                    {item.reactions.map((element, index) => {
+                                        return <li key={index}>
+                                            {element.users.includes(props.trueEmail) ? <div>
+                                                <p onClick={(event: React.MouseEvent) => {
+                                                    event.stopPropagation()
+                                                    reaction(item.id, element.reaction, 'reactionDel')
+                                                }}>{element.reaction}</p>
+                                                <p>{element.users.length}</p>
+                                            </div> : <div>
+                                                <p onClick={(event: React.MouseEvent) => {
+                                                    event.stopPropagation()
+                                                    reaction(item.id, element.reaction, 'addReaction')
+                                                }}>{element.reaction}</p>
+                                                <p>{element.users.length}</p>
+                                            </div>}
+                                        </li>
+                                    })}
+                                </ul>
+                            </div> : null}
+
                             {item.controls && (
                                 <div className="message-controls">
                                     {item.user === email && (
                                         <button className="control-btn delete-btn" onClick={async() => {
                                             const messId = [item.id]
-                                            let unreadCount: number = 0
-                                            if (item.read !== true) {
-                                                unreadCount = 1
-                                            }
+                                            const readStatus = item.read
                                             const deleteMess = await fetch('http://localhost:4000/users-controller/delete/mess', {
                                                 method: "PATCH",
                                                 headers: {
                                                     'Content-Type': 'application/json',
                                                 },
-                                                body: JSON.stringify({ trueParamEmail, messId, unreadCount }),
+                                                body: JSON.stringify({ trueParamEmail, messId, readStatus }),
                                                 credentials: 'include',
                                             })
                                             const resultDelete = await deleteMess.text()
@@ -291,14 +535,14 @@ const MessDisplay: FC <MessDisplayProps> = (props) => {
                                     <button className="control-btn reply-btn" onClick={() => {
                                         if (item.typeMess === 'text') {
                                             if (item.text !== '') {
-                                                props.setAnswMess(item.text)
+                                                props.setAnswMess({text: item.text, id: item.id})
                                             } else {
-                                                props.setAnswMess('Фото')
+                                                props.setAnswMess({text: 'Фото', id: item.id})
                                             }
                                         } else if (item.typeMess === 'voice') {
-                                            props.setAnswMess('Голосовое сообщение')
+                                            props.setAnswMess({text: 'Голосовое сообщение', id: item.id})
                                         } else if (item.typeMess === 'gif') {
-                                            props.setAnswMess('GIF')
+                                            props.setAnswMess({text: 'GIF', id: item.id})
                                         }
                                     }}>
                                         ↩️

@@ -11,22 +11,20 @@ interface FileChangerProps{
 const FileChanger: FC <FileChangerProps> = (props) => {
 
     const handleFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (file) {
+        const avatarFile = e.target.files?.[0];
+        if (avatarFile) {
             const reader = new FileReader();
             reader.onload = async (event) => {
-                const newAva = event.target?.result as string
+                const formData = new FormData()
+                formData.append('ava', avatarFile)
                 await fetch('http://localhost:4000/users-controller/new/avatar', {
-                method: "PATCH",
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ newAva }),
-                credentials: 'include',
+                    method: "PATCH",
+                    body: formData,
+                    credentials: 'include',
                 })
                 props.setAva('')
             };
-            reader.readAsDataURL(file);
+            reader.readAsDataURL(avatarFile);
         }
     };
 

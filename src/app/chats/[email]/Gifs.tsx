@@ -6,6 +6,7 @@ import { Message } from "@/app/Chat"
 import getMessIdAndDate from "@/app/getMessIdAndDate"
 import gifs from "@/app/gifs"
 import getGifs from "./getGifs"
+import AnsMess from "./Answ"
 
 interface GifsProps{
     gifsArr: string[];
@@ -14,7 +15,8 @@ interface GifsProps{
     messages: Message[] | null;
     trueEmail: string;
     trueParamEmail: string;
-    answMess: string;
+    answMess: AnsMess | null;
+    usersChat: string[] | null;
     setInputMess: Function;
     setMessages: Function;
     backUpMess: Function;
@@ -53,9 +55,25 @@ const Gifs: FC <GifsProps> = (props) => {
                         credentials: 'include',      
                     })
                     const resultMessRealCount = await messRealCount.json()
+                    let readMess: any = ''
+                    if (props.usersChat) {
+                        readMess = props.usersChat.map(el => {
+                            if (el === props.trueEmail) {
+                                return {
+                                    user: el,
+                                    read: true,
+                                }
+                            } else {
+                                return {
+                                    user: el,
+                                    read: false,
+                                }
+                            }
+                        })
+                    }
                     if (props.messages) { 
                         if (resultMessRealCount !== 0) {
-                            const newMess = [...props.messages, {user: props.trueEmail, text: item, photos: [], date: formattedDate, id: messId, ans: props.answMess, edit: false, typeMess: 'gif', per: '', controls: false, pin: false, read: false, sending: true}]
+                            const newMess = [...props.messages, {user: props.trueEmail, text: item, photos: [], date: formattedDate, id: messId, ans: props.answMess, edit: false, typeMess: 'gif', per: '', controls: false, pin: false, read: readMess, sending: true}]
                             props.setMessages(newMess)
                             props.setInputMess('')
                             const formData = new FormData()
@@ -64,7 +82,7 @@ const Gifs: FC <GifsProps> = (props) => {
                             formData.append('myText', JSON.stringify(item))
                             formData.append('date', formattedDate)
                             formData.append('id', messId)
-                            formData.append('ans', props.answMess)
+                            formData.append('ans', JSON.stringify(props.answMess))
                             formData.append('trueParamEmail', props. trueParamEmail)
                             formData.append('per', '')
                             formData.append('type', 'gif')
@@ -82,7 +100,7 @@ const Gifs: FC <GifsProps> = (props) => {
                                 props.succesSend(newMess, messId)
                             }
                         } else {
-                            const newMess = [{user: props.trueEmail, text: item, photos: [], date: formattedDate, id: messId, ans: props.answMess, edit: false, typeMess: 'gif', per: '', controls: false, pin: false, read: false, sending: true}]
+                            const newMess = [{user: props.trueEmail, text: item, photos: [], date: formattedDate, id: messId, ans: props.answMess, edit: false, typeMess: 'gif', per: '', controls: false, pin: false, read: readMess, sending: true}]
                             props.setMessages(newMess)
                             props.setGifsArr([])
                             const formData = new FormData()
@@ -91,7 +109,7 @@ const Gifs: FC <GifsProps> = (props) => {
                             formData.append('myText', JSON.stringify(item))
                             formData.append('date', formattedDate)
                             formData.append('id', messId)
-                            formData.append('ans', props.answMess)
+                            formData.append('ans', JSON.stringify(props.answMess))
                             formData.append('trueParamEmail', props.trueParamEmail)
                             formData.append('per', '')
                             formData.append('type', 'gif')

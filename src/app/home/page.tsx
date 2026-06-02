@@ -250,7 +250,7 @@ export default function Home() {
         const user = message.user
           if (document.visibilityState !== 'visible') {
             setTrueEmail(prevTrueEmail => {
-              getNotifsMess(user)
+              getUserChats('', user)
               return prevTrueEmail
             })
           }
