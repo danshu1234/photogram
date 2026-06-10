@@ -65,6 +65,7 @@ const UserChat: FC = () => {
     const { trueEmail, setTrueEmail } = useGetEmail()
     const { trueParamEmail, setTrueParamEmail } = useGetTrueParamEmail()
 
+    const [deleteMess, setDeleteMess] = useState <string[] | null> (null)
     const [createVoting, setCreateVoting] = useState <boolean> (false)
     const [allUsers, setAllUsers] = useState <UserInterface[]> ([])
     const [admin, setAdmin] = useState <string[]> ([])
@@ -109,6 +110,8 @@ const UserChat: FC = () => {
     let chatName;
     let showUsers;
     let usersInter;
+    let messInter;
+
 
     if (participantsChat) {
         if (!trueParamEmail.includes('@') && allUsers.length !== 0) {
@@ -192,7 +195,7 @@ const UserChat: FC = () => {
     }
 
     const getUsers = async () => {
-        const users = await fetch('http://localhost:4000/users-controller/get/group/users', {
+        const users = await fetch('http://localhost:4000/chats-controller/get/group/users', {
             method: "POST",
             headers: {
                 'Content-Type': 'application/json',
@@ -209,7 +212,7 @@ const UserChat: FC = () => {
     }
 
     const getChatId = async () => {
-        const chatUserId = await fetch('http://localhost:4000/users-controller/chat/id', {
+        const chatUserId = await fetch('http://localhost:4000/chats-controller/chat/id', {
             method: "POST",
             headers: {
                 'Content-Type': 'application/json',
@@ -229,7 +232,7 @@ const UserChat: FC = () => {
     }
 
     const getNameChat = async () => {
-        const chatName = await fetch(`http://localhost:4000/users-controller/chat/name/${trueParamEmail}`)
+        const chatName = await fetch(`http://localhost:4000/chats-controller/chat/name/${trueParamEmail}`)
         const resultChatName = await chatName.text()
         setNameChat(resultChatName)
     }
@@ -248,7 +251,7 @@ const UserChat: FC = () => {
 
     const getUsersChat = async () => {
         if (!trueParamEmail.includes('@')) {
-            const usersChat = await fetch('http://localhost:4000/users-controller/get/users/chat', {
+            const usersChat = await fetch('http://localhost:4000/chats-controller/get/users/chat', {
                 method: "POST",
                 headers: {
                     'Content-Type': 'application/json',
@@ -299,7 +302,7 @@ const UserChat: FC = () => {
         if (messages.length === 0) {
             showMess = <div className="empty-chat"><h2>Этот чат пока пуст</h2></div>
         } else if (messages.length !== 0) {
-            showMess = <MessDisplay messages={messages} email={trueEmail} trueParamEmail={trueParamEmail} setMessages={setMessages} setAnswMess={setAnswMess} setEditMess={setEditMess} setInputMess={setInputMess} setSucCopy={setSucCopy} setVideoMessId={setVideoMessId} pinMess={pinMess} setPinMess={setPinMess} setGeoLocation={setGeoLocation} chatId={chatId} trueEmail={trueEmail} scrollToMessage={scrollToMessage}/>
+            showMess = <MessDisplay messages={messages} email={trueEmail} trueParamEmail={trueParamEmail} setMessages={setMessages} setAnswMess={setAnswMess} setEditMess={setEditMess} setInputMess={setInputMess} setSucCopy={setSucCopy} setVideoMessId={setVideoMessId} pinMess={pinMess} setPinMess={setPinMess} setGeoLocation={setGeoLocation} chatId={chatId} trueEmail={trueEmail} scrollToMessage={scrollToMessage} deleteMess={deleteMess} setDeleteMess={setDeleteMess}/>
         }
     } else {
         showMess = <div className="loading-chat"><h2>Загрузка...</h2></div>
@@ -321,7 +324,7 @@ const UserChat: FC = () => {
     };
 
     const zeroMess = async (trueParamEmail: string) => {
-        await fetch('http://localhost:4000/users-controller/zero/mess', {
+        await fetch('http://localhost:4000/chats-controller/zero/mess', {
             method: "PATCH",
             headers: {
                 'Content-Type': 'application/json',
@@ -333,13 +336,13 @@ const UserChat: FC = () => {
 
 
     const getBanArr = async () => {
-        const banArr = await fetch(`http://localhost:4000/users-controller/get/ban/mess/${trueParamEmail}`)
+        const banArr = await fetch(`http://localhost:4000/chats-controller/get/ban/mess/${trueParamEmail}`)
         const resultBanArr = await banArr.json()
         setUsersBan(resultBanArr)
     }
 
     const getMyBanArr = async () => {
-        const banArr = await fetch('http://localhost:4000/users-controller/get/my/ban/mess', {
+        const banArr = await fetch('http://localhost:4000/chats-controller/get/my/ban/mess', {
             method: "GET",
             headers: {
                 'Content-Type': 'application/json',
@@ -357,7 +360,7 @@ const UserChat: FC = () => {
     }
 
     const getUserPermAndSubs = async () => {
-        const getPermData = await fetch('http://localhost:4000/users-controller/get/perm/data', {
+        const getPermData = await fetch('http://localhost:4000/chats-controller/get/perm/data', {
             method: "POST",
             headers: {
                 'Content-Type': 'application/json',
@@ -372,7 +375,7 @@ const UserChat: FC = () => {
     }
 
     const openChat = async () => {
-        await fetch('http://localhost:4000/users-controller/open/chat', {
+        await fetch('http://localhost:4000/chats-controller/open/chat', {
             method: "POST",
             headers: {
                 'Content-Type': 'application/json',
@@ -430,6 +433,10 @@ const UserChat: FC = () => {
                     return prev
                 }
             })
+          } else if (event.key === 'Delete') {
+            if (deleteMess === null) {
+                setDeleteMess([])
+            }
           }
         };   
 
@@ -543,7 +550,7 @@ const UserChat: FC = () => {
                         })
                         const readMess = async () => {
                             const targetEmail = message.user.email
-                            await fetch('http://localhost:4000/users-controller/read/mess', {
+                            await fetch('http://localhost:4000/chats-controller/read/mess', {
                                 method: "POST",
                                 headers: {
                                     'Content-Type': 'application/json',
@@ -567,7 +574,7 @@ const UserChat: FC = () => {
                     })
                 }
                 const userSocket = message.socketId
-                await fetch(`http://localhost:4000/users-controller/zero/mess/count/${userSocket}`)
+                await fetch(`http://localhost:4000/chats-controller/zero/mess/count/${userSocket}`)
             } else if (message.type === 'typing') {
                 setTrueParamEmail(prev => {
                     setTrueEmail(prevTrueEmail => {
@@ -741,6 +748,11 @@ const UserChat: FC = () => {
     useEffect(() => {
         console.log(messages)
     }, [messages])
+
+    useEffect(() => { 
+        console.log('Delete mess: ')
+        console.log(deleteMess)
+    }, [deleteMess])
     
     useEffect(() => {
         if (socketId !== '') {
@@ -774,7 +786,7 @@ const UserChat: FC = () => {
                                 className="message-input"
                                 onChange={async(event: ChangeEvent<HTMLInputElement>) => {
                                 setInputMess(event.target.value)
-                                await fetch('http://localhost:4000/users-controller/typing', {
+                                await fetch('http://localhost:4000/chats-controller/typing', {
                                     method: "POST",
                                     headers: {
                                         'Content-Type': 'application/json',
@@ -841,7 +853,7 @@ const UserChat: FC = () => {
                                 reset()
                                 startRecording()
                                 setStartStop(true)
-                                await fetch('http://localhost:4000/users-controller/start/voice', {
+                                await fetch('http://localhost:4000/chats-controller/start/voice', {
                                     method: "POST",
                                     headers: {
                                         'Content-Type': 'application/json',
@@ -855,7 +867,7 @@ const UserChat: FC = () => {
                                 pause()
                                 setStartStop(false)
                                 stopRecording()
-                                await fetch('http://localhost:4000/users-controller/stop/voice', {
+                                await fetch('http://localhost:4000/chats-controller/stop/voice', {
                                     method: "POST",
                                     headers: {
                                         'Content-Type': 'application/json',
@@ -928,6 +940,24 @@ const UserChat: FC = () => {
         </div>
     }
 
+    if (deleteMess === null) {
+        messInter = <div>
+            {videoFile ? <div>
+            <p onClick={() => setVideoFile(null)}>X</p>
+            <h3>{videoFile.type === 'video' ? 'Видеофайл' : 'Файл'}</h3>
+            {processSendMess === false ? <SendBtn sendMess={sendMess} editMess={editMess} inputMess={videoFile.file.name} type='video' imageBase64={imageBase64} messages={messages} setEditMess={setEditMess} trueEmail={trueEmail} trueParamEmail={trueParamEmail} setAnswMess={setAnswMess} setImageBase64={setImageBase64} setVideoFile={setVideoFile} setInputMess={setInputMess} videoFile={videoFile} setMessages={setMessages} setProcessSendMess={setProcessSendMess} backUpMess={backUpMess} succesSend={succesSend} answMess={answMess} setOverStatus={setOverStatus} files={files} setFiles={setFiles} usersChat={usersChat}/> : <ClipLoader/>}
+        </div> : null}
+        {showMessInter}
+        {preview !== '' ? <img src={preview} width={200} height={200}/> : null}
+        {geoLocation ? <Geopos geoLocation={geoLocation} trueParamEmail={trueParamEmail} setGeoLocation={setGeoLocation}/> : null}
+        </div>
+    } else {
+        messInter = <div>
+            <p>Удалить</p>
+            <p onClick={() => setDeleteMess(null)}>Отмена</p>
+        </div>
+    }
+
 
     return (
         <div className="chat-container" onClick={clearEmojies}>
@@ -996,14 +1026,7 @@ const UserChat: FC = () => {
 
             {photos}
             {showGifs}
-            {videoFile ? <div>
-                <p onClick={() => setVideoFile(null)}>X</p>
-                <h3>{videoFile.type === 'video' ? 'Видеофайл' : 'Файл'}</h3>
-                {processSendMess === false ? <SendBtn sendMess={sendMess} editMess={editMess} inputMess={videoFile.file.name} type='video' imageBase64={imageBase64} messages={messages} setEditMess={setEditMess} trueEmail={trueEmail} trueParamEmail={trueParamEmail} setAnswMess={setAnswMess} setImageBase64={setImageBase64} setVideoFile={setVideoFile} setInputMess={setInputMess} videoFile={videoFile} setMessages={setMessages} setProcessSendMess={setProcessSendMess} backUpMess={backUpMess} succesSend={succesSend} answMess={answMess} setOverStatus={setOverStatus} files={files} setFiles={setFiles} usersChat={usersChat}/> : <ClipLoader/>}
-            </div> : null}
-            {showMessInter}
-            {preview !== '' ? <img src={preview} width={200} height={200}/> : null}
-            {geoLocation ? <Geopos geoLocation={geoLocation} trueParamEmail={trueParamEmail} setGeoLocation={setGeoLocation}/> : null}
+            {messInter}
         </div>
     )
 }

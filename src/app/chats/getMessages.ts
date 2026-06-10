@@ -4,7 +4,7 @@ import nacl from "tweetnacl"
 import decryptMess from "./decrpytMess"
 
 const getMessages = async (trueParamEmail: string, setPinMess: Function, setMessages: Function, trueEmail: string) => {
-    const getMess = await fetch('http://localhost:4000/users-controller/get/mess', {
+    const getMess = await fetch('http://localhost:4000/chats-controller/get/mess', {
         method: "POST",
         headers: {
             'Content-Type': 'application/json',
@@ -14,7 +14,7 @@ const getMessages = async (trueParamEmail: string, setPinMess: Function, setMess
     })
     const resultMess = await getMess.json()
     console.log(resultMess)
-    const getMessCount = await fetch('http://localhost:4000/users-controller/get/friend/mess/count', {
+    const getMessCount = await fetch('http://localhost:4000/chats-controller/get/friend/mess/count', {
         method: "POST",
         headers: {
             'Content-Type': 'application/json',

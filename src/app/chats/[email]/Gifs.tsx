@@ -46,7 +46,7 @@ const Gifs: FC <GifsProps> = (props) => {
                 {props.gifsArr.map((item, index) => <div key={index} className="gif-item"><img src={item} onClick={async() => {
                     const { formattedDate, messId } = getMessIdAndDate()
                     const trueParamEmail = props.trueParamEmail
-                    const messRealCount = await fetch('http://localhost:4000/users-controller/mess/length', {
+                    const messRealCount = await fetch('http://localhost:4000/chats-controller/mess/length', {
                         method: "POST",
                         headers: {
                             'Content-Type': 'application/json',
@@ -86,7 +86,7 @@ const Gifs: FC <GifsProps> = (props) => {
                             formData.append('trueParamEmail', props. trueParamEmail)
                             formData.append('per', '')
                             formData.append('type', 'gif')
-                            const sendMess = await fetch('http://localhost:4000/users-controller/new/mess', {
+                            const sendMess = await fetch('http://localhost:4000/chats-controller/new/mess', {
                                 method: "PATCH",
                                 body: formData,
                                 credentials: 'include',
@@ -113,7 +113,7 @@ const Gifs: FC <GifsProps> = (props) => {
                             formData.append('trueParamEmail', props.trueParamEmail)
                             formData.append('per', '')
                             formData.append('type', 'gif')
-                            const firstMess = await fetch('http://localhost:4000/users-controller/new/chat', {
+                            const firstMess = await fetch('http://localhost:4000/chats-controller/new/chat', {
                                 method: "PATCH",
                                 body: formData,
                                 credentials: 'include',

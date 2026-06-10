@@ -28,6 +28,8 @@ interface MessDisplayProps{
     trueEmail: string;
     chatId: string;
     scrollToMessage: Function;
+    deleteMess: string[] | null;
+    setDeleteMess: Function;
 }
 
 const MessDisplay: FC <MessDisplayProps> = (props) => {
@@ -311,18 +313,20 @@ const MessDisplay: FC <MessDisplayProps> = (props) => {
 
                 return (
                     <Element name={item.id} key={index} className={messageClass} onClick={(e) => {
-                        e.stopPropagation()
-                        if (item.controls === false) {
-                            openMessControls(item.id)
-                        } else {
-                            if (props.messages) {
-                                const newMessages = props.messages.map(el => {
-                                    return {
-                                        ...el,
-                                        controls: false,
-                                    }
-                                })
-                                props.setMessages(newMessages)
+                        if (props.deleteMess === null) {
+                            e.stopPropagation()
+                            if (item.controls === false) {
+                                openMessControls(item.id)
+                            } else {
+                                if (props.messages) {
+                                    const newMessages = props.messages.map(el => {
+                                        return {
+                                            ...el,
+                                            controls: false,
+                                        }
+                                    })
+                                    props.setMessages(newMessages)
+                                }
                             }
                         }
                     }}
@@ -504,6 +508,18 @@ const MessDisplay: FC <MessDisplayProps> = (props) => {
                                     })}
                                 </ul>
                             </div> : null}
+
+                            {props.deleteMess ? <input type="checkbox" onChange={() => {
+                                if (props.deleteMess) {
+                                    if (!props.deleteMess?.includes(item.id)) {
+                                        const newDeleteMess = [...props.deleteMess, item.id]
+                                        props.setDeleteMess(newDeleteMess)
+                                    } else {
+                                        const newDeleteMess = props.deleteMess?.filter(element => element !== item.id)
+                                        props.setDeleteMess(newDeleteMess)
+                                    }
+                                }
+                            }}/> : null}
 
                             {item.controls && (
                                 <div className="message-controls">

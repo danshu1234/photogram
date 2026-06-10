@@ -26,7 +26,7 @@ const sendMess = async (type: string, inputMess: string, imageBase64: SendPhoto[
             } else {
                 messageBytes = encoder.encode(fileName)
             }
-            const publicKeys = await fetch('http://localhost:4000/users-controller/public/keys', {
+            const publicKeys = await fetch('http://localhost:4000/chats-controller/public/keys', {
                 method: "POST",
                 headers: {
                     'Content-Type': 'application/json',
@@ -110,7 +110,7 @@ const sendMess = async (type: string, inputMess: string, imageBase64: SendPhoto[
                     previewVideo = resultPreview
                 }
             }
-            const messRealCount = await fetch('http://localhost:4000/users-controller/mess/length', {
+            const messRealCount = await fetch('http://localhost:4000/chats-controller/mess/length', {
                 method: "POST",
                 headers: {
                     'Content-Type': 'application/json',
@@ -216,7 +216,7 @@ const sendMess = async (type: string, inputMess: string, imageBase64: SendPhoto[
                         if (type === 'vote') {
                             formData.append('options', JSON.stringify(votes))
                         }
-                        const sendMess = await fetch('http://localhost:4000/users-controller/new/mess', {
+                        const sendMess = await fetch('http://localhost:4000/chats-controller/new/mess', {
                             method: "PATCH",
                             body: formData,
                             credentials: 'include',
@@ -244,7 +244,7 @@ const sendMess = async (type: string, inputMess: string, imageBase64: SendPhoto[
                     } else {
                         const per = ''
                         const text = JSON.stringify(resultText)
-                        await fetch('http://localhost:4000/users-controller/edit/mess', {
+                        await fetch('http://localhost:4000/chats-controller/edit/mess', {
                             method: "PATCH",
                             headers: {
                                 'Content-Type': 'application/json',
@@ -303,7 +303,7 @@ const sendMess = async (type: string, inputMess: string, imageBase64: SendPhoto[
                     if (groupName) {
                         formData.append('groupName', groupName)
                     }
-                    const firstMess = await fetch('http://localhost:4000/users-controller/new/chat', {
+                    const firstMess = await fetch('http://localhost:4000/chats-controller/new/chat', {
                         method: "PATCH",
                         body: formData,
                         credentials: 'include',

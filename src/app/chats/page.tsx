@@ -80,7 +80,7 @@ const Chats: FC = () => {
         saveChangePermBtn = <button 
             className={styles.saveButton}
             onClick={async() => {
-                await fetch('http://localhost:4000/users-controller/new/perm/mess', {
+                await fetch('http://localhost:4000/chats-controller/new/perm/mess', {
                     method: "PATCH",
                     headers: {
                         'Content-Type': 'application/json',
@@ -124,7 +124,7 @@ const Chats: FC = () => {
     const getChats = async (prevEmail?: string) => {
         let resChats = []
         if (prevEmail) {
-            const chats = await fetch('http://localhost:4000/users-controller/get/chats', {
+            const chats = await fetch('http://localhost:4000/chats-controller/get/chats', {
                 method: "GET",
                 headers: {
                     'Content-Type': 'application/json',
@@ -134,7 +134,7 @@ const Chats: FC = () => {
             const resultChats = await chats.json()
             resChats = resultChats
         } else {
-            const chats = await fetch('http://localhost:4000/users-controller/get/chats', {
+            const chats = await fetch('http://localhost:4000/chats-controller/get/chats', {
                 method: "GET",
                 headers: {
                     'Content-Type': 'application/json',
@@ -185,7 +185,7 @@ const Chats: FC = () => {
     }
 
     const pinUnpinChat = async (user: string, pin: boolean) => {
-        await fetch('http://localhost:4000/users-controller/pin/chat', {
+        await fetch('http://localhost:4000/chats-controller/pin/chat', {
             method: "PATCH",
             headers: {
                 'Content-Type': 'application/json',
@@ -210,7 +210,7 @@ const Chats: FC = () => {
     }
 
     const changeNotifs = async (notifs: boolean, user: string) => {
-        await fetch('http://localhost:4000/users-controller/change/notifs', {
+        await fetch('http://localhost:4000/chats-controller/change/notifs', {
             method: "PATCH",
             headers: {
                 'Content-Type': 'application/json',
@@ -342,7 +342,7 @@ const Chats: FC = () => {
                                                 const encoder = new TextEncoder()
                                                 const messageBytes = encoder.encode(shareMess.text)
                                                 const usersChat = item.users
-                                                const publicKeys = await fetch('http://localhost:4000/users-controller/public/keys', {
+                                                const publicKeys = await fetch('http://localhost:4000/chats-controller/public/keys', {
                                                     method: "POST",
                                                     headers: {
                                                         'Content-Type': 'application/json',
@@ -407,7 +407,7 @@ const Chats: FC = () => {
                                             setSendMess(item.user)
                                             setChats(newChats)
                                             setShareMess(null)
-                                            const sendMess = await fetch('http://localhost:4000/users-controller/new/mess', {
+                                            const sendMess = await fetch('http://localhost:4000/chats-controller/new/mess', {
                                                 method: "PATCH",
                                                 body: formData,
                                                 credentials: 'include',
@@ -646,7 +646,7 @@ const Chats: FC = () => {
     }, [typing])
 
     const getPerm = async () => {
-        const myPerm = await fetch(`http://localhost:4000/users-controller/get/perm/mess`, {
+        const myPerm = await fetch(`http://localhost:4000/chats-controller/get/perm/mess`, {
             method: "GET",
             headers: {
                 'Content-Type': 'application/json',
@@ -713,7 +713,7 @@ const Chats: FC = () => {
                 <button onClick={async() => {
                     const friendEmail = deleteWarn.friendEmail
                     const friendDel = deleteWarn.friendDel
-                    const deleteChat = await fetch('http://localhost:4000/users-controller/delete/chat', {
+                    const deleteChat = await fetch('http://localhost:4000/chats-controller/delete/chat', {
                         method: "PATCH",
                         headers: {
                             'Content-Type': 'application/json',

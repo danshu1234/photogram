@@ -10,7 +10,7 @@ const Reg: FC = () => {
 
     const codeSend = async () => {
         if (email !== '') {
-            const send = await fetch(`http://localhost:4000/users-controller/send/enter/code/${email}`, {method: "POST"})
+            const send = await fetch(`http://localhost:4000/authorization-controller/send/enter/code/${email}`, {method: "POST"})
             const resultSendCode = await send.text()
             if (resultSendCode === 'OK') {
                 setSendCode(true)
@@ -22,7 +22,7 @@ const Reg: FC = () => {
 
     const checkCode = async () => {
         if (code !== '') {
-            const emailEnter = await fetch('http://localhost:4000/users-controller/email/enter', {
+            const emailEnter = await fetch('http://localhost:4000/authorization-controller/email/enter', {
                 method: "POST",
                 headers: {
                     'Content-Type': 'application/json',

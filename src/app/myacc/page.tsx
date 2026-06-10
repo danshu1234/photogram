@@ -205,7 +205,7 @@ export default function MyPage() {
           Выйти
         </span>
         <span onClick={async() => {
-          const changeToken = await fetch('http://localhost:4000/users-controller/change/token', {
+          const changeToken = await fetch('http://localhost:4000/authorization-controller/change/token', {
             method: "GET",
             credentials: 'include',
           })

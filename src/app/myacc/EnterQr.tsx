@@ -20,7 +20,7 @@ const EnterQr: FC <EnterQrProps> = (props) => {
         const getToken = async () => {
             const refreshToken = localStorage.getItem('photogram-enter-refresh')
             if (refreshToken) {
-                const userToken = await fetch('http://localhost:4000/users-controller/get/token', {
+                const userToken = await fetch('http://localhost:4000/authorization-controller/get/token', {
                     method: "GET",
                     headers: {
                         'Content-Type': 'application/json',

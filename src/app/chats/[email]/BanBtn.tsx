@@ -24,7 +24,7 @@ const BanBtn: FC <BanBtnProps> = (props) => {
                 } else {
                     props.setMyBanArr(props.myBanArr.filter(el => el !== trueParamEmail))
                 }
-                await fetch('http://localhost:4000/users-controller/ban/unban/user', {
+                await fetch('http://localhost:4000/chats-controller/ban/unban/user', {
                     method: "PATCH",
                     headers: {
                         'Content-Type': 'application/json',

@@ -30,7 +30,7 @@ const PartChat: FC <PartChatProps> = (props) => {
                 const formData = new FormData()
                 formData.append('ava', avatarFile)
                 formData.append('id', props.trueParamEmail)
-                await fetch('http://localhost:4000/users-controller/group/new/avatar', {
+                await fetch('http://localhost:4000/chats-controller/group/new/avatar', {
                     method: "PATCH",
                     body: formData,
                     credentials: 'include',
@@ -68,7 +68,7 @@ const PartChat: FC <PartChatProps> = (props) => {
                                     const trueParamEmail = props.trueParamEmail
                                     const particip = item
                                     await sendMess('text', `${item} исключен(а) из группы`, [], null, props.messages, '', props.trueEmail, props.setMessages, null, null, null, null, null, null, null, [], props.succesSend, trueParamEmail, null, null, null, props.participantsChat, '')
-                                    const deleteParticip = await fetch('http://localhost:4000/users-controller/delete/particip', {
+                                    const deleteParticip = await fetch('http://localhost:4000/chats-controller/delete/particip', {
                                         method: "PATCH",
                                         headers: {
                                             'Content-Type': 'application/json',

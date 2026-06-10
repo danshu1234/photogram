@@ -88,7 +88,7 @@ const Files: FC = () => {
     }
 
     const downloadFile = async (messId: string) => {
-        const file = await fetch('http://localhost:4000/users-controller/get/file', {
+        const file = await fetch('http://localhost:4000/chats-controller/get/file', {
             method: "POST",
             headers: {
                 'Content-Type': 'application/json',
@@ -114,7 +114,7 @@ const Files: FC = () => {
                         setBigPhoto('loading')
                         const messId = item.messId
                         const photoId = item.photoId
-                        const bigPhoto = await fetch('http://localhost:4000/users-controller/big/photo', {
+                        const bigPhoto = await fetch('http://localhost:4000/chats-controller/big/photo', {
                             method: "POST",
                             headers: {
                                 'Content-Type': 'application/json',
@@ -148,7 +148,7 @@ const Files: FC = () => {
                                                 const videoMessId: string = item.text
                                                 const videoLoad = changeVideo('loading', item.id, item.date)
                                                 setResultVideos(videoLoad)
-                                                const video = await fetch('http://localhost:4000/users-controller/video', {
+                                                const video = await fetch('http://localhost:4000/chats-controller/video', {
                                                     method: "POST",
                                                     headers: {
                                                         'Content-Type': 'application/json',
@@ -220,7 +220,7 @@ const Files: FC = () => {
     }
 
     const getFiles = async () => {
-        const getMess = await fetch(`http://localhost:4000/users-controller/get/mess`, {
+        const getMess = await fetch(`http://localhost:4000/chats-controller/get/mess`, {
             method: "POST",
             headers: {
                 'Content-Type': 'application/json',
